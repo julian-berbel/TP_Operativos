@@ -5,9 +5,18 @@
  *      Author: utnso
  */
 
-/*
+#include <commons/config.h>
+#include <stdio.h>
+int abrirConfiguracion();
+int puertoCpu;
+int main(){
+	abrirConfiguracion();
+	return 0;
+}
 
-	t_config* configuracion= config_create("/home/utnso/tp-2016-1c-Hellfish-Group/src/config/cpu.config");
-	int puerto = config_get_int_value(configuracion, "PUERTO");
-	printf("%d",puerto);
-	*/
+int abrirConfiguracion(){
+	t_config* configuracion= config_create("/home/utnso/tp-2016-1c-Hellfish-Group/cpu/config/cpu.config");
+		puertoCpu = config_get_int_value(configuracion, "PUERTO");
+	return 0;
+}
+

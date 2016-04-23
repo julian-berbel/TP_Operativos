@@ -6,19 +6,15 @@
  */
 #include <commons/config.h>
 #include <stdio.h>
+int abrirConfiguracion();
+int puertoSwap;
 
 int main(){
-	t_config* configuracionSwap = config_create("/home/utnso/tp-2016-1c-Hellfish-Group/src/config/swap.config");
-	int puertoSwap= config_get_int_value(configuracionSwap, "PUERTO_ESCUCHA");
-
-	t_config* configuracionNucleo= config_create("/home/utnso/tp-2016-1c-Hellfish-Group/src/config/nucleo.config");
-		int puertoNucleo = config_get_int_value(configuracionNucleo, "PUERTO_PROG");
-		printf("%d",puertoNucleo);
-
-	t_config* configuracionConsola= config_create("/home/utnso/tp-2016-1c-Hellfish-Group/src/config/consola.config");
-		int puertoConsola = config_get_int_value(configuracionConsola, "PUERTO");
-		printf("%d",puertoConsola);
-	printf("puerto de SWAP: %d", puertoSwap);
-	//config_destroy(configuracionSwap);
+	abrirConfiguracion();
 	return 0;
+}
+int abrirConfiguracion(){
+	t_config* configuracionSwap = config_create("/home/utnso/tp-2016-1c-Hellfish-Group/swap/config/swap.config");
+		puertoSwap= config_get_int_value(configuracionSwap, "PUERTO_ESCUCHA");
+		return 0;
 }
