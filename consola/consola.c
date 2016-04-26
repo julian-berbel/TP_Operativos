@@ -20,31 +20,30 @@
 #include <commons/config.h>
 #include <stdio.h>
 int abrirConfiguracion();
-char *puertoNucleo;
-char *ip;
+char *puerto_nucleo;
+char *ip_nucleo;
 
 int crear_socket_cliente(char * ip, char * puerto);
 int enviar_string(int socket, char * mensaje);
 
 int main(){
 	abrirConfiguracion();
-	char * mensaje = malloc(100);//Defino char* y pido 100 bytes de memoria
-	    memset(mensaje, '\0', 100); //Seteo la memoria
-	   // printf("%s", ip);
-	 //   printf("%s", puertoNucleo);
-	    strcpy(mensaje, "Hola\n"); //Le agrego al char* el mensaje a mandar
-	    int socket_cliente = crear_socket_cliente("127.0.0.1", "5000"); //Creo un socket cliente (connect)
+	char * mensaje = malloc(100);
+	    memset(mensaje, '\0', 100);
+	    strcpy(mensaje, "Hola\n");
+	    int socket_cliente = crear_socket_cliente(ip_nucleo, puerto_nucleo); //Creo un socket cliente (connect)
 	    int e = enviar_string(socket_cliente, mensaje); //Envio el string
 		close(socket_cliente); //Cierro socket.
 		free(mensaje); //Libero mensaje enviado
 
+	//printf("%s\n%s",ip_nucleo,puerto_nucleo);
 	return 0;
 }
 int abrirConfiguracion(){
 	t_config* configuracion= config_create("/home/utnso/tp-2016-1c-Hellfish-Group/consola/config/consola.config");
-			ip = config_get_string_value(configuracion, "IP_NUCLEO");
-			puertoNucleo= config_get_string_value(configuracion, "PUERTO_NUCLEO");
-			config_destroy(configuracion);
+			ip_nucleo = config_get_string_value(configuracion, "IP_NUCLEO");
+			puerto_nucleo= config_get_string_value(configuracion, "PUERTO_NUCLEO");
+			//config_destroy(configuracion);
 			return 0;
 }
 
