@@ -50,51 +50,31 @@ int crear_socket_servidor(char *ip, char *puerto){
     return descriptorArchivo;
 }
 
-char* recibir_string(int socket_aceptado){
-	char *error = string_new();
-	string_append(&error, "fail");
-	char *mensaje = malloc(100);
-    char *mensaje_2 = malloc(100);
-	memset(mensaje, '\0', 100);
-	int error_check = recv(socket_aceptado, mensaje, 100, 0);
+int recibirConexion(int socket_servidor){
+	struct sockaddr_storage their_addr;
 
-	if(error_check <= 0){
-        free(mensaje_2);
-		free(mensaje);
-		return error;
+	socklen_t addr_size;
+
+	int estado = listen(socket_servidor, 5);
+
+	if(estado == -1){
+		printf("Error al poner el servidor en listen\n");
+		close(socket_servidor);
+		return 1;
 	}
 
-    while(strcmp(mensaje,"Hola\n") != 0){
-    	memset(mensaje_2, '\0', 100);
-    	error_check = recv(socket_aceptado, mensaje_2, 100, 0);
-
-    	if(error_check <= 0){
-    		free(mensaje_2);
-		    free(mensaje);
-		    return error;
-    	}
-
-    	string_append(&mensaje, mensaje_2);
-    }
-        free(error);
-        free(mensaje_2);
-
-        return mensaje;
-}
-
-char* recibir_string_generico(int socket_aceptado){
-	char* mensaje = string_new();
-	char* acumulador = malloc(101);
-
-	int aux;
-	int aux2 = 0;
-
-	while((aux = recv(socket_aceptado, acumulador, 100, 0)) > 0){
-		string_append(&mensaje, acumulador);
-		aux2 += aux;
+	if(estado == 0){
+		printf("Se puso el socket en listen\n");
 	}
 
-	printf("%d", aux2);
-	free(acumulador);
-	return mensaje;
+	addr_size = sizeof(their_addr);
+	int socket_aceptado = accept(socket_servidor, (struct sockaddr *)&their_addr, &addr_size);
+
+	if (socket_aceptado == -1){
+		close(socket_servidor);
+		printf("Error al aceptar conexion\n");
+		return 1;
+	}
+
+	return socket_aceptado;
 }

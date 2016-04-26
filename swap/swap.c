@@ -15,39 +15,19 @@ char *ipSwap;
 
 int main(){
 	abrirConfiguracion();
-	struct sockaddr_storage their_addr;
-
-	socklen_t addr_size;
 
 	int socket_servidor = crear_socket_servidor(ipSwap, puertoSwap);
+	int socket_aceptado = recibirConexion(socket_servidor);
 
-	int estado = listen(socket_servidor, 5);
+	printf("Swap y UMC conectados\n");
 
-	if(estado == -1){
-		printf("Error al poner el servidor en listen\n");
-		close(socket_servidor);
-		return 1;
-	}
+	char* mensaje;
 
-	if(estado == 0){
-		printf("Se puso el socket en listen\n");
-	}
+	while(string_is_empty(mensaje = recibir_string_generico(socket_aceptado)));
 
-	addr_size = sizeof(their_addr);
-	int socket_aceptado = accept(socket_servidor, (struct sockaddr *)&their_addr, &addr_size);
+	printf("Pase por la Swap - %s\n", mensaje);
 
-	if (socket_aceptado == -1){
-		close(socket_servidor);
-		printf("Error al aceptar conexion\n");
-		return 1;
-	}
-
-	char *handshake = recibir_string_generico(socket_aceptado);
-	printf("%s\n", handshake);
-
-	handshake = recibir_string_generico(socket_aceptado);
-
-	free(handshake);
+	free(mensaje);
 	close(socket_servidor);
 	close(socket_aceptado);
 
