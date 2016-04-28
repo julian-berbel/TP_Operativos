@@ -14,33 +14,35 @@ char *puertoNucleo;
 char *ipNucleo;
 
 int main(){
-	abrirConfiguracion();
+	t_config* configuracionConsola = config_create("/home/utnso/tp-2016-1c-Hellfish-Group/consola/config/consola.config");
+	abrirConfiguracion(configuracionConsola);
 
-	int socket_cliente = crear_socket_cliente("127.0.0.1", "5000");
+	int socket_nucleo = crear_socket_cliente(ipNucleo, puertoNucleo);
 
 	printf("Consola y Nucleo conectados\n");
 
-	char* comando = malloc(10);
+	char* comando = string_new();
 
 	do{
-		scanf("%s", comando);
-	}while(strcmp(comando, "prueba"));
+		gets(comando);
+	}while(!string_starts_with(comando, "prueba "));
 
-	char * mensaje = malloc(100);
-	strcpy(mensaje, "Hola!");
+	char* mensaje = string_new();
+	strcpy(mensaje, string_substring_from(comando ,7));
 
-	enviar_string(socket_cliente, mensaje);
+	enviar_string(socket_nucleo, mensaje);
 
-	close(socket_cliente);
+	close(socket_nucleo);
 	free(mensaje);
 	free(comando);
+	config_destroy(configuracionConsola);
 
 	return 0;
 }
-int abrirConfiguracion(){
-	t_config* configuracion= config_create("/home/utnso/tp-2016-1c-Hellfish-Group/consola/config/consola.config");
-	ipNucleo = config_get_string_value(configuracion, "IP_NUCLEO");
-	puertoNucleo= config_get_string_value(configuracion, "PUERTO_NUCLEO");
-	config_destroy(configuracion);
+
+int abrirConfiguracion(t_config* configuracionConsola){
+	ipNucleo = config_get_string_value(configuracionConsola, "IP_NUCLEO");
+	puertoNucleo = config_get_string_value(configuracionConsola, "PUERTO_NUCLEO");
+
 	return 0;
 }

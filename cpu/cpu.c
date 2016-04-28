@@ -16,35 +16,38 @@ char* puertoUMC;
 char* ipUMC;
 
 int main(){
-	abrirConfiguracion();
-		int socket_nucleo = crear_socket_cliente(ipNucleo, puertoNucleo);
+	t_config* configuracionCPU = config_create("/home/utnso/tp-2016-1c-Hellfish-Group/cpu/config/cpu.config");
+	abrirConfiguracion(configuracionCPU);
 
-		printf("CPU y Nucleo conectados\n");
+	int socket_nucleo = crear_socket_cliente(ipNucleo, puertoNucleo);
 
-		int socket_umc = crear_socket_cliente(ipUMC, puertoUMC);
+	printf("CPU y Nucleo conectados\n");
 
-		printf("CPU y UMC conectados\n");
+	int socket_umc = crear_socket_cliente(ipUMC, puertoUMC);
 
-		char * mensaje;
+	printf("CPU y UMC conectados\n");
 
-		while(string_is_empty(mensaje = recibir_string_generico(socket_nucleo)));
+	char * mensaje;
 
-		printf("Pase por la CPU - %s\n", mensaje);
+	while(string_is_empty(mensaje = recibir_string_generico(socket_nucleo)));
 
-		enviar_string(socket_umc, mensaje);
+	printf("Pase por la CPU - %s\n", mensaje);
 
-		close(socket_nucleo);
-		free(mensaje);
+	enviar_string(socket_umc, mensaje);
 
-		return 0;
+	close(socket_nucleo);
+	free(mensaje);
+	config_destroy(configuracionCPU);
+
+	return 0;
 }
 
-int abrirConfiguracion(){
-	t_config* configuracion= config_create("/home/utnso/tp-2016-1c-Hellfish-Group/cpu/config/cpu.config");
-		puertoNucleo = config_get_string_value(configuracion, "PUERTO_NUCLEO");
-		ipNucleo = config_get_string_value(configuracion, "IP_NUCLEO");
-		puertoUMC = config_get_string_value(configuracion, "PUERTO_UMC");
-		ipUMC = config_get_string_value(configuracion, "IP_UMC");
+int abrirConfiguracion(t_config* configuracionCPU){
+	puertoNucleo = config_get_string_value(configuracionCPU, "PUERTO_NUCLEO");
+	ipNucleo = config_get_string_value(configuracionCPU, "IP_NUCLEO");
+	puertoUMC = config_get_string_value(configuracionCPU, "PUERTO_UMC");
+	ipUMC = config_get_string_value(configuracionCPU, "IP_UMC");
+
 	return 0;
 }
 

@@ -17,7 +17,8 @@ char *ipNucleo;
 char *puertoCPU;
 
 int main(){
-	abrirConfiguracion();
+	t_config* configuracionNucleo = config_create("/home/utnso/tp-2016-1c-Hellfish-Group/nucleo/config/nucleo.config");
+	abrirConfiguracion(configuracionNucleo);
 
 	int socket_servidor = crear_socket_servidor(ipNucleo, puertoNucleo);
 	int socket_consola = recibirConexion(socket_servidor);
@@ -41,16 +42,17 @@ int main(){
 	close(socket_consola);
 	close(socket_servidor);
 	close(socket_cpu);
+	config_destroy(configuracionNucleo);
 
 	return 0;
 }
 
 
 
-int abrirConfiguracion(){
-	t_config* configuracion= config_create("/home/utnso/tp-2016-1c-Hellfish-Group/nucleo/config/nucleo.config");
-			puertoNucleo = config_get_string_value(configuracion, "PUERTO_PROG");
-			ipNucleo = config_get_string_value(configuracion, "IP_NUCLEO");
-			puertoCPU = config_get_string_value(configuracion, "PUERTO_CPU");
-			return 0;
+int abrirConfiguracion(t_config* configuracionNucleo){
+	puertoNucleo = config_get_string_value(configuracionNucleo, "PUERTO_PROG");
+	ipNucleo = config_get_string_value(configuracionNucleo, "IP_NUCLEO");
+	puertoCPU = config_get_string_value(configuracionNucleo, "PUERTO_CPU");
+
+	return 0;
 }

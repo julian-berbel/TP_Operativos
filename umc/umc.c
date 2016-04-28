@@ -16,7 +16,8 @@ char* ipSwap;
 char* puertoSwap;
 
 int main(){
-	abrirConfiguracion();
+	t_config* configuracionUMC = config_create("/home/utnso/tp-2016-1c-Hellfish-Group/umc/config/umc.config");
+	abrirConfiguracion(configuracionUMC);
 
 	int socket_swap = crear_socket_cliente(ipSwap, puertoSwap);
 
@@ -39,16 +40,17 @@ int main(){
 	close(socket_swap);
 	close(socket_servidor);
 	close(socket_cpu);
+	config_destroy(configuracionUMC);
 
 	return 0;
 }
 
-int abrirConfiguracion(){
-	t_config* configuracion= config_create("/home/utnso/tp-2016-1c-Hellfish-Group/umc/config/umc.config");
-	puertoUmc = config_get_string_value(configuracion, "PUERTO");
-	ipUmc = config_get_string_value(configuracion, "IP_UMC");
-	puertoSwap = config_get_string_value(configuracion, "PUERTO_SWAP");
-	ipSwap = config_get_string_value(configuracion, "IP_SWAP");
+int abrirConfiguracion(t_config* configuracionUMC){
+	puertoUmc = config_get_string_value(configuracionUMC, "PUERTO");
+	ipUmc = config_get_string_value(configuracionUMC, "IP_UMC");
+	puertoSwap = config_get_string_value(configuracionUMC, "PUERTO_SWAP");
+	ipSwap = config_get_string_value(configuracionUMC, "IP_SWAP");
+
 	return 0;
 }
 
