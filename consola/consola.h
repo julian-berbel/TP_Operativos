@@ -7,7 +7,7 @@
 #include<stdio.h>
 
 #define RUTA_LOG "/home/utnso/consola.log"
-#define RUTA_CONFIG "/home/utnso/workspace/tp-2016-1c-Hellfish-Group/consola/config/consola.config"
+#define RUTA_CONFIG "/home/utnso/tp-2016-1c-Hellfish-Group/consola/config/consola.config"
 
 t_config* configuracionConsola;
 char* ipNucleo;

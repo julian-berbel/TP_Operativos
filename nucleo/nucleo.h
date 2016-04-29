@@ -8,7 +8,7 @@
 #include <stdio.h>
 
 #define RUTA_LOG "/home/utnso/nucleo.log"
-#define RUTA_CONFIG "/home/utnso/workspace/tp-2016-1c-Hellfish-Group/nucleo/config/nucleo.config"
+#define RUTA_CONFIG "/home/utnso/tp-2016-1c-Hellfish-Group/nucleo/config/nucleo.config"
 
 t_config* configuracionNucleo;
 char* ipNucleo;

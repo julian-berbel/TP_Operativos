@@ -8,7 +8,7 @@
 #include"cliente.h"
 
 #define RUTA_LOG "/home/utnso/umc.log"
-#define RUTA_CONFIG "/home/utnso/workspace/tp-2016-1c-Hellfish-Group/umc/config/umc.config"
+#define RUTA_CONFIG "/home/utnso/tp-2016-1c-Hellfish-Group/umc/config/umc.config"
 
 t_config* configuracionUMC;
 char* puertoUmc;

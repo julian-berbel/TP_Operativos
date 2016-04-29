@@ -7,7 +7,7 @@
 #include"servidor.h"
 
 #define RUTA_LOG "/home/utnso/swap.log"
-#define RUTA_CONFIG "/home/utnso/workspace/tp-2016-1c-Hellfish-Group/swap/config/swap.config"
+#define RUTA_CONFIG "/home/utnso/tp-2016-1c-Hellfish-Group/swap/config/swap.config"
 
 t_config* configuracion_swap;
 char* puertoSwap;
