@@ -1,25 +1,14 @@
-/*
- * consola.c
- *
- *  Created on: 19/4/2016
- *      Author: utnso
- */
-
-#include "cliente.h"
-#include <commons/config.h>
-#include <stdio.h>
-
-int abrirConfiguracion();
-char *puertoNucleo;
-char *ipNucleo;
+#include<commons/config.h>
+#include<commons/log.h>
+#include"consola.h"
 
 int main(){
-	t_config* configuracionConsola = config_create("/home/utnso/tp-2016-1c-Hellfish-Group/consola/config/consola.config");
-	abrirConfiguracion(configuracionConsola);
+	abrirConfiguracion();
+	log_info(logger, "Inicia proceso Consola");
 
 	int socket_nucleo = crear_socket_cliente(ipNucleo, puertoNucleo);
 
-	printf("Consola y Nucleo conectados\n");
+	log_info(logger_pantalla, "Consola y Nucleo conectados");
 
 	char* comando = string_new();
 
@@ -35,14 +24,25 @@ int main(){
 	close(socket_nucleo);
 	free(mensaje);
 	free(comando);
-	config_destroy(configuracionConsola);
+	cerrar_todo();
 
 	return 0;
 }
 
-int abrirConfiguracion(t_config* configuracionConsola){
+void abrirConfiguracion(){
+	configuracionConsola = config_create(RUTA_CONFIG);
 	ipNucleo = config_get_string_value(configuracionConsola, "IP_NUCLEO");
 	puertoNucleo = config_get_string_value(configuracionConsola, "PUERTO_NUCLEO");
+	logger = log_create(RUTA_LOG, "Consola", false, LOG_LEVEL_INFO);
+	logger_pantalla = log_create(RUTA_LOG, "Consola", true, LOG_LEVEL_INFO);
 
-	return 0;
+	printf("%s\n", ipNucleo);
+	printf("%s\n", puertoNucleo);
+
+}
+
+void cerrar_todo(){
+	log_destroy(logger);
+	log_destroy(logger_pantalla);
+	config_destroy(configuracionConsola);
 }
