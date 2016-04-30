@@ -21,10 +21,10 @@ int main(){
 	while(string_is_empty(mensaje = recibir_string_generico(socket_consola)));
 
 	char * mensaje_logger = string_new();
-		string_append(&mensaje_logger, "Pase por el Nucleo - ");
-		string_append(&mensaje_logger, mensaje);
-		log_info(logger_pantalla, mensaje_logger);
-		free(mensaje_logger);
+	string_append(&mensaje_logger, "Pase por el Nucleo - ");
+	string_append(&mensaje_logger, mensaje);
+	log_info(logger_pantalla, mensaje_logger);
+	free(mensaje_logger);
 
 	enviar_string(socket_cpu, mensaje);
 

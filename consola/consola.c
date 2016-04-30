@@ -10,19 +10,13 @@ int main(){
 
 	log_info(logger_pantalla, "Consola y Nucleo conectados");
 
-	char* comando = string_new();
-
-	do{
-		gets(comando);
-	}while(!string_starts_with(comando, "prueba "));
-
-	char* mensaje = string_new();
-	strcpy(mensaje, string_substring_from(comando ,7));
-
-	enviar_string(socket_nucleo, mensaje);
+	char* comando = malloc(20);
+	memset(comando, '\0', 20);
+	printf("Introduzca 'prueba' para enviar mensaje\n");
+	scanf("%s", comando);
+	enviar_string(socket_nucleo, comando);
 
 	close(socket_nucleo);
-	free(mensaje);
 	free(comando);
 	cerrar_todo();
 
