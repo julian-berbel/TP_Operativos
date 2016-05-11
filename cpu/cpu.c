@@ -1,6 +1,7 @@
 #include <commons/config.h>
 #include <commons/log.h>
 #include"cpu.h"
+#include <parser/parser.h>
 
 int main(){
 	abrirConfiguracion();
@@ -10,7 +11,7 @@ int main(){
 
 	log_info(logger_pantalla, "CPU y Nucleo conectados");
 
-	int socket_umc = crear_socket_cliente(ipUMC, puertoUMC);
+	socket_umc = crear_socket_cliente(ipUMC, puertoUMC);
 
 	log_info(logger_pantalla, "CPU y UMC conectados");
 
@@ -54,3 +55,39 @@ void cerrar_todo(){
 	log_destroy(logger_pantalla);
 	config_destroy(configuracionCPU);
 }
+
+//primitivas
+static const int CONTENIDO_VARIABLE = 20;
+static const int POSICION_MEMORIA = 0x10;
+
+t_puntero definirVariable(t_nombre_variable variable) {
+	printf("definir la variable %c\n", variable);
+	char *mensaje=string_new();
+	string_append(&mensaje,"guarde la variable\n");
+	enviar_string(socket_umc, mensaje);
+	return POSICION_MEMORIA;
+}
+
+t_puntero obtenerPosicionVariable(t_nombre_variable variable) {
+	printf("Obtener posicion de %c\n", variable);
+	return POSICION_MEMORIA;
+}
+
+t_valor_variable dereferenciar(t_puntero puntero) {
+	printf("Dereferenciar %d y su valor es: %d\n", puntero, CONTENIDO_VARIABLE);
+	return CONTENIDO_VARIABLE;
+}
+
+void asignar(t_puntero puntero, t_valor_variable variable) {
+	printf("Asignando en %d el valor %d\n", puntero, variable);
+}
+
+void imprimir(t_valor_variable valor) {
+	printf("Imprimir %d\n", valor);
+}
+
+void imprimirTexto(char* texto) {
+	printf("ImprimirTexto: %s", texto);
+}
+
+

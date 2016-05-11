@@ -2,6 +2,7 @@
 #include<commons/log.h>
 #include"nucleo.h"
 
+
 int main(){
 	abrirConfiguracion();
 	log_info(logger, "Inicia proceso Núcleo");

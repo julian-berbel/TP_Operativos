@@ -5,6 +5,7 @@
 #include<commons/log.h>
 #include<commons/config.h>
 #include"servidor.h"
+#include <pthread.h>
 #include"cliente.h"
 
 #define RUTA_LOG "/home/utnso/umc.log"
@@ -26,5 +27,6 @@ t_log* logger_pantalla;
 
 void abrirConfiguracion();
 void cerrar_todo();
+void *funcion_nucleo();
 
 #endif

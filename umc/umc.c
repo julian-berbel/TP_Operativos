@@ -6,31 +6,38 @@ int main(){
 	abrirConfiguracion();
 	log_info(logger, "Inicia proceso UMC");
 
-	int socket_swap = crear_socket_cliente(ipSwap, puertoSwap);
+	/*int socket_swap = crear_socket_cliente(ipSwap, puertoSwap);
 
-	log_info(logger_pantalla, "UMC y Swap conectados");
+	log_info(logger_pantalla, "UMC y Swap conectados");*/
 
 	int socket_servidor = crear_socket_servidor(ipUmc, puertoUmc);
-	int socket_cpu = recibirConexion(socket_servidor);
 
-	log_info(logger_pantalla, "UMC y CPU conectados");
+	int socket_cliente = recibirConexion(socket_servidor);
 
 	char* mensaje;
 
-	while(string_is_empty(mensaje = recibir_string_generico(socket_cpu)));
+	while(string_is_empty(mensaje = recibir_string_generico(socket_cliente)));
 
-	char * mensaje_logger = string_new();
-	string_append(&mensaje_logger, "Pase por la UMC - ");
-	string_append(&mensaje_logger, mensaje);
-	log_info(logger_pantalla, mensaje_logger);
-	free(mensaje_logger);
+	//enviar_string(socket_swap, mensaje);
+	if (mensaje == "n"){
+		int args_nucleo = 1234;
+		int r = 0;
+		pthread_t thread_nucleo;
+		r = pthread_create(&thread_nucleo, NULL, funcion_nucleo, (void*) args_nucleo);
+		printf("Recibi un mensaje de Kernel\n");
 
-	enviar_string(socket_swap, mensaje);
+
+	}else if (mensaje == "c"){
+		printf("Recibir un mensaje de CPU\n");
+	}
+
+
+
 
 	free(mensaje);
-	close(socket_swap);
+	//close(socket_swap);
 	close(socket_servidor);
-	close(socket_cpu);
+	close(socket_cliente);
 	cerrar_todo();
 
 	return 0;
@@ -66,6 +73,16 @@ void cerrar_todo(){
 	log_destroy(logger);
 	log_destroy(logger_pantalla);
 	config_destroy(configuracionUMC);
+}
+
+void *funcion_nucleo(void *argumento){
+	int socket_nucleo;
+	socket_nucleo =  (int) argumento;
+	char* mensaje = string_new();
+	string_append(&mensaje, "okey\n");
+	enviar_string(socket_nucleo, mensaje);
+	free(mensaje);
+
 }
 
 
