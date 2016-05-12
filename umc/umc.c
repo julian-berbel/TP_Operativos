@@ -19,15 +19,14 @@ int main(){
 	while(string_is_empty(mensaje = recibir_string_generico(socket_cliente)));
 
 	//enviar_string(socket_swap, mensaje);
-	if (mensaje == "n"){
+	if (strcmp(mensaje, "n")){
 		int args_nucleo = 1234;
-		int r = 0;
 		pthread_t thread_nucleo;
-		r = pthread_create(&thread_nucleo, NULL, funcion_nucleo, (void*) args_nucleo);
+		int r = pthread_create(&thread_nucleo, NULL, funcion_nucleo, (void*) args_nucleo);
 		printf("Recibi un mensaje de Kernel\n");
 
 
-	}else if (mensaje == "c"){
+	}else if (strcmp(mensaje, "c")){
 		printf("Recibir un mensaje de CPU\n");
 	}
 
@@ -75,9 +74,9 @@ void cerrar_todo(){
 	config_destroy(configuracionUMC);
 }
 
-void *funcion_nucleo(void *argumento){
+void* funcion_nucleo(void *argumento){ // thread para nucleo
 	int socket_nucleo;
-	socket_nucleo =  (int) argumento;
+	socket_nucleo = (int) argumento;
 	char* mensaje = string_new();
 	string_append(&mensaje, "okey\n");
 	enviar_string(socket_nucleo, mensaje);

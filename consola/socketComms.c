@@ -9,19 +9,8 @@
 
 char* recibir_string_generico(int socket_aceptado){
 	char* mensaje = string_new();
-	char* acumulador = malloc(30);
-	memset(acumulador, '\0', 30);
-
-	recv(socket_aceptado, acumulador, 30, 0);
-	string_append(&mensaje, acumulador);
-
-	/*int aux;
-	int aux2 = 0;
-
-	while((aux = recv(socket_aceptado, acumulador, 100, 0)) > 0){
-		string_append(&mensaje, acumulador);
-		aux2 += aux;
-	}*/
+	char* acumulador = malloc(100);
+	while(recv(socket_aceptado, acumulador, 99, 0) > 0) string_append(&mensaje, acumulador);
 
 	free(acumulador);
 	return mensaje;

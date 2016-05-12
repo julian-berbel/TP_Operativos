@@ -1,7 +1,6 @@
 #include <commons/config.h>
 #include <commons/log.h>
-#include"cpu.h"
-#include <parser/parser.h>
+#include "cpu.h"
 
 int main(){
 	abrirConfiguracion();
@@ -56,6 +55,7 @@ void cerrar_todo(){
 	config_destroy(configuracionCPU);
 }
 
+/*
 //primitivas
 static const int CONTENIDO_VARIABLE = 20;
 static const int POSICION_MEMORIA = 0x10;
@@ -90,4 +90,4 @@ void imprimirTexto(char* texto) {
 	printf("ImprimirTexto: %s", texto);
 }
 
-
+*/

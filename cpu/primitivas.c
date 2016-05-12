@@ -1,9 +1,8 @@
-static const int CONTENIDO_VARIABLE = 20;
-static const int POSICION_MEMORIA = 0x10;
+#include "primitivas.h"
 
 t_puntero definirVariable(t_nombre_variable variable) {
 	printf("definir la variable %c\n", variable);
-	char *mensaje=();
+	char *mensaje;
 	return POSICION_MEMORIA;
 }
 

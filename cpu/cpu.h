@@ -6,8 +6,7 @@
 #include <commons/config.h>
 #include <commons/log.h>
 #include <stdio.h>
-#include <parser/parser.h>
-#include <parser/metadata_program.h>
+#include "primitivas.h"
 
 #define RUTA_LOG "/home/utnso/cpu.log"
 #define RUTA_CONFIG "/home/utnso/tp-2016-1c-Hellfish-Group/cpu/config/cpu.config"

@@ -1,12 +1,11 @@
-#include<commons/config.h>
-#include<commons/log.h>
-#include"consola.h"
+#include "consola.h"
 
-int main(){
+int main(int cantidadArgumentos, char* argumentos[]){
+
 	abrirConfiguracion();
 	log_info(logger, "Inicia proceso Consola");
 
-	int socket_nucleo = crear_socket_cliente(ipNucleo, puertoNucleo);
+	socket_nucleo = crear_socket_cliente(ipNucleo, puertoNucleo);
 
 	log_info(logger_pantalla, "Consola y Nucleo conectados");
 
@@ -39,4 +38,33 @@ void cerrar_todo(){
 	log_destroy(logger);
 	log_destroy(logger_pantalla);
 	config_destroy(configuracionConsola);
+}
+
+int archivoExiste(char *ruta) {
+    struct stat st;
+    return !stat(ruta, &st);
+}
+
+char* leerArchivo(char* ruta){
+	FILE* archivo;
+	if (archivoExiste(ruta)){
+		archivo = fopen(ruta,"r");
+
+		char* buffer = string_new();
+
+		char* aux = malloc(100);
+
+		do{
+			fgets(aux, 99, archivo);
+			string_append(&buffer, aux);
+		}while(!feof(archivo));
+
+		free(aux);
+		fclose(archivo);
+		return buffer;
+
+	}else{
+		printf("El archivo no existe\n");
+		exit(1);
+	}
 }
