@@ -1,3 +1,5 @@
+#include <commons/config.h>
+#include <commons/log.h>
 #include "consola.h"
 
 int main(int cantidadArgumentos, char* argumentos[]){

@@ -4,8 +4,9 @@
 #include "servidor.h"
 #include "cliente.h"
 #include <commons/config.h>
-#include<commons/log.h>
+#include <commons/log.h>
 #include <stdio.h>
+#include <parser/metadata_program.h>
 
 #define RUTA_LOG "/home/utnso/nucleo.log"
 #define RUTA_CONFIG "/home/utnso/tp-2016-1c-Hellfish-Group/nucleo/config/nucleo.config"
@@ -23,6 +24,27 @@ char** sem_init;
 char** shared_vars;
 t_log* logger;
 t_log* logger_pantalla;
+
+typedef struct{
+
+} t_indice_de_codigo;
+
+typedef struct{
+
+} t_indice_de_etiquetas;
+
+typedef struct{
+
+} t_indice_de_stack;
+
+typedef struct{
+	int pid;
+	int programCounter;
+	int cantidadPaginas;
+	t_indice_de_codigo indiceCodigo;
+	t_indice_de_etiquetas indiceEtiquetas;
+	t_indice_de_stack indiceStack;
+} t_PCB;
 
 void abrirConfiguracion();
 void cerrar_todo();
