@@ -8,19 +8,21 @@
 
 #define RUTA_LOG "/home/utnso/swap.log"
 #define RUTA_CONFIG "/home/utnso/tp-2016-1c-Hellfish-Group/swap/config/swap.config"
+#define RUTA_BINFILE "/home/utnso/tp-2016-1c-Hellfish-Group/swap/"
 
 t_config* configuracion_swap;
 char* puertoSwap;
 char* ipSwap;
 char* nombre_data;
 int cant_paginas;
-int pagina_size;
+char* pagina_size;
 int retardo_compactacion;
 t_log* logger;
 t_log* logger_pantalla;
 
 void abrirConfiguracion();
 void cerrar_todo();
+void crearArchivoBinario();
 
 
 #endif
