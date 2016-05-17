@@ -90,3 +90,9 @@ void cerrar_todo(){
 	log_destroy(logger_pantalla);
 	config_destroy(configuracionNucleo);
 }
+
+t_PCB* crearPCB(const char* programa){
+	t_PCB* pcb = malloc(sizeof(t_PCB));
+	t_metadata_program* metadata = metadata_desde_literal(programa);
+	//metadata->
+}

@@ -11,7 +11,6 @@
 #define RUTA_LOG "/home/utnso/consola.log"
 #define RUTA_CONFIG "/home/utnso/tp-2016-1c-Hellfish-Group/consola/config/consola.config"
 #define RUTA_PROGRAMA argumentos[1]
-#define ARCHIVO_INEXISTENTE "El Archivo no existe\n"
 
 t_config* configuracionConsola;
 char* ipNucleo;
