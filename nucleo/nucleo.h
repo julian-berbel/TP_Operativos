@@ -27,23 +27,15 @@ t_log* logger_pantalla;
 
 typedef struct{
 
-} t_indice_de_codigo;
-
-typedef struct{
-
-} t_indice_de_etiquetas;
-
-typedef struct{
-
-} t_indice_de_stack;
+} t_elemento_stack;
 
 typedef struct{
 	int pid;
 	int programCounter;
 	int cantidadPaginas;
-	t_indice_de_codigo indiceCodigo;
-	t_indice_de_etiquetas indiceEtiquetas;
-	t_indice_de_stack indiceStack;
+	int** indiceCodigo;
+	char* indiceEtiquetas;
+	t_elemento_stack* indiceStack;
 } t_PCB;
 
 void abrirConfiguracion();
