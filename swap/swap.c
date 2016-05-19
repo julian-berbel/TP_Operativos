@@ -1,6 +1,7 @@
 #include <commons/config.h>
 #include<commons/log.h>
 #include"swap.h"
+#include"binFile.h"
 
 int main(){
 	abrirConfiguracion();
