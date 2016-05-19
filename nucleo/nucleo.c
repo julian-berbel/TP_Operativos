@@ -1,6 +1,6 @@
 #include <commons/config.h>
-#include<commons/log.h>
-#include"nucleo.h"
+#include <commons/log.h>
+#include "nucleo.h"
 
 
 int main(){
@@ -118,7 +118,7 @@ t_PCB* crearPCB(const char* programa){
 	pcb->indiceEtiquetas = metadata->etiquetas;
 //	pcb->indiceStack =  ????
 
+	queue_push(colaPCBReady, (void*) pcb);
 	pid++;
-
 	return pcb;
 }
