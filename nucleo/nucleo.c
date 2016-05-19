@@ -4,6 +4,7 @@
 
 
 int main(){
+	memset(colaPCBReady,0,sizeof(t_queue));
 	abrirConfiguracion();
 	log_info(logger, "Inicia proceso Núcleo");
 

@@ -26,11 +26,11 @@ char** sem_init;
 char** shared_vars;
 t_log* logger;
 t_log* logger_pantalla;
-t_queue colaPCBNew; // hace falta esta?
-t_queue colaPCBReady;
-t_queue colaPCBExec;
-t_queue colaPCBBlock;
-t_queue colaPCBExit; // ^
+t_queue* colaPCBNew; // hace falta esta?
+t_queue* colaPCBReady;
+t_queue* colaPCBExec;
+t_queue* colaPCBBlock;
+t_queue* colaPCBExit; // ^
 
 typedef struct{
 	int pagina;
