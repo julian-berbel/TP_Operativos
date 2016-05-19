@@ -55,11 +55,13 @@ char* leerArchivo(char* ruta){
 		char* buffer = string_new();
 
 		char* aux = malloc(100);
+		memset(aux, '\0', 100);
 
-		do{
+		while(!feof(archivo)){
 			fgets(aux, 99, archivo);
 			string_append(&buffer, aux);
-		}while(!feof(archivo));
+			memset(aux, '\0', 100);
+		}
 
 		free(aux);
 		fclose(archivo);
