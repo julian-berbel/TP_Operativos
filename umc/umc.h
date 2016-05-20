@@ -24,11 +24,16 @@ int entradas_tlb;
 int retardo;
 t_log* logger;
 t_log* logger_pantalla;
-
+int socket_swap;
 
 void abrirConfiguracion();
 void cerrar_todo();
 void *funcion_nucleo(void *argumento);
 void *funcion_cpu(void *argumento);
+
+void inicializar(int id_programa,int paginas_requeridas);
+void finalizar(int num_programa);
+void leer_pagina(int num_pagina, int offset,size_t t);
+void escribir_pagina(int num_pagina, int offset, size_t t, char *buffer);
 
 #endif

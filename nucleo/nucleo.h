@@ -17,6 +17,8 @@ t_config* configuracionNucleo;
 char* ipNucleo;
 char* puertoNucleo;
 char* puertoCPU;
+char* puertoUMC;
+char* ipUMC;
 int quantum;
 int quantum_sleep;
 char** io_id;

@@ -8,10 +8,14 @@ int main(){
 	pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
 	pthread_t thread_cpu;
 	pthread_t thread_nucleo;
+
 	abrirConfiguracion();
 	log_info(logger, "Inicia proceso UMC");
-	int socket_swap = crear_socket_cliente(ipSwap, puertoSwap);
+
+	socket_swap = crear_socket_cliente(ipSwap, puertoSwap);
 	log_info(logger_pantalla, "UMC y Swap conectados");
+
+
 	int socket_servidor = crear_socket_servidor(ipUmc, puertoUmc);
 	int socket_cliente = recibirConexion(socket_servidor);
 	char* mensaje;
@@ -32,6 +36,18 @@ int main(){
 		}
 		*args_cpu = socket_cliente;
 		pthread_create(&thread_cpu, &attr, funcion_cpu, args_cpu);
+	}
+	else if (strcmp(mensaje, "inicializar")){ //en el mensaje debe recibir los parametros necesarios
+		inicializar(4,5); //id_programa:4, paginas_requeridas:5
+	}else if (strcmp(mensaje, "finalizar")){
+		finalizar(4); //id_programa:4
+	}else if (strcmp(mensaje,"leer_pagina")){
+		leer_pagina(3,50,100); //nro_pagina:3,offset:50,tamaño:100
+	}else if (strcmp(mensaje,"escribir_pagina")){
+		escribir_pagina(5,40,80,"hola"); //nro_pagina:5,offset:40,tamaño:80,bufer:"hola"
+	}
+	else{
+		printf("%s",mensaje); //para los mensajes de las primitivas
 	}
 	//Comienza el cierre del main.
 	free(mensaje);
@@ -59,7 +75,7 @@ void abrirConfiguracion(){
 	logger = log_create(RUTA_LOG, "UMC", false, LOG_LEVEL_INFO);
 	logger_pantalla = log_create(RUTA_LOG, "UMC", true, LOG_LEVEL_INFO);
 
-	printf("%s\n", ipUmc);
+	/*printf("%s\n", ipUmc);
 	printf("%s\n", puertoUmc);
 	printf("%s\n", ipSwap);
 	printf("%s\n", puertoSwap);
@@ -67,7 +83,7 @@ void abrirConfiguracion(){
 	printf("%d\n", marco_size);
 	printf("%d\n", marco_x_proc);
 	printf("%d\n", entradas_tlb);
-	printf("%d\n", retardo);
+	printf("%d\n", retardo);*/
 }
 
 void cerrar_todo(){
@@ -95,4 +111,21 @@ void *funcion_cpu(void *argumento){
 	close(socket_cpu);
 	free(argumento);
 	pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
+}
+
+void inicializar(int id_programa,int paginas_requeridas){
+	printf("inicializar programa, crear estructura para administrar e informar al proceso swap\n");
+	char* mensaje = "swap: inicializar programa\n";
+	enviar_string(socket_swap, mensaje);
+}
+void finalizar(int num_programa){
+	printf("finalizar programa, liberar espacio e informar al proceso swap\n");
+	char* mensaje = "swap: finalizar programa\n";
+		enviar_string(socket_swap, mensaje);
+}
+void leer_pagina(int num_pagina, int offset,size_t t){
+	printf("devolver contenido de la pagina %d\n",num_pagina); //verificar si esta en memoria principal y sino pedir al proceso swap
+	}
+void escribir_pagina(int num_pagina, int offset, size_t t, char *buffer){
+	printf("escribir %s en la pagina %d\n",buffer,num_pagina); //idem leer_pagina
 }

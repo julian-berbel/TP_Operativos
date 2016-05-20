@@ -17,11 +17,12 @@ int main(){
 
 	while(string_is_empty(mensaje = recibir_string_generico(socket_umc)));
 
-	char * mensaje_logger = string_new();
-	string_append(&mensaje_logger, "Pase por la Swap - ");
+	/*char * mensaje_logger = string_new();
+	string_append(&mensaje_logger, "Pase por la Swap - "); //->checkpoint 1
 	string_append(&mensaje_logger, mensaje);
 	log_info(logger_pantalla, mensaje_logger);
-	free(mensaje_logger);
+	free(mensaje_logger);*/
+	printf("%s",mensaje);
 
 	free(mensaje);
 	close(socket_servidor);
@@ -42,12 +43,12 @@ void abrirConfiguracion(){
 	logger = log_create(RUTA_LOG, "Swap", false, LOG_LEVEL_INFO);
 	logger_pantalla = log_create(RUTA_LOG, "Swap", true, LOG_LEVEL_INFO);
 
-	printf("%s\n", puertoSwap);
+	/*printf("%s\n", puertoSwap);
 	printf("%s\n", ipSwap);
 	printf("%s\n", nombre_data);
 	printf("%d\n", cant_paginas);
 	printf("%d\n", pagina_size);
-	printf("%d\n", retardo_compactacion);
+	printf("%d\n", retardo_compactacion);*/
 
 
 }
@@ -57,6 +58,3 @@ void cerrar_todo(){
 	log_destroy(logger_pantalla);
 	config_destroy(configuracion_swap);
 }
-
-
-

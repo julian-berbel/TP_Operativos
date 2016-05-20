@@ -72,3 +72,9 @@ char* leerArchivo(char* ruta){
 		exit(1);
 	}
 }
+
+void imprimirTexto(char* texto){
+	printf("%s",texto);
+}
+void imprimir(){
+}

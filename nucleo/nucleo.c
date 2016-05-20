@@ -4,7 +4,7 @@
 
 
 int main(){
-	memset(colaPCBReady,0,sizeof(t_queue));
+	//memset(colaPCBReady,0,sizeof(t_queue));
 	abrirConfiguracion();
 	log_info(logger, "Inicia proceso Núcleo");
 
@@ -13,7 +13,10 @@ int main(){
 
 	log_info(logger_pantalla, "Nucleo y Consola conectados");
 
-	int otro_socket_servidor = crear_socket_servidor(ipNucleo, puertoCPU);
+	int socket_umc = crear_socket_cliente(ipUMC, puertoUMC);
+	log_info(logger_pantalla, "Nucleo y UMC conectados");
+
+	int otro_socket_servidor = crear_socket_servidor(ipNucleo, puertoCPU); //???
 	int socket_cpu = recibirConexion(otro_socket_servidor);
 
 	log_info(logger_pantalla, "Nucleo y CPU conectados");
@@ -28,7 +31,7 @@ int main(){
 	log_info(logger_pantalla, mensaje_logger);
 	free(mensaje_logger);
 
-	enviar_string(socket_cpu, mensaje);
+	//enviar_string(socket_cpu, mensaje);  -> era para el checkpoint 1
 
 	free(mensaje);
 	close(socket_consola);
@@ -55,6 +58,8 @@ void abrirConfiguracion(){
 	shared_vars = config_get_array_value(configuracionNucleo, "SHARED_VARS");
 	logger = log_create(RUTA_LOG, "Nucleo", false, LOG_LEVEL_INFO);
 	logger_pantalla = log_create(RUTA_LOG, "Nucleo", true, LOG_LEVEL_INFO);
+	puertoUMC = config_get_string_value(configuracionNucleo, "PUERTO_UMC");
+	ipUMC = config_get_string_value(configuracionNucleo, "IP_UMC");
 
 	printf("%s\n", ipNucleo);
 	printf("%s\n", puertoNucleo);
@@ -62,6 +67,8 @@ void abrirConfiguracion(){
 	printf("%d\n", quantum);
 	printf("%d\n", quantum_sleep);
 	printf("%s\n", io_id[0]);
+	printf("%s\n", ipUMC);
+	printf("%s\n", puertoUMC);
 
 }
 
