@@ -31,8 +31,8 @@ void abrirConfiguracion(){
 	logger = log_create(RUTA_LOG, "Consola", false, LOG_LEVEL_INFO);
 	logger_pantalla = log_create(RUTA_LOG, "Consola", true, LOG_LEVEL_INFO);
 
-	printf("%s\n", ipNucleo);
-	printf("%s\n", puertoNucleo);
+	/*printf("%s\n", ipNucleo);
+	printf("%s\n", puertoNucleo);*/
 
 }
 

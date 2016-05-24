@@ -2,6 +2,8 @@
 #include<commons/log.h>
 #include"umc.h"
 
+
+
 int main(){
 	pthread_attr_t attr;
 	pthread_attr_init(&attr);
@@ -11,6 +13,13 @@ int main(){
 
 	abrirConfiguracion();
 	log_info(logger, "Inicia proceso UMC");
+
+	marcos_libres=(int*)malloc(sizeof(int)*marcos);
+	memset(marcos_libres,'0',sizeof(int));
+
+	//memoria
+	//int memoria[marcos][marco_size/sizeof(int)];
+	int **memoria =(int **)malloc(sizeof(int)*marcos*(marco_size/sizeof(int)));
 
 	socket_swap = crear_socket_cliente(ipSwap, puertoSwap);
 	log_info(logger_pantalla, "UMC y Swap conectados");
@@ -47,7 +56,7 @@ int main(){
 		escribir_pagina(5,40,80,"hola"); //nro_pagina:5,offset:40,tamaño:80,bufer:"hola"
 	}
 	else{
-		printf("%s",mensaje); //para los mensajes de las primitivas
+		printf("%s",mensaje); //para los mensajes de las primitivas checkpoint 2
 	}
 	//Comienza el cierre del main.
 	free(mensaje);
@@ -71,6 +80,7 @@ void abrirConfiguracion(){
 	marco_size = config_get_int_value(configuracionUMC, "MARCO_SIZE");
 	marco_x_proc = config_get_int_value(configuracionUMC, "MARCO_X_PROC");
 	entradas_tlb = config_get_int_value(configuracionUMC, "ENTRADAS_TLB");
+	tlb_habilitada = config_get_int_value(configuracionUMC, "TLB_HABILITADA");
 	retardo = config_get_int_value(configuracionUMC, "RETARDO");
 	logger = log_create(RUTA_LOG, "UMC", false, LOG_LEVEL_INFO);
 	logger_pantalla = log_create(RUTA_LOG, "UMC", true, LOG_LEVEL_INFO);
@@ -83,6 +93,7 @@ void abrirConfiguracion(){
 	printf("%d\n", marco_size);
 	printf("%d\n", marco_x_proc);
 	printf("%d\n", entradas_tlb);
+	printf("%d\n", tlb_habilitada);
 	printf("%d\n", retardo);*/
 }
 
@@ -113,10 +124,10 @@ void *funcion_cpu(void *argumento){
 	pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
 }
 
-void inicializar(int id_programa,int paginas_requeridas){
-	printf("inicializar programa, crear estructura para administrar e informar al proceso swap\n");
-	char* mensaje = "swap: inicializar programa\n";
-	enviar_string(socket_swap, mensaje);
+void inicializar(int id_programa,int paginas_requeridas){//tambien recibe el codigo del programa
+	//inicializar programa, crear estructura para administrar e informar al proceso swap
+	crear_tabla_de_paginas(id_programa, paginas_requeridas);
+	//enviar a swap para que lo guarde
 }
 void finalizar(int num_programa){
 	printf("finalizar programa, liberar espacio e informar al proceso swap\n");
@@ -128,4 +139,27 @@ void leer_pagina(int num_pagina, int offset,size_t t){
 	}
 void escribir_pagina(int num_pagina, int offset, size_t t, char *buffer){
 	printf("escribir %s en la pagina %d\n",buffer,num_pagina); //idem leer_pagina
+}
+
+void crear_tabla_de_paginas(int idp, int paginas_requeridas){
+	tabla_paginas tabla_paginas[paginas_requeridas];
+	tabla_procesos[idp]=tabla_paginas;
+}
+int obtener_marco(int idp,int numero_pagina){
+	return tabla_procesos[idp]->marco;
+
+}
+void escribir_marco_en_TP(int idp,int pagina, int marco){//al guardar en MP devuelve el marco en que se guardo y se guarda en la tabla de paginas del proceso
+	tabla_procesos[idp]->marco=marco;
+}
+
+void marco_ocupado(int num_marco){
+	marcos_libres[num_marco]=1; //.h sin longitud?
+}
+void modificar_retardo(int ret){
+	retardo=ret;
+}
+
+void cambiar_proceso_activo(int proceso){
+	id_proceso_activo=proceso;
 }
