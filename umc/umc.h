@@ -35,7 +35,7 @@ void *funcion_cpu(void *argumento);
 
 void inicializar(int id_programa,int paginas_requeridas);
 void finalizar(int num_programa);
-void leer_pagina(int num_pagina, int offset,size_t t);
+int leer_pagina(int num_pagina, int offset,size_t t);
 void escribir_pagina(int num_pagina, int offset, size_t t, char *buffer);
 
 
@@ -45,14 +45,20 @@ typedef struct{
 	int modificado;
 } tabla_paginas;
 
+int **memoria;
 int *marcos_libres;
 int TLB;
 
 
 void crear_tabla_de_paginas(int idp, int paginas_requeridas);
 int obtener_marco(int idp,int numero_pagina);
-void escribir_marco(int idp,int pagina, int marco);
-
+void escribir_marco_en_TP(int idp,int pagina, int marco);
+void marco_ocupado(int num_marco);
+void modificar_retardo(int ret);
+void cambiar_proceso_activo(int proceso);
+void modificar_bit_uso(int idp,int num_pagina);
+void modificar_bit_modificado(int idp, int num_pagina);
+char* serializar1(int operacion,int num_pagina,int offset,size_t t);
 
 tabla_paginas* tabla_procesos[1000];
 

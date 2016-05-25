@@ -19,7 +19,7 @@ int main(){
 
 	//memoria
 	//int memoria[marcos][marco_size/sizeof(int)];
-	int **memoria =(int **)malloc(sizeof(int)*marcos*(marco_size/sizeof(int)));
+	memoria =(int **)malloc(sizeof(int)*marcos*(marco_size/sizeof(int)));
 
 	socket_swap = crear_socket_cliente(ipSwap, puertoSwap);
 	log_info(logger_pantalla, "UMC y Swap conectados");
@@ -51,7 +51,12 @@ int main(){
 	}else if (strcmp(mensaje, "finalizar")){
 		finalizar(4); //id_programa:4
 	}else if (strcmp(mensaje,"leer_pagina")){
-		leer_pagina(3,50,100); //nro_pagina:3,offset:50,tamaño:100
+		int contenido=leer_pagina(3,50,100); //nro_pagina:3,offset:50,tamaño:100
+		if (contenido!=-1000){ //como saber si no lo encontro?
+			//enviar a la cpu el contenido
+		}else{
+			//esperar respuesta de la swap y enviar al cpu
+		}
 	}else if (strcmp(mensaje,"escribir_pagina")){
 		escribir_pagina(5,40,80,"hola"); //nro_pagina:5,offset:40,tamaño:80,bufer:"hola"
 	}
@@ -125,24 +130,33 @@ void *funcion_cpu(void *argumento){
 }
 
 void inicializar(int id_programa,int paginas_requeridas){//tambien recibe el codigo del programa
-	//inicializar programa, crear estructura para administrar e informar al proceso swap
 	crear_tabla_de_paginas(id_programa, paginas_requeridas);
 	//enviar a swap para que lo guarde
 }
-void finalizar(int num_programa){
-	printf("finalizar programa, liberar espacio e informar al proceso swap\n");
-	char* mensaje = "swap: finalizar programa\n";
-		enviar_string(socket_swap, mensaje);
+void finalizar(int id_programa){
+	free(tabla_procesos[id_programa]); //
+
 }
-void leer_pagina(int num_pagina, int offset,size_t t){
-	printf("devolver contenido de la pagina %d\n",num_pagina); //verificar si esta en memoria principal y sino pedir al proceso swap
-	}
+
+int leer_pagina(int num_pagina, int offset,size_t t){
+	//verificar si esta en memoria principal y sino pedir al proceso swap
+	int marco= obtener_marco(id_proceso_activo,num_pagina);
+	if (marco>=0){//si esta en MP
+	modificar_bit_uso(id_proceso_activo,num_pagina);
+	return memoria[marco][offset];
+	}else{
+		char* mensaje= serializar1(3,num_pagina,offset,t);
+		enviar_string(socket_swap,mensaje);
+	return -1000;}
+}
+
 void escribir_pagina(int num_pagina, int offset, size_t t, char *buffer){
 	printf("escribir %s en la pagina %d\n",buffer,num_pagina); //idem leer_pagina
 }
 
 void crear_tabla_de_paginas(int idp, int paginas_requeridas){
 	tabla_paginas tabla_paginas[paginas_requeridas];
+	memset(tabla_paginas, '0',sizeof(tabla_paginas)); // como inicializo sin que sea cero? para saber si tiene un marco asignado o no (si esta en memoria)
 	tabla_procesos[idp]=tabla_paginas;
 }
 int obtener_marco(int idp,int numero_pagina){
@@ -154,7 +168,7 @@ void escribir_marco_en_TP(int idp,int pagina, int marco){//al guardar en MP devu
 }
 
 void marco_ocupado(int num_marco){
-	marcos_libres[num_marco]=1; //.h sin longitud?
+	marcos_libres[num_marco]=1;
 }
 void modificar_retardo(int ret){
 	retardo=ret;
@@ -162,4 +176,18 @@ void modificar_retardo(int ret){
 
 void cambiar_proceso_activo(int proceso){
 	id_proceso_activo=proceso;
+}
+void modificar_bit_uso(int idp,int num_pagina){
+	tabla_procesos[idp]->bit_uso=1;
+}
+void modificar_bit_modificado(int idp, int num_pagina){
+	tabla_procesos[idp]->modificado=1;
+}
+
+char* serializar1(int operacion,int num_pagina,int offset,size_t t){
+	char* mensaje= string_new();
+	string_append(&mensaje, (char*)operacion);
+	string_append(&mensaje, (char*)num_pagina);
+	string_append(&mensaje, (char*)t);
+	return mensaje;
 }
