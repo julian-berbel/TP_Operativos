@@ -69,7 +69,7 @@ int calcularTamanioPCB(t_PCB* pcb){
 		tamanioStack += elemento->cantidadArgumentos * sizeof(t_posicion_de_memoria) + elemento->cantidadVariables * sizeof(t_variable) + sizeof(t_posicion_de_memoria);
 	}
 
-	return sizeof(int) * 6 + sizeof(int) * pcb->cantidadInstrucciones * 2 + sizeof(char) * string_length(pcb->indiceEtiquetas) + tamanioStack;;
+	return sizeof(int) * 6 + sizeof(int) * pcb->cantidadInstrucciones * 2 + sizeof(char) * pcb->tamanioIndiceEtiquetas + tamanioStack;;
 }
 
 void* serializarPCB(t_PCB* pcb){
@@ -100,13 +100,15 @@ void* serializarPCB(t_PCB* pcb){
 
 	memcpy(posicion, &pcb->tamanioIndiceEtiquetas,sizeof(int));
 	posicion += sizeof(int);
-	memcpy(posicion, pcb->indiceEtiquetas, sizeof(char) * string_length(pcb->indiceEtiquetas));
+
+	memcpy(posicion, pcb->indiceEtiquetas, sizeof(char) * pcb->tamanioIndiceEtiquetas);
+	posicion += sizeof(char) * pcb->tamanioIndiceEtiquetas;
 
 	t_elemento_stack* elemento;
 
 	int f;
 
-	*((int*)posicion) = pcb->indiceStack->elements_count;
+	memcpy(posicion, &pcb->indiceStack->elements_count, sizeof(int));
 	posicion += sizeof(int);
 
 	for(i = 0; i < pcb->indiceStack->elements_count;i++){
@@ -114,7 +116,7 @@ void* serializarPCB(t_PCB* pcb){
 		memcpy(posicion, &elemento->cantidadArgumentos, sizeof(int));
 		posicion += sizeof(int);
 
-		for(f = 0; f < elemento->cantidadArgumentos; i++){
+		for(f = 0; f < elemento->cantidadArgumentos; f++){
 			memcpy(posicion, (elemento->argumentos + f), sizeof(t_posicion_de_memoria));
 			posicion += sizeof(t_posicion_de_memoria);
 		}
@@ -122,7 +124,7 @@ void* serializarPCB(t_PCB* pcb){
 		memcpy(posicion, &elemento->cantidadVariables, sizeof(int));
 		posicion += sizeof(int);
 
-		for(f = 0; f < elemento->cantidadVariables; i++){
+		for(f = 0; f < elemento->cantidadVariables; f++){
 			memcpy(posicion, (elemento->variables + f), sizeof(t_variable));
 			posicion += sizeof(t_variable);
 		}
@@ -161,6 +163,7 @@ t_PCB* deserializarPCB(void* pcb_serializado){
 
 	pcb->indiceEtiquetas = malloc(sizeof(char) * pcb->tamanioIndiceEtiquetas);
 	memcpy(pcb->indiceEtiquetas, pcb_serializado, sizeof(char) * pcb->tamanioIndiceEtiquetas);
+	pcb_serializado += sizeof(char) * pcb->tamanioIndiceEtiquetas;
 
 	t_elemento_stack* elemento;
 
@@ -169,6 +172,8 @@ t_PCB* deserializarPCB(void* pcb_serializado){
 	int cantidadElementosStack = *((int*) pcb_serializado);
 	pcb_serializado += sizeof(int);
 
+	pcb->indiceStack = list_create();
+
 	for(i = 0; i < cantidadElementosStack;i++){
 		elemento = malloc(sizeof(t_elemento_stack));
 		memcpy(&elemento->cantidadArgumentos, pcb_serializado, sizeof(int));
@@ -176,7 +181,7 @@ t_PCB* deserializarPCB(void* pcb_serializado){
 
 		elemento->argumentos = malloc(sizeof(t_posicion_de_memoria) * elemento->cantidadArgumentos);
 
-		for(f = 0; f < elemento->cantidadArgumentos; i++){
+		for(f = 0; f < elemento->cantidadArgumentos; f++){
 			memcpy((elemento->argumentos + f), pcb_serializado, sizeof(t_posicion_de_memoria));
 			pcb_serializado += sizeof(t_posicion_de_memoria);
 		}
@@ -186,7 +191,7 @@ t_PCB* deserializarPCB(void* pcb_serializado){
 
 		elemento->variables = malloc(sizeof(t_variable) * elemento->cantidadVariables);
 
-		for(f = 0; f < elemento->cantidadVariables; i++){
+		for(f = 0; f < elemento->cantidadVariables; f++){
 			memcpy((elemento->variables + f), pcb_serializado, sizeof(t_variable));
 			pcb_serializado += sizeof(t_variable);
 		}
@@ -275,12 +280,12 @@ void imprimirPCB(t_PCB* pcb){
 		printf("\tCantidad de Argumentos: %d\n", elemento.cantidadArgumentos);
 		for(f = 0; f < elemento.cantidadArgumentos; f++){
 			printf("\t\tArgumento %d: ", f);
-			printf("Pagina: %d, Offset: %d, Size: %d\n", elemento.argumentos[i].pagina, elemento.argumentos[i].offset, elemento.argumentos[i].size);
+			printf("Pagina: %d, Offset: %d, Size: %d\n", elemento.argumentos[f].pagina, elemento.argumentos[f].offset, elemento.argumentos[f].size);
 		}
 		printf("\tCantidad de Variables: %d\n", elemento.cantidadVariables);
 		for(f = 0; f < elemento.cantidadVariables; f++){
 			printf("\t\tVariable %d: ", f);
-			printf("Identificador: %c, Pagina: %d, Offset: %d, Size: %d\n", elemento.variables[i].identificador, elemento.variables[i].posicion.pagina, elemento.variables[i].posicion.offset, elemento.variables[i].posicion.size);
+			printf("Identificador: %c, Pagina: %d, Offset: %d, Size: %d\n", elemento.variables[f].identificador, elemento.variables[f].posicion.pagina, elemento.variables[f].posicion.offset, elemento.variables[f].posicion.size);
 		}
 		printf("\tDireccion de Retorno: %d\n", elemento.direccionDeRetorno);
 		printf("\tPosicion de Retorno:\n");
@@ -288,8 +293,7 @@ void imprimirPCB(t_PCB* pcb){
 	}
 }
 
-void agregarElementoAStack(){
-	t_PCB* pcb = malloc(sizeof(t_PCB));
+void agregarElementoAStack(t_PCB* pcb){
 
 	t_elemento_stack* elemento;
 
@@ -306,8 +310,6 @@ void agregarElementoAStack(){
 	memcpy(elemento->argumentos, unArgumento, sizeof(t_posicion_de_memoria));
 
 	elemento->cantidadVariables = 1;
-
-	printf("%d\n", unArgumento->offset);
 
 	elemento->variables = malloc(sizeof(t_variable));
 
@@ -327,7 +329,7 @@ void agregarElementoAStack(){
 
 	memcpy(&elemento->posicionDeRetorno, unArgumento, sizeof(t_posicion_de_memoria));
 
-	list_add(pcb->indiceStack, elemento);
+	list_add(pcb->indiceStack,(void*) elemento);
 
 }
 
@@ -336,7 +338,10 @@ int main(int cantidadArgumentos, char* argumentos[]){
 
 	t_PCB* pcb = crearPCB(programa);
 
-//	agregarElementoAStack(pcb);
+	agregarElementoAStack(pcb);
+	agregarElementoAStack(pcb);
+
+	printf("-----------------PCB pre serializacion-----------------\n");
 
 	imprimirPCB(pcb);
 
@@ -344,7 +349,9 @@ int main(int cantidadArgumentos, char* argumentos[]){
 
 	t_PCB* otroPCB = deserializarPCB(serializado);
 
-	imprimirPCB(otroPCB);
+//	printf("\n-----------------PCB post serializacion-----------------\n");
+
+//	imprimirPCB(otroPCB);
 
 	free(pcb);
 	free(programa);
