@@ -2,7 +2,6 @@
 #include <commons/log.h>
 #include "nucleo.h"
 
-
 int main(){
 	//memset(colaPCBReady,0,sizeof(t_queue));
 	abrirConfiguracion();
@@ -41,8 +40,6 @@ int main(){
 
 	return 0;
 }
-
-
 
 void abrirConfiguracion(){
 	configuracionNucleo = config_create(RUTA_CONFIG);
@@ -97,36 +94,4 @@ void cerrar_todo(){
 	log_destroy(logger);
 	log_destroy(logger_pantalla);
 	config_destroy(configuracionNucleo);
-}
-
-int** crearIndiceCodigo(t_metadata_program* metadata){
-	int** indiceCodigo = malloc(sizeof(int*) * metadata->instrucciones_size);
-
-	int i;
-
-	for(i = 0; i < metadata->instrucciones_size; i++){
-		indiceCodigo[i] = malloc(sizeof(int) * 2);
-		indiceCodigo[i][0] = (metadata->instrucciones_serializado + i)->start;
-		indiceCodigo[i][1] = (metadata->instrucciones_serializado + i)->offset;
-	}
-
-	return indiceCodigo;
-}
-
-t_PCB* crearPCB(const char* programa){
-	static int pid = 0;
-
-	t_PCB* pcb = malloc(sizeof(t_PCB));
-	t_metadata_program* metadata = metadata_desde_literal(programa);
-
-	pcb->pid = pid;
-	pcb->programCounter = 0;
-//	pcb->cantidadPaginas = string_length(programa)*sizeof(char) / tamanioDePagina; // tamanioDePagina lo tiene que pasar la umc por socket
-	pcb->indiceCodigo = crearIndiceCodigo(metadata);
-	pcb->indiceEtiquetas = metadata->etiquetas;
-//	pcb->indiceStack =  ????
-
-	queue_push(colaPCBReady, (void*) pcb);
-	pid++;
-	return pcb;
 }

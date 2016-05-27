@@ -1,46 +1,11 @@
 /*
- * pruebas.c
+ * pcb.c
  *
- *  Created on: 13/5/2016
+ *  Created on: 27/5/2016
  *      Author: utnso
  */
 
-#include <stdio.h>
-#include <parser/metadata_program.h>
-#include <commons/collections/list.h>
-#include <commons/collections/queue.h>
-#include <commons/string.h>
-
-typedef struct {
-	int pagina;
-	int offset;
-	int size;
-} __attribute__((packed)) t_posicion_de_memoria;
-
-typedef struct{
-	char identificador;
-	t_posicion_de_memoria posicion;
-} __attribute__((packed)) t_variable;
-
-typedef struct{
-	int cantidadArgumentos;
-	t_posicion_de_memoria* argumentos;
-	int cantidadVariables;
-	t_variable* variables;
-	int direccionDeRetorno;
-	t_posicion_de_memoria posicionDeRetorno;
-} t_elemento_stack;
-
-typedef struct{
-	int pid;
-	int programCounter;
-	int cantidadPaginas;
-	int cantidadInstrucciones;
-	int** indiceCodigo;
-	int tamanioIndiceEtiquetas;
-	char* indiceEtiquetas;
-	t_list* indiceStack;
-} t_PCB;
+#include "pcb.h"
 
 int** crearIndiceCodigo(t_size cantidadInstrucciones){
 	int** indiceCodigo = malloc(sizeof(int*) * cantidadInstrucciones);
@@ -129,7 +94,10 @@ void* serializarPCB(t_PCB* pcb){
 			posicion += sizeof(t_variable);
 		}
 
-		memcpy(posicion, &elemento->direccionDeRetorno, sizeof(t_posicion_de_memoria));
+		memcpy(posicion, &elemento->direccionDeRetorno, sizeof(int));
+		posicion += sizeof(int);
+
+		memcpy(posicion, &elemento->posicionDeRetorno, sizeof(t_posicion_de_memoria));
 		posicion += sizeof(t_posicion_de_memoria);
 	}
 
@@ -206,56 +174,28 @@ t_PCB* deserializarPCB(void* pcb_serializado){
 	return pcb;
 }
 
-int archivoExiste(char *ruta) {
-    struct stat st;
-    return !stat(ruta, &st);
-}
-
-char* leerArchivo(char* ruta){
-	FILE* archivo;
-	if (archivoExiste(ruta)){
-		archivo = fopen(ruta,"r");
-
-		char* buffer = string_new();
-
-		char* aux = malloc(100);
-		memset(aux, '\0', 100);
-
-		while(!feof(archivo)){
-			fgets(aux, 99, archivo);
-			string_append(&buffer, aux);
-			memset(aux, '\0', 100);
-		}
-
-		free(aux);
-		fclose(archivo);
-		return buffer;
-
-	}else{
-		printf("El archivo no existe\n");
-		exit(1);
-	}
-}
-
 t_PCB* crearPCB(const char* programa){
+	static int pid = 0;
+
 	t_PCB* pcb = malloc(sizeof(t_PCB));
 	t_metadata_program* metadata = metadata_desde_literal(programa);
 
-	static int pid = 0;
 	pcb->pid = pid;
-	pid++;
+	pid++; //sincronizar con mutex?
+
 	pcb->programCounter = 0;
-	pcb->cantidadPaginas = 5;
+//	pcb->cantidadPaginas = string_length(programa)*sizeof(char) / tamanioDePagina; // tamanioDePagina lo tiene que pasar la umc por socket
 	pcb->cantidadInstrucciones = metadata->instrucciones_size;
 	pcb->indiceCodigo = crearIndiceCodigo(metadata->instrucciones_size);
 	cargarIndiceCodigo(pcb->indiceCodigo, metadata);
 	pcb->tamanioIndiceEtiquetas = metadata->etiquetas_size;
 	pcb->indiceEtiquetas = metadata->etiquetas;
 	pcb->indiceStack = list_create();
+
 	return pcb;
 }
 
-void imprimirPCB(t_PCB* pcb){
+void imprimirPCB(t_PCB* pcb){ // lo dejo por si alguna vez hace falta
 	printf("Pid: %d\n", pcb->pid);
 	printf("Program Counter: %d\n", pcb->programCounter);
 	printf("Cantidad de Paginas: %d\n", pcb->cantidadPaginas);
@@ -291,69 +231,4 @@ void imprimirPCB(t_PCB* pcb){
 		printf("\tPosicion de Retorno:\n");
 		printf("\t\tPagina: %d, Offset: %d, Size: %d\n", elemento.posicionDeRetorno.pagina, elemento.posicionDeRetorno.offset, elemento.posicionDeRetorno.size);
 	}
-}
-
-void agregarElementoAStack(t_PCB* pcb){
-
-	t_elemento_stack* elemento;
-
-	elemento = malloc(sizeof(t_elemento_stack));
-	elemento->cantidadArgumentos = 1;
-
-	elemento->argumentos = malloc(sizeof(t_posicion_de_memoria));
-
-	t_posicion_de_memoria* unArgumento = malloc(sizeof(t_posicion_de_memoria));
-	unArgumento->offset = 1;
-	unArgumento->pagina = 2;
-	unArgumento->size = 3;
-
-	memcpy(elemento->argumentos, unArgumento, sizeof(t_posicion_de_memoria));
-
-	elemento->cantidadVariables = 1;
-
-	elemento->variables = malloc(sizeof(t_variable));
-
-	t_variable* unaVariable = malloc(sizeof(t_variable));
-	unaVariable->identificador = 'a';
-	unaVariable->posicion.offset = 4;
-	unaVariable->posicion.pagina = 5;
-	unaVariable->posicion.size = 6;
-
-	memcpy(elemento->variables, unaVariable, sizeof(t_variable));
-
-	elemento->direccionDeRetorno = 7;
-
-	unArgumento->offset = 8;
-	unArgumento->pagina = 9;
-	unArgumento->size = 10;
-
-	memcpy(&elemento->posicionDeRetorno, unArgumento, sizeof(t_posicion_de_memoria));
-
-	list_add(pcb->indiceStack,(void*) elemento);
-
-}
-
-int main(int cantidadArgumentos, char* argumentos[]){
-	char* programa = leerArchivo(argumentos[1]);
-
-	t_PCB* pcb = crearPCB(programa);
-
-	agregarElementoAStack(pcb);
-	agregarElementoAStack(pcb);
-
-	printf("-----------------PCB pre serializacion-----------------\n");
-
-	imprimirPCB(pcb);
-
-	void* serializado = serializarPCB(pcb);
-
-	t_PCB* otroPCB = deserializarPCB(serializado);
-
-//	printf("\n-----------------PCB post serializacion-----------------\n");
-
-//	imprimirPCB(otroPCB);
-
-	free(pcb);
-	free(programa);
-	return 0;
 }
