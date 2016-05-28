@@ -37,6 +37,7 @@
 								<option id="gnu.c.link.option.libs.1136468343" name="Libraries (-l)" superClass="gnu.c.link.option.libs" valueType="libs">
 									<listOptionValue builtIn="false" value="commons"/>
 									<listOptionValue builtIn="false" value="pthread"/>
+									<listOptionValue builtIn="false" srcPrefixMapping="" srcRootPath="" value="cunit"/>
 								</option>
 								<inputType id="cdt.managedbuild.tool.gnu.c.linker.input.1261791484" superClass="cdt.managedbuild.tool.gnu.c.linker.input">
 									<additionalInput kind="additionalinputdependency" paths="$(USER_OBJS)"/>
@@ -133,4 +134,5 @@
 			<resource resourceType="PROJECT" workspacePath="/umc"/>
 		</configuration>
 	</storageModule>
+	<storageModule moduleId="org.eclipse.cdt.internal.ui.text.commentOwnerProjectMappings"/>
 </cproject>
