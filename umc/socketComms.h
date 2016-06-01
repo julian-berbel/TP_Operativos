@@ -23,6 +23,10 @@
 
 char* recibir_string_generico(int socket_aceptado);
 
-int enviar_string(int socket, char * mensaje);
+void enviar_string(int socket, char * mensaje);
+
+void* recibir(int socket);
+
+void enviar(int socket, void* cosaAEnviar, int tamanio);
 
 #endif /* SOCKETCOMMS_H_ */

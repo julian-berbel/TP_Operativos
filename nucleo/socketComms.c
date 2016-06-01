@@ -8,20 +8,39 @@
 #include "socketComms.h"
 
 char* recibir_string_generico(int socket_aceptado){
-	char* mensaje = string_new();
-	char* acumulador = malloc(100);
-	while(recv(socket_aceptado, acumulador, 99, 0) > 0) string_append(&mensaje, acumulador);
-
-	free(acumulador);
-	return mensaje;
+	return (char*) recibir(socket_aceptado);
 }
 
-int enviar_string(int socket, char * mensaje){
-	int e = string_length(mensaje);
-	int check_error = send(socket, mensaje, e, 0);
+void enviar_string(int socket, char* mensaje){
+	int tamanio = string_length(mensaje) + 1;
 
-	if(check_error < 0){
-	return 1;
-	}
-    return 0;
+	enviar(socket, (void*) mensaje, tamanio);
+}
+
+void enviar(int socket, void* cosaAEnviar, int tamanio){
+	void* mensaje = malloc(sizeof(int) + tamanio);
+	void* aux = mensaje;
+	*((int*)aux) = tamanio;
+	aux += sizeof(int);
+	memcpy(aux, cosaAEnviar, tamanio);
+
+	send(socket, mensaje, sizeof(int) + tamanio, 0);
+}
+
+void* recibir(int socket){
+	void* recibido = malloc(sizeof(int));
+
+	recv(socket, recibido, sizeof(int), 0);
+
+	int tamanioDelMensaje = *((int*)recibido);
+
+	free(recibido);
+
+	recibido = malloc(tamanioDelMensaje);
+
+	int bytesRecibidos = 0;
+
+	while(bytesRecibidos < tamanioDelMensaje) bytesRecibidos += recv(socket, (recibido + bytesRecibidos), (tamanioDelMensaje - bytesRecibidos), 0);
+
+	return recibido;
 }
