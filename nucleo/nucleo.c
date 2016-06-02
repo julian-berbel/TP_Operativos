@@ -15,7 +15,7 @@ int main(){
 	int socket_umc = crear_socket_cliente(ipUMC, puertoUMC);
 	log_info(logger_pantalla, "Nucleo y UMC conectados");
 
-	int otro_socket_servidor = crear_socket_servidor(ipNucleo, puertoCPU); //???
+	int otro_socket_servidor = crear_socket_servidor(ipNucleo, puertoCPU);//porque ipNucleo y puerto CPU???
 	int socket_cpu = recibirConexion(otro_socket_servidor);
 
 	log_info(logger_pantalla, "Nucleo y CPU conectados");
@@ -29,8 +29,6 @@ int main(){
 	string_append(&mensaje_logger, mensaje);
 	log_info(logger_pantalla, mensaje_logger);
 	free(mensaje_logger);
-
-	//enviar_string(socket_cpu, mensaje);  -> era para el checkpoint 1
 
 	free(mensaje);
 	close(socket_consola);
