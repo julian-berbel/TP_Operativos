@@ -69,7 +69,8 @@ void modificar_bit_modificado(int idp, int num_pagina);
 char* serializar1(int operacion,int num_pagina,int offset,size_t t);
 char* serializar2(int operacion, int id_programa, int paginas_requeridas, char* programa);
 int obtener_marco_tlb(int num_pagina);
-void escribir_memoria(int posicion,size_t tamanio,char *buffer);
+void escribir_posicion_memoria(int posicion,size_t tamanio,char *buffer);
+char* leer_posicion_memoria(int posicion, size_t tamanio);
 void guardar_en_tlb(int num_pagina,int marco);
 int buscar_indice_libre_tlb();
 

@@ -25,6 +25,7 @@ void enviar(int socket, void* cosaAEnviar, int tamanio){
 	memcpy(aux, cosaAEnviar, tamanio);
 
 	send(socket, mensaje, sizeof(int) + tamanio, 0);
+	free(mensaje);
 }
 
 void* recibir(int socket){

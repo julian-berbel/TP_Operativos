@@ -24,9 +24,9 @@ int main() {
 	tlb = (TLB*) malloc(entradas_tlb * sizeof(TLB));
 	//inicializo la tlb con paginas en -1
 	int i;
-		for (i = 0; i < entradas_tlb; i++){
-			tlb[i].pagina=-1;
-		}
+	for (i = 0; i < entradas_tlb; i++) {
+		tlb[i].pagina = -1;
+	}
 
 	socket_swap = crear_socket_cliente(ipSwap, puertoSwap);
 	log_info(logger_pantalla, "UMC y Swap conectados");
@@ -145,25 +145,26 @@ void inicializar(int id_programa, int paginas_requeridas, char* programa) {
 }
 void finalizar(int id_programa) {
 	free(tabla_procesos[id_programa]);
+	//avisar al swap para que libere memoria
 
 }
 
 int leer_pagina(int num_pagina, int offset, size_t t) {
-	int marco= obtener_marco(num_pagina);
+	int marco = obtener_marco(num_pagina);
 	if (marco >= 0) { //si esta en MP
 		modificar_bit_uso(id_proceso_activo, num_pagina);
-		return memoria[marco * marco_size + offset];//hacer funcion leer memoria, tener en cuenta el tamaño
+		return memoria[marco * marco_size + offset]; //hacer funcion leer memoria, tener en cuenta el tamaño
 	} else { //si no esta en MP envio la solicitud a SWAP
 		char* mensaje = serializar1(3, num_pagina, offset, t); //3=leer_pagina
 		enviar_string(socket_swap, mensaje);
-		return -1;//si devuelve -1 tengo que esperar al swap
+		return -1; //si devuelve -1 tengo que esperar al swap
 	}
 }
 
 void escribir_pagina(int num_pagina, int offset, size_t t, char *buffer) {
 	int marco = obtener_marco(num_pagina);
-	if(marco>=0){//esta en MP
-		escribir_memoria(marco*marco_size + offset,t,buffer);
+	if (marco >= 0) { //esta en MP
+		escribir_posicion_memoria(marco * marco_size + offset, t, buffer);
 	}
 }
 
@@ -171,106 +172,113 @@ void crear_tabla_de_paginas(int idp, int paginas_requeridas) {
 	tabla_paginas tabla_paginas[paginas_requeridas];
 	//la inicializo en -1
 	int i;
-		for (i = 0; i < paginas_requeridas; i++)
-			tabla_paginas[i].marco=-1;
+	for (i = 0; i < paginas_requeridas; i++)
+		tabla_paginas[i].marco = -1;
 	tabla_procesos[idp] = tabla_paginas;
 }
 
-int obtener_marco(int num_pagina){
+int obtener_marco(int num_pagina) {
 	int marco;
-		if (tlb_habilitada) {
-			marco = obtener_marco_tlb(num_pagina);
-			if (marco == -1) {//si no esta en la tlb
-				marco = obtener_marco_tabla_paginas(num_pagina);
-				if(marco!=-1){ //no estaba en la tlb pero si en la tabla de paginas(en MP)
-					guardar_en_tlb(num_pagina,marco);
-				}
-			}
-		} else {//si no esta habilitada la tlb
+	if (tlb_habilitada) {
+		marco = obtener_marco_tlb(num_pagina);
+		if (marco == -1) { //si no esta en la tlb
 			marco = obtener_marco_tabla_paginas(num_pagina);
+			if (marco != -1) { //no estaba en la tlb pero si en la tabla de paginas(en MP)
+				guardar_en_tlb(num_pagina, marco);
+			}
 		}
-		return marco;
+	}
+else { //si no esta habilitada la tlb
+	marco = obtener_marco_tabla_paginas(num_pagina);
+}
+return marco;
 }
 
-
 int obtener_marco_tabla_paginas(int numero_pagina) {
-	return tabla_procesos[id_proceso_activo]->marco;
+sleep(retardo);
+return tabla_procesos[id_proceso_activo][numero_pagina].marco;
+
 }
 
 void escribir_marco_en_TP(int idp, int pagina, int marco) { //al guardar en MP devuelve el marco en que se guardo y se guarda en la tabla de paginas del proceso
-	tabla_procesos[idp]->marco = marco;
+tabla_procesos[idp]->marco = marco;
 }
 
 void marco_ocupado(int num_marco) {
-	marcos_libres[num_marco] = 1;
+marcos_libres[num_marco] = 1;
 }
 void marco_desocupado(int num_marco) {
-	marcos_libres[num_marco] = 0;
+marcos_libres[num_marco] = 0;
 }
 void modificar_retardo(int ret) {
-	retardo = ret;
+retardo = ret;
 }
 
 void cambiar_proceso_activo(int proceso) {
-	id_proceso_activo = proceso;
+id_proceso_activo = proceso;
 }
 void modificar_bit_uso(int idp, int num_pagina) {
-	tabla_procesos[idp]->bit_uso = 1;
+tabla_procesos[idp]->bit_uso = 1;
 }
 void modificar_bit_modificado(int idp, int num_pagina) {
-	tabla_procesos[idp]->modificado = 1;
+tabla_procesos[idp]->modificado = 1;
 }
 
 char* serializar1(int operacion, int num_pagina, int offset, size_t t) {
-	char* mensaje = string_new();
-	string_append(&mensaje, (char*) operacion);
-	string_append(&mensaje, (char*) '|');
-	string_append(&mensaje, (char*) num_pagina);
-	string_append(&mensaje, (char*) '|');
-	string_append(&mensaje, (char*) t);
-	return mensaje;
+char* mensaje = string_new();
+string_append(&mensaje, (char*) operacion);
+string_append(&mensaje, (char*) '|');
+string_append(&mensaje, (char*) num_pagina);
+string_append(&mensaje, (char*) '|');
+string_append(&mensaje, (char*) t);
+return mensaje;
 }
 char* serializar2(int operacion, int id_programa, int paginas_requeridas,
-		char* programa) {
-	char* mensaje = string_new();
-	string_append(&mensaje, (char*) operacion);
-	string_append(&mensaje, (char*) '|');
-	string_append(&mensaje, (char*) id_programa);
-	string_append(&mensaje, (char*) '|');
-	string_append(&mensaje, (char*) paginas_requeridas);
-	string_append(&mensaje, (char*) '|');
-	string_append(&mensaje, programa);
-	return mensaje;
+	char* programa) {
+char* mensaje = string_new();
+string_append(&mensaje, (char*) operacion);
+string_append(&mensaje, (char*) '|');
+string_append(&mensaje, (char*) id_programa);
+string_append(&mensaje, (char*) '|');
+string_append(&mensaje, (char*) paginas_requeridas);
+string_append(&mensaje, (char*) '|');
+string_append(&mensaje, programa);
+return mensaje;
 }
 int obtener_marco_tlb(int num_pagina) {
-	int i = 0;
-	while (i < entradas_tlb) {
-		if (tlb[i].pagina == num_pagina) {
-			return tlb[i].marco;
-		}
-		i++;
+int i = 0;
+while (i < entradas_tlb) {
+	if (tlb[i].pagina == num_pagina) {
+		return tlb[i].marco;
 	}
-	return -1;
+	i++;
 }
-void escribir_memoria(int posicion,size_t tamanio,char *buffer){
-	//ver como escribo el buffer
+return -1;
+}
+void escribir_posicion_memoria(int posicion, size_t tamanio, char *buffer) {
+sleep(retardo);
+//ver como escribo el buffer
+}
+/*char* leer_posicion_memoria(int posicion, size_t tamanio){
+
+ */
+void guardar_en_tlb(int num_pagina, int marco) {
+int indice_libre = buscar_indice_libre_tlb();
+if (indice_libre != -1) { //si hay un indice libre
+	tlb[indice_libre].pagina = num_pagina;
+	tlb[indice_libre].marco = marco;
+	tlb[indice_libre].uso = 0;
+} else { //no hay indice libre ->reemplazo con LRU
+
+}
 }
 
-void guardar_en_tlb(int num_pagina,int marco){
-	int indice_libre=buscar_indice_libre_tlb();
-	if (indice_libre!=-1){
-		tlb[indice_libre].pagina=num_pagina;
-		tlb[indice_libre].marco=marco;
-		tlb[indice_libre].uso=0;
+int buscar_indice_libre_tlb() {
+int i;
+for (i = 0; i < entradas_tlb; i++) {
+	if (tlb[i].pagina == -1) {
+		return i;
 	}
 }
-
-int buscar_indice_libre_tlb(){
-	int i;
-	for(i=0;i<entradas_tlb;i++){
-		if(tlb[i].pagina==-1){
-			return i;
-		}
-	}
-	return -1;
+return -1;
 }
