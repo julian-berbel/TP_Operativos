@@ -3,7 +3,8 @@
 #include"umc.h"
 #include "CUnit/Basic.h"
 
-int main() {
+
+	int main() {
 	pthread_attr_t attr;
 	pthread_attr_init(&attr);
 	pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
@@ -14,19 +15,21 @@ int main() {
 	log_info(logger, "Inicia proceso UMC");
 
 	//array de disponibilidad de marcos
-	marcos_libres = (int*) malloc(sizeof(int) * marcos);
-	memset(marcos_libres, '0', sizeof(int));
+			marcos_libres = (int*) malloc(sizeof(int) * marcos);
+			int k;
+			for(k=0;k<marcos;k++){//lo inicializo en cero:testeado
+				marcos_libres[k]=0;
+			}
 
 	//memoria
-	memoria = (int *) malloc(marcos * marco_size);
+			memoria = (int *) malloc(marcos * marco_size);
 
 	//TLB
-	tlb = (TLB*) malloc(entradas_tlb * sizeof(TLB));
-	//inicializo la tlb con paginas en -1
-	int i;
-	for (i = 0; i < entradas_tlb; i++) {
-		tlb[i].pagina = -1;
-	}
+			tlb = (TLB*) malloc(entradas_tlb * sizeof(TLB));
+			int i;
+			for (i = 0; i < entradas_tlb; i++) {//inicializo la tlb con paginas en -1:testeado
+				tlb[i].pagina = -1;
+			}
 
 	socket_swap = crear_socket_cliente(ipSwap, puertoSwap);
 	log_info(logger_pantalla, "UMC y Swap conectados");
@@ -140,7 +143,7 @@ void *funcion_cpu(void *argumento) {
 void inicializar(int id_programa, int paginas_requeridas, char* programa) {
 	crear_tabla_de_paginas(id_programa, paginas_requeridas);
 	char* mensaje = serializar2(1, id_programa, paginas_requeridas, programa); //1=inicializar
-	enviar_string(socket_swap, mensaje);
+	//enviar_string(socket_swap, mensaje);
 	//enviar a swap para que lo guarde
 }
 void finalizar(int id_programa) {
@@ -168,12 +171,14 @@ void escribir_pagina(int num_pagina, int offset, size_t t, char *buffer) {
 	}
 }
 
-void crear_tabla_de_paginas(int idp, int paginas_requeridas) {
+void crear_tabla_de_paginas(int idp, int paginas_requeridas) {//testeado
 	tabla_paginas tabla_paginas[paginas_requeridas];
-	//la inicializo en -1
-	int i;
-	for (i = 0; i < paginas_requeridas; i++)
-		tabla_paginas[i].marco = -1;
+	//inicializo los marcos en -1:testeado
+	int lala;
+	for(lala=0;lala<paginas_requeridas;lala++){
+		tabla_paginas[lala].marco=-1;
+	}
+
 	tabla_procesos[idp] = tabla_paginas;
 }
 
@@ -194,14 +199,14 @@ else { //si no esta habilitada la tlb
 return marco;
 }
 
-int obtener_marco_tabla_paginas(int numero_pagina) {
+int obtener_marco_tabla_paginas(int numero_pagina) {//testeado el retardo
 sleep(retardo);
 return tabla_procesos[id_proceso_activo][numero_pagina].marco;
 
 }
 
 void escribir_marco_en_TP(int idp, int pagina, int marco) { //al guardar en MP devuelve el marco en que se guardo y se guarda en la tabla de paginas del proceso
-tabla_procesos[idp]->marco = marco;
+tabla_procesos[idp][pagina].marco = marco;
 }
 
 void marco_ocupado(int num_marco) {
@@ -273,7 +278,7 @@ if (indice_libre != -1) { //si hay un indice libre
 }
 }
 
-int buscar_indice_libre_tlb() {
+int buscar_indice_libre_tlb() {//testeado
 int i;
 for (i = 0; i < entradas_tlb; i++) {
 	if (tlb[i].pagina == -1) {
