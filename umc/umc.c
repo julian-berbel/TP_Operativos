@@ -4,7 +4,7 @@
 #include "CUnit/Basic.h"
 
 
-	int main() {
+int main(){
 	pthread_attr_t attr;
 	pthread_attr_init(&attr);
 	pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
@@ -146,6 +146,7 @@ void inicializar(int id_programa, int paginas_requeridas, char* programa) {
 	//enviar_string(socket_swap, mensaje);
 	//enviar a swap para que lo guarde
 }
+
 void finalizar(int id_programa) {
 	free(tabla_procesos[id_programa]);
 	//avisar al swap para que libere memoria

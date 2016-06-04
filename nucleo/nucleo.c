@@ -1,5 +1,3 @@
-#include <commons/config.h>
-#include <commons/log.h>
 #include "nucleo.h"
 
 int main(){

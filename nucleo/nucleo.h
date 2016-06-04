@@ -8,6 +8,7 @@
 #include <stdio.h>
 #include <commons/collections/queue.h>
 #include "pcb.h"
+#include "interfazUMC.h"
 
 #define RUTA_LOG "/home/utnso/nucleo.log"
 #define RUTA_CONFIG "/home/utnso/tp-2016-1c-Hellfish-Group/nucleo/config/nucleo.config"

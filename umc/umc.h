@@ -8,6 +8,7 @@
 #include<commons/config.h>
 #include"servidor.h"
 #include"cliente.h"
+#include "interfazNucleoCPU.h"
 
 #define RUTA_LOG "/home/utnso/umc.log"
 #define RUTA_CONFIG "/home/utnso/tp-2016-1c-Hellfish-Group/umc/config/umc.config"
@@ -35,9 +36,8 @@ void *funcion_cpu(void *argumento);
 
 void inicializar(int id_programa,int paginas_requeridas, char* programa);
 void finalizar(int num_programa);
-int leer_pagina(int num_pagina, int offset,size_t t);
+void leer_pagina(int num_pagina, int offset,size_t t);
 void escribir_pagina(int num_pagina, int offset, size_t t, char *buffer);
-
 
 typedef struct{
 	int marco;
