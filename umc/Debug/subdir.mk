@@ -5,18 +5,21 @@
 # Add inputs and outputs from these tool invocations to the build variables 
 C_SRCS += \
 ../cliente.c \
+../interfazNucleoCPU.c \
 ../servidor.c \
 ../socketComms.c \
 ../umc.c 
 
 OBJS += \
 ./cliente.o \
+./interfazNucleoCPU.o \
 ./servidor.o \
 ./socketComms.o \
 ./umc.o 
 
 C_DEPS += \
 ./cliente.d \
+./interfazNucleoCPU.d \
 ./servidor.d \
 ./socketComms.d \
 ./umc.d 
