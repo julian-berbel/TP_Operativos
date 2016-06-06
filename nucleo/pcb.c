@@ -37,13 +37,13 @@ int calcularTamanioPCB(t_PCB* pcb){
 	return sizeof(int) * 6 + sizeof(int) * pcb->cantidadInstrucciones * 2 + sizeof(char) * pcb->tamanioIndiceEtiquetas + tamanioStack;;
 }
 
-void* serializarPCB(t_PCB* pcb){
+int serializarPCB(t_PCB* pcb, void** pcbSerializado){
 
 	int tamanioSerializado = calcularTamanioPCB(pcb);
 
-	void* pcbSerializado = malloc(tamanioSerializado);
+	*pcbSerializado = malloc(tamanioSerializado);
 
-	void* posicion = pcbSerializado;
+	void* posicion = *pcbSerializado;
 
 	memcpy(posicion, &pcb->pid, sizeof(int));
 	posicion += sizeof(int);
@@ -101,7 +101,7 @@ void* serializarPCB(t_PCB* pcb){
 		posicion += sizeof(t_posicion_de_memoria);
 	}
 
-	return pcbSerializado;
+	return tamanioSerializado;
 }
 
 t_PCB* deserializarPCB(void* pcb_serializado){

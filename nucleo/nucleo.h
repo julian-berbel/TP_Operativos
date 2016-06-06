@@ -24,7 +24,7 @@ int quantum_sleep;
 char** io_id;
 char** io_sleep;
 char** sem_id;
-char** sem_init;
+char** sem_init1;
 char** shared_vars;
 t_log* logger;
 t_log* logger_pantalla;

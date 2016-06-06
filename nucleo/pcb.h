@@ -43,4 +43,18 @@ typedef struct{
 	t_list* indiceStack;
 } t_PCB;
 
+int** crearIndiceCodigo(t_size cantidadInstrucciones);
+
+void cargarIndiceCodigo(int** indiceCodigo, t_metadata_program* metadata);
+
+int calcularTamanioPCB(t_PCB* pcb);
+
+int serializarPCB(t_PCB* pcb, void** pcbSerializado);
+
+t_PCB* deserializarPCB(void* pcb_serializado);
+
+t_PCB* crearPCB(const char* programa);
+
+void imprimirPCB(t_PCB* pcb);
+
 #endif /* PCB_H_ */

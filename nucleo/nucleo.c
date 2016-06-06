@@ -1,37 +1,154 @@
 #include "nucleo.h"
+#include <commons/collections/list.h>
+#include <signal.h>
+#include <pthread.h>
+#include <semaphore.h>
+
+t_list* consolas; // lista de sockets de consolas
+t_list* cpus; // lista de threads de CPUs
+t_list* sockets_cpus;
+sem_t semTerminar;
+
+
+sig_atomic_t flagTerminar = 0;
+
+void* threadReceptorConsolas(void* param){
+
+	int socketServer = *((int*)param);
+	int* conexionRecibida = malloc(sizeof(int));
+
+	*conexionRecibida = recibirConexion(socketServer);
+
+	while(!flagTerminar){
+		printf("Conectado a una Consola\n");
+		list_add(consolas, (void*) conexionRecibida);
+		conexionRecibida = malloc(sizeof(int));
+		*conexionRecibida = recibirConexion(socketServer);
+	}
+	free(conexionRecibida);
+
+	return NULL;
+}
+
+void* threadCPU(void* param){
+	int socket = *((int*) param);
+	free(param);
+
+	void* mensaje = NULL;
+
+	printf("Conectado a un CPU\n");
+
+	while(!flagTerminar){
+		mensaje = recibir(socket);
+		//procesarMensaje(mensaje); // hay que definir el protocolo Nucleo <--> CPU
+		free(mensaje);
+	}
+
+	close(socket);
+	return NULL;
+}
+
+void crearThreadDeCPU(int conexionRecibida){
+	pthread_t* hiloCPU = malloc(sizeof(pthread_t));
+	list_add(cpus, (void*) hiloCPU);
+	int* socket = malloc(sizeof(int));
+	*socket = conexionRecibida;
+
+	pthread_create(hiloCPU, NULL, threadCPU,(void*) socket);
+}
+
+void* threadReceptorCPUs(void* param){
+
+	int socketServer = *((int*)param);
+	int* conexionRecibida = malloc(sizeof(int));
+
+	*conexionRecibida = recibirConexion(socketServer);
+
+	while(!flagTerminar){
+		crearThreadDeCPU(*conexionRecibida);
+		list_add(sockets_cpus,(void*) conexionRecibida);
+		conexionRecibida = malloc(sizeof(int));
+		*conexionRecibida = recibirConexion(socketServer);
+	}
+	free(conexionRecibida);
+
+	return NULL;
+}
+
+void terminar(int n){
+	printf("Entre a la funcion del signal\n");
+	if(n == SIGINT) flagTerminar = 1;
+	sem_post(&semTerminar);
+	printf("flagTerminar ahora vale: %d\n", flagTerminar);
+}
+
+void bloquearSocket(void* socket){
+	shutdown(*((int*) socket), 0);
+}
+
+void cerrarSocket(void* socket){
+	close(*((int*) socket));
+	free(socket);
+}
+
+void destruirCPU(void* cpu){
+	void* retorno;
+	pthread_join(*((pthread_t*) cpu), &retorno);
+	free(cpu);
+}
 
 int main(){
-	//memset(colaPCBReady,0,sizeof(t_queue));
 	abrirConfiguracion();
+
+	sem_init(&semTerminar, 0, 0);
+
+	signal(SIGINT, terminar);
+
+	consolas = list_create();
+	cpus = list_create();
+	sockets_cpus = list_create();
+
 	log_info(logger, "Inicia proceso Núcleo");
-
-	int socket_servidor = crear_socket_servidor(ipNucleo, puertoNucleo);
-	int socket_consola = recibirConexion(socket_servidor);
-
-	log_info(logger_pantalla, "Nucleo y Consola conectados");
 
 	int socket_umc = crear_socket_cliente(ipUMC, puertoUMC);
 	log_info(logger_pantalla, "Nucleo y UMC conectados");
 
-	int otro_socket_servidor = crear_socket_servidor(ipNucleo, puertoCPU);//porque ipNucleo y puerto CPU???
-	int socket_cpu = recibirConexion(otro_socket_servidor);
+	int socket_consolas = crear_socket_servidor(ipNucleo, puertoNucleo);
 
-	log_info(logger_pantalla, "Nucleo y CPU conectados");
+	pthread_t thrdReceptorConsolas;
+	pthread_create(&thrdReceptorConsolas, NULL, threadReceptorConsolas, &socket_consolas);
 
-	char* mensaje;
+	int socket_cpus = crear_socket_servidor(ipNucleo, puertoCPU);
 
-	while(string_is_empty(mensaje = recibir_string_generico(socket_consola)));
+	pthread_t thrdReceptorCPUs;
+	pthread_create(&thrdReceptorCPUs, NULL, threadReceptorCPUs, &socket_cpus);
 
-	char * mensaje_logger = string_new();
-	string_append(&mensaje_logger, "Pase por el Nucleo - ");
-	string_append(&mensaje_logger, mensaje);
-	log_info(logger_pantalla, mensaje_logger);
-	free(mensaje_logger);
+	sem_wait(&semTerminar);
 
-	free(mensaje);
-	close(socket_consola);
-	close(socket_servidor);
-	close(socket_cpu);
+	shutdown(socket_consolas, 0);
+	shutdown(socket_cpus, 0);
+	shutdown(socket_umc, 0);
+
+	list_destroy_and_destroy_elements(consolas, cerrarSocket);
+
+	list_iterate(sockets_cpus, bloquearSocket);
+
+	list_destroy_and_destroy_elements(cpus, destruirCPU);
+
+	list_destroy_and_destroy_elements(sockets_cpus, cerrarSocket);
+
+	void* retorno;
+
+	pthread_join(thrdReceptorConsolas, &retorno);
+
+	pthread_join(thrdReceptorCPUs, &retorno);
+
+	sem_destroy(&semTerminar);
+
+	close(socket_consolas);
+	close(socket_cpus);
+	close(socket_umc);
+
 	cerrar_todo();
 
 	return 0;
@@ -47,7 +164,7 @@ void abrirConfiguracion(){
 	io_id = config_get_array_value(configuracionNucleo, "IO_ID");
 	io_sleep = config_get_array_value(configuracionNucleo, "IO_SLEEP");
 	sem_id = config_get_array_value(configuracionNucleo, "SEM_ID");
-	sem_init = config_get_array_value(configuracionNucleo, "SEM_INIT");
+	sem_init1 = config_get_array_value(configuracionNucleo, "SEM_INIT");
 	shared_vars = config_get_array_value(configuracionNucleo, "SHARED_VARS");
 	logger = log_create(RUTA_LOG, "Nucleo", false, LOG_LEVEL_INFO);
 	logger_pantalla = log_create(RUTA_LOG, "Nucleo", true, LOG_LEVEL_INFO);
@@ -67,26 +184,32 @@ void abrirConfiguracion(){
 
 void cerrar_todo(){
 	int i;
+
 	int largo_array = sizeof(io_id);
 	for(i=0; i<largo_array; ++i)
 		free(io_id[i]);
 	free(io_id);
+
 	largo_array = sizeof(io_sleep);
 	for(i=0; i<largo_array; ++i)
 		free(io_sleep[i]);
 	free(io_sleep);
+
 	largo_array = sizeof(sem_id);
 	for(i=0; i<largo_array; ++i)
 		free(sem_id[i]);
 	free(sem_id);
-	largo_array = sizeof(sem_init);
+
+	largo_array = sizeof(sem_init1);
 	for(i=0; i<largo_array; ++i)
-		free(sem_init[i]);
-	free(sem_init);
+		free(sem_init1[i]);
+	free(sem_init1);
+
 	largo_array = sizeof(shared_vars);
 	for(i=0; i<largo_array; ++i)
 		free(shared_vars[i]);
 	free(shared_vars);
+
 	log_destroy(logger);
 	log_destroy(logger_pantalla);
 	config_destroy(configuracionNucleo);
