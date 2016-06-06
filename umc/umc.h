@@ -55,22 +55,25 @@ typedef struct{
 
 int* memoria;
 int *marcos_libres;
-tabla_paginas* tabla_procesos[100][20];
+tabla_paginas tabla_procesos[50][20];
 TLB *tlb;
 
 void crear_tabla_de_paginas(int idp, int paginas_requeridas);
 int obtener_marco(int idp,int num_pagina);
 int obtener_marco_tabla_paginas(int idp,int numero_pagina);
+int obtener_marco_tlb(int idp,int num_pagina);
 void escribir_marco_en_TP(int idp,int pagina, int marco);
+void escribir_marco_en_tlb(int idp,int num_pagina,int marco);
 void marco_ocupado(int num_marco);
+void marco_desocupado(int num_marco);
 void modificar_retardo(int ret);
 void cambiar_proceso_activo(int proceso);
 void modificar_bit_uso(int idp,int num_pagina);
 void modificar_bit_modificado(int idp, int num_pagina);
-int obtener_marco_tlb(int idp,int num_pagina);
 void escribir_posicion_memoria(int posicion,size_t tamanio,char *buffer);
 char* leer_posicion_memoria(int posicion, size_t tamanio);
-void guardar_en_tlb(int idp,int num_pagina,int marco);
 int buscar_indice_libre_tlb();
+void aumentar_uso_tlb(int idp,int num_pagina);
+int buscar_indice_menos_accedido_tlb();
 
 #endif
