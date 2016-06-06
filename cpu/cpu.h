@@ -23,6 +23,27 @@ typedef struct{
 	t_list* indiceStack;
 } t_PCB;
 
+AnSISOP_funciones functions = {
+		.AnSISOP_definirVariable		= definirVariable,
+		.AnSISOP_obtenerPosicionVariable= obtenerPosicionVariable,
+		.AnSISOP_dereferenciar			= dereferenciar,
+		.AnSISOP_asignar				= asignar,
+		.AnSISOP_obtenerValorCompartida = obtenerValorCompartida,
+		.AnSISOP_asignarValorCompartida = asignarValorCompartida,
+		.AnSISOP_irAlLabel              = irAlLabel,
+		.AnSISOP_llamarSinRetorno       = llamarSinRetorno,
+		.AnSISOP_llamarConRetorno       = llamarConRetorno,
+		.AnSISOP_finalizar              = finalizar,
+		.AnSISOP_retornar               = retornar,
+		.AnSISOP_imprimir				= imprimir,
+		.AnSISOP_imprimirTexto			= imprimirTexto,
+
+};
+AnSISOP_kernel kernel_functions = {
+		.AnSISOP_wait                   = wait,
+		.AnSISOP_signal                 = signal,
+};
+
 t_config* configuracionCPU;
 char* ipNucleo;
 char* puertoNucleo;
@@ -35,5 +56,7 @@ int tamanio_pagina;
 
 void abrirConfiguracion();
 void cerrar_todo();
+char* obtener_instruccion(t_PCB * pcb);
+char* pedir_instruccion_umc(int num_pagina, int offset, int tamanio);
 
 #endif
