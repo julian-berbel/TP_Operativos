@@ -17,6 +17,7 @@ typedef struct{
 	int bit_uso;
 } t_swap;
 
+t_swap lista_swap[];
 
 t_config* configuracion_swap;
 char* puertoSwap;
@@ -28,10 +29,15 @@ int retardo_compactacion;
 t_log* logger;
 t_log* logger_pantalla;
 
-t_swap lista_procesos[1000];
 
 void abrirConfiguracion();
 void cerrar_todo();
 
+void inicializar(int id_programa,int paginas_requeridas, char* programa);
+
+int cant_pags_disponibles();
+int hayEspacio(int paginas_requeridas);
+void agregarProcesoALista(int id_programa,int paginas_requeridas);
+int tamanioListaSwap();
 
 #endif

@@ -14,8 +14,10 @@
 
 #define RUTA_BINFILE "/home/utnso/tp-2016-1c-Hellfish-Group/swap/"
 
+FILE *archivo;
 
 void crearArchivoBinario(char* nombre_data,int pagina_size,int cant_paginas);
 char* tamanioArchivo(int pag_size,int cantidad);
+void escribirArchivoBinario(char* programa);
 
 #endif /* BINFILE_H_ */

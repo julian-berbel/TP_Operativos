@@ -31,3 +31,15 @@ char* tamanioArchivo(int pagina_tamanio, int cantidad_pags) {
 	return tamanioTotalString;
 }
 
+void escribirArchivoBinario(char* programa){
+
+	char *ruta_archivo = strcpy(ruta_archivo,RUTA_BINFILE );
+	ruta_archivo = strcat(ruta_archivo,nombre_data);
+
+	archivo = fopen(ruta_archivo,"w");
+
+	fputs(programa,archivo);
+
+	fclose(archivo);
+}
+
