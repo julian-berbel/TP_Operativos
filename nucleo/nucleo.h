@@ -9,6 +9,10 @@
 #include <commons/collections/queue.h>
 #include "pcb.h"
 #include "interfazUMC.h"
+#include <commons/collections/list.h>
+#include <signal.h>
+#include <pthread.h>
+#include <semaphore.h>
 
 #define RUTA_LOG "/home/utnso/nucleo.log"
 #define RUTA_CONFIG "/home/utnso/tp-2016-1c-Hellfish-Group/nucleo/config/nucleo.config"
@@ -33,6 +37,20 @@ t_queue* colaPCBReady;
 t_queue* colaPCBExec;
 t_queue* colaPCBBlock;
 t_queue* colaPCBExit;
+t_list* consolas; // lista de sockets de consolas
+t_list* cpus; // lista de t_cpus
+int socket_umc;
+int socket_consolas;
+int socket_cpus;
+pthread_t thrdReceptorConsolas;
+pthread_t thrdReceptorCPUs;
+sem_t semTerminar;
+sig_atomic_t flagTerminar = 0;
+
+typedef struct{
+	pthread_t* hiloCPU;
+	int socketCPU;
+}t_cpu;
 
 void abrirConfiguracion();
 void cerrar_todo();
