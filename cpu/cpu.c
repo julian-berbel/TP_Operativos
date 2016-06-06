@@ -2,6 +2,27 @@
 #include <commons/log.h>
 #include "cpu.h"
 
+AnSISOP_funciones functions = {
+		.AnSISOP_definirVariable		= definirVariable,
+		.AnSISOP_obtenerPosicionVariable= obtenerPosicionVariable,
+		.AnSISOP_dereferenciar			= dereferenciar,
+		.AnSISOP_asignar				= asignar,
+		.AnSISOP_obtenerValorCompartida = obtenerValorCompartida,
+		.AnSISOP_asignarValorCompartida = asignarValorCompartida,
+		.AnSISOP_irAlLabel              = irAlLabel,
+		.AnSISOP_llamarSinRetorno       = llamarSinRetorno,
+		.AnSISOP_llamarConRetorno       = llamarConRetorno,
+		.AnSISOP_finalizar              = finalizar,
+		.AnSISOP_retornar               = retornar,
+		.AnSISOP_imprimir				= imprimir,
+		.AnSISOP_imprimirTexto			= imprimirTexto,
+
+};
+AnSISOP_kernel kernel_functions = {
+		.AnSISOP_wait                   = wait,
+		.AnSISOP_signal                 = signal,
+};
+
 int main(){
 	abrirConfiguracion();
 	log_info(logger, "Inicia proceso CPU");
@@ -62,9 +83,11 @@ char* obtener_instruccion(t_PCB * pcb){
 }
 
 char* pedir_instruccion_umc(int num_pagina, int offset, int tamanio){
-	char* instruccion = string_new();
-	/*Aca hay que serializar el mensaje, mandarlo al UMC, y deserializar el mensaje de respuesta
-	y appendearla a instruccion*/
-	string_append(&instruccion, "Aca va la instruccion que recibo de la UMC\n");
+	char* instruccion;
+	void* pedido;
+	int tamanioSerializacion = serializarSolicitar(num_pagina, offset, tamanio, &pedido);
+	enviar(socket_umc, pedido, tamanioSerializacion);
+	instruccion = recibir(socket_umc);
+	string_append(&instruccion, "Aca va la instruccion que recibo de la UMC\n"); //?
 	return instruccion;
 }

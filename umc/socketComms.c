@@ -31,7 +31,7 @@ void enviar(int socket, void* cosaAEnviar, int tamanio){
 void* recibir(int socket){
 	void* recibido = malloc(sizeof(int));
 
-	recv(socket, recibido, sizeof(int), 0);
+	read(socket, recibido, sizeof(int));
 
 	int tamanioDelMensaje = *((int*)recibido);
 
@@ -41,7 +41,7 @@ void* recibir(int socket){
 
 	int bytesRecibidos = 0;
 
-	while(bytesRecibidos < tamanioDelMensaje) bytesRecibidos += recv(socket, (recibido + bytesRecibidos), (tamanioDelMensaje - bytesRecibidos), 0);
+	while(bytesRecibidos < tamanioDelMensaje) bytesRecibidos += read(socket, (recibido + bytesRecibidos), (tamanioDelMensaje - bytesRecibidos));
 
 	return recibido;
 }
