@@ -66,7 +66,6 @@ void escribir_marco_en_TP(int idp,int pagina, int marco);
 void escribir_marco_en_tlb(int idp,int num_pagina,int marco);
 void marco_ocupado(int num_marco);
 void marco_desocupado(int num_marco);
-void modificar_retardo(int ret);
 void cambiar_proceso_activo(int proceso);
 void modificar_bit_uso(int idp,int num_pagina);
 void modificar_bit_modificado(int idp, int num_pagina);
@@ -75,5 +74,14 @@ char* leer_posicion_memoria(int posicion, size_t tamanio);
 int buscar_indice_libre_tlb();
 void aumentar_uso_tlb(int idp,int num_pagina);
 int buscar_indice_menos_accedido_tlb();
+void flush (int idp);
+//operaciones de consola
+void modificar_retardo(int ret);
+void dump_est_proceso(int idp);
+void dump_est();
+void dump_cont_proceso(int idp);
+void dump_cont();
+void flush_tlb();
+void flush_memory(int idp, int cantidad_paginas);
 
 #endif

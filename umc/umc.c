@@ -198,7 +198,7 @@ int obtener_marco(int idp, int num_pagina) { //testeado
 }
 
 int obtener_marco_tabla_paginas(int idp, int numero_pagina) { //testeado
-	sleep(retardo);
+	sleep(retardo/1000);//el retardo esta en milisegundos, sleep recibe segundos
 	return tabla_procesos[idp][numero_pagina].marco;
 
 }
@@ -219,7 +219,7 @@ void escribir_marco_en_TP(int idp, int pagina, int marco) { //al guardar en MP d
 	tabla_procesos[idp][pagina].marco = marco;					//testeado
 }
 
-void escribir_marco_en_tlb(int idp, int num_pagina, int marco) {
+void escribir_marco_en_tlb(int idp, int num_pagina, int marco) {//testeado
 	int indice_libre = buscar_indice_libre_tlb();
 	if (indice_libre != -1) { //si hay un indice libre
 		tlb[indice_libre].idp = idp;
@@ -227,7 +227,7 @@ void escribir_marco_en_tlb(int idp, int num_pagina, int marco) {
 		tlb[indice_libre].marco = marco;
 		tlb[indice_libre].uso = 0;
 	} else { //no hay indice libre ->reemplazo con LRU
-	int indice_menos_accedido = buscar_indice_menos_accedido_tlb();//hasta aca testeado
+	int indice_menos_accedido = buscar_indice_menos_accedido_tlb();
 	tlb[indice_menos_accedido].idp=idp;
 	tlb[indice_menos_accedido].pagina=num_pagina;
 	tlb[indice_menos_accedido].marco=marco;
@@ -241,12 +241,11 @@ void marco_ocupado(int num_marco) { //testeado
 void marco_desocupado(int num_marco) {//testeado
 	marcos_libres[num_marco] = 0;
 }
-void modificar_retardo(int ret) {//testeado
-	retardo = ret;
-}
 
-void cambiar_proceso_activo(int proceso) {//testeado
+void cambiar_proceso_activo(int proceso) {
+	int id_proceso_viejo=id_proceso_activo;
 	id_proceso_activo = proceso;
+	flush (id_proceso_viejo); //limpio lo que haya de ese proceso en la tlb
 }
 void modificar_bit_uso(int idp, int num_pagina) {
 	tabla_procesos[idp][num_pagina].bit_uso = 1;
@@ -256,11 +255,11 @@ void modificar_bit_modificado(int idp, int num_pagina) {
 }
 
 void escribir_posicion_memoria(int posicion, size_t tamanio, char *buffer) {
-	sleep(retardo);
+	sleep(retardo/1000);
 //escribir buffer
 }
 /*char* leer_posicion_memoria(int posicion, size_t tamanio){
-
+	sleep(retardo/1000);
  */
 
 
@@ -274,7 +273,7 @@ int buscar_indice_libre_tlb() { //testeado
 	return -1;
 }
 
-void aumentar_uso_tlb(int idp,int num_pagina){//testear
+void aumentar_uso_tlb(int idp,int num_pagina){//testeado
 	int i;
 	for(i=0;i<entradas_tlb;i++){
 		if(tlb[i].idp!=idp && tlb[0].pagina !=num_pagina){
@@ -285,7 +284,7 @@ void aumentar_uso_tlb(int idp,int num_pagina){//testear
 	}
 }
 
-int buscar_indice_menos_accedido_tlb(){//busco la pagina de la TLB menos accedida para reemplazarla
+int buscar_indice_menos_accedido_tlb(){//testeado
 	int indice,valormax=0,i;
 	for(i=0;i<entradas_tlb;i++){
 		if(tlb[i].uso>=valormax){
@@ -294,4 +293,51 @@ int buscar_indice_menos_accedido_tlb(){//busco la pagina de la TLB menos accedid
 		}
 	}
 	return indice;
+}
+
+void flush (int idp){
+	int i=0;
+	for(i=0;i<entradas_tlb;i++){
+		if(tlb[i].idp==idp){
+			tlb[i].idp=-1; //queda nuevamente como libre
+		}
+	}
+}
+
+//operaciones de consola
+void modificar_retardo(int ret) {//testeado
+	retardo = ret;
+}
+
+void dump_est_proceso(int idp){
+	//generar reporte en pantalla y un archivo sobre la tabla de paginas del proceso
+}
+
+void dump_est(){
+	//generar un reporte en pantalla y un archivo con las tablas de paginas
+	//de todos los procesos
+}
+
+void dump_cont_proceso(int idp){
+	//generar un reporte en pantalla y un archivo sobre los datos almacenados en memoria
+	//de ese proceso
+}
+
+void dump_cont(){
+	//generar un reporte en pantalla y un archivo sobre los datos almacenados en memoria
+	//de todos los procesos
+}
+
+void flush_tlb(){ //limpia completamente la tlb
+	int i;
+	for(i=0;i<entradas_tlb;i++){
+		tlb[i].idp=-1;
+	}
+}
+
+void flush_memory(int idp, int cantidad_paginas){ //marca todas las paginas del proceso como modificadas
+	int i;
+	for (i=0;i<cantidad_paginas;i++){
+		tabla_procesos[idp][i].modificado=1;
+	}
 }
