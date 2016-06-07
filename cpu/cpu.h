@@ -8,38 +8,10 @@
 #include <parser/parser.h>
 #include <commons/collections/list.h>
 #include "interfazUMC.h"
+#include "pcb.h"
 
 #define RUTA_LOG "/home/utnso/cpu.log"
 #define RUTA_CONFIG "/home/utnso/tp-2016-1c-Hellfish-Group/cpu/config/cpu.config"
-
-typedef struct{
-	int pid;
-	int programCounter;
-	int cantidadPaginas;
-	int cantidadInstrucciones;
-	int** indiceCodigo;
-	int tamanioIndiceEtiquetas;
-	char* indiceEtiquetas;
-	t_list* indiceStack;
-} t_PCB;
-
-typedef struct{
-	int pagina;
-	int offset;
-	int size;
-} pos_mem;
-
-typedef struct{
-	t_list* args; //Lista de pos_mem's. Cada posicion representa un argumento en el orden de la lista
-	t_list* vars; // Lista de variables(struct)
-	int dir_retorno;
-	pos_mem* var_retorno;
-} nodo_stack;
-
-typedef struct{
-	char nombre_var;
-	pos_mem* dir_var;
-} t_variable;
 
 //Defino funciones de primitivas
 

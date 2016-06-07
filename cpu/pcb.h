@@ -9,7 +9,7 @@
 #define PCB_H_
 
 #include <stdio.h>
-#include <parser/metadata_program.h>
+#include <parser/parser.h>
 #include <commons/collections/list.h>
 
 typedef struct{
@@ -24,8 +24,8 @@ typedef struct{
 } t_variable;
 
 typedef struct{
-	t_list* args;
-	t_list* vars;
+	t_list* args; //Lista de pos_mem's. Cada posicion representa un argumento en el orden de la lista
+	t_list* vars; // Lista de variables(struct)
 	int dir_retorno;
 	pos_mem* var_retorno;
 } nodo_stack;
@@ -43,15 +43,11 @@ typedef struct{
 
 int** crearIndiceCodigo(t_size cantidadInstrucciones);
 
-void cargarIndiceCodigo(int** indiceCodigo, t_metadata_program* metadata);
-
 int calcularTamanioPCB(t_PCB* pcb);
 
 int serializarPCB(t_PCB* pcb, void** pcbSerializado);
 
 t_PCB* deserializarPCB(void* pcb_serializado);
-
-t_PCB* crearPCB(const char* programa);
 
 void imprimirPCB(t_PCB* pcb);
 

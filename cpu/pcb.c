@@ -16,14 +16,6 @@ int** crearIndiceCodigo(t_size cantidadInstrucciones){
 	return indiceCodigo;
 }
 
-void cargarIndiceCodigo(int** indiceCodigo, t_metadata_program* metadata){
-	int i;
-	for(i = 0; i < metadata->instrucciones_size; i++){
-		indiceCodigo[i][0] = (metadata->instrucciones_serializado + i)->start;
-		indiceCodigo[i][1] = (metadata->instrucciones_serializado + i)->offset;
-	}
-}
-
 int calcularTamanioPCB(t_PCB* pcb){
 	int tamanioPCB = sizeof(int) * 6 + pcb->cantidadInstrucciones * 2 * sizeof(int) + pcb->tamanioIndiceEtiquetas * sizeof(char);
 	nodo_stack* elemento;
@@ -187,29 +179,6 @@ t_PCB* deserializarPCB(void* pcb_serializado){
 		list_add(pcb->indiceStack, (void*) elemento);
 	}
 
-	return pcb;
-}
-
-t_PCB* crearPCB(const char* programa){
-	static int pid = 0;
-
-	t_PCB* pcb = malloc(sizeof(t_PCB));
-	t_metadata_program* metadata = metadata_desde_literal(programa);
-
-	pcb->pid = pid;
-	pid++;
-
-	pcb->programCounter = 0;
-//	pcb->cantidadPaginas = string_length(programa)*sizeof(char) / tamanioDePagina; // tamanioDePagina lo tiene que pasar la umc por socket
-	pcb->cantidadInstrucciones = metadata->instrucciones_size;
-	pcb->indiceCodigo = crearIndiceCodigo(metadata->instrucciones_size);
-	cargarIndiceCodigo(pcb->indiceCodigo, metadata);
-	pcb->tamanioIndiceEtiquetas = metadata->etiquetas_size;
-	pcb->indiceEtiquetas = malloc(sizeof(char) * pcb->tamanioIndiceEtiquetas);
-	memcpy(pcb->indiceEtiquetas, metadata->etiquetas, sizeof(char) * pcb->tamanioIndiceEtiquetas);
-	pcb->indiceStack = list_create();
-
-	metadata_destruir(metadata);
 	return pcb;
 }
 
