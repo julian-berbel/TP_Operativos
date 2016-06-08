@@ -1,5 +1,28 @@
 #include "nucleo.h"
 
+void cancelar(int socket){
+
+}
+
+void imprimir(int pid, char* mensaje){
+	// obtener socket de la consola correspondiente a partir del pid
+	/* void* mensajeSerializado;
+	 int tamanio = serializarImprimir(mensaje, &mensajeSerializado);
+	 enviar(socket_consola, mensajeSerializado);
+	 free(mensajeSerializado);
+	*/
+	printf("Imprimir en consola del proceso: %d: %s\n", pid, mensaje);
+}
+
+void quantumTerminado(t_PCB* pcbActualizado){//????
+	/* buscar por pid y remover pcb desactualizado de colaPCBExec y destruirlo. (referirse a list_remove_and_destroy_by_condition de la commons)
+	 meter pcbActualizado en la cola que corresponda.
+	*/
+	printf("Quantum Terminado del PCB: \n");
+	imprimirPCB(pcbActualizado);
+	pcb_destroy(pcbActualizado);
+}
+
 void threadReceptorConsolas(void* param){
 	int socketServer = *((int*)param);
 	int* conexionRecibida = malloc(sizeof(int));
@@ -28,8 +51,7 @@ void threadCPU(void* param){
 
 	while(!flagTerminar){
 		mensaje = recibir(socket);
-		//procesarMensaje(mensaje); // hay que definir el protocolo Nucleo <--> CPU
-		free(mensaje);
+		procesarMensaje(mensaje);
 	}
 
 	close(socket);

@@ -1,6 +1,6 @@
 #include "interfazNucleoCPU.h"
 
-void (*deserializadores[4])(void*) = {deserializarInicializar, deserializarSolicitar, deserializarAlmacenar, deserializarFinalizar};
+void (*deserializadores[5])(void*) = {terminar, deserializarInicializar, deserializarSolicitar, deserializarAlmacenar, deserializarFinalizar};
 
 void deserializarInicializar(void* parametrosSerializados){
 	int id_programa, paginas_requeridas;
@@ -59,8 +59,8 @@ void deserializarFinalizar(void* parametrosSerializados){
 }
 
 void procesarMensaje(void* mensaje){
-	tipoDeMensaje tipo = *((tipoDeMensaje*) mensaje);
-	void* aux = mensaje + sizeof(tipoDeMensaje);
+	interfazPropia tipo = *((interfazPropia*) mensaje);
+	void* aux = mensaje + sizeof(interfazPropia);
 
 	(*deserializadores[tipo])(aux);
 	free(mensaje);

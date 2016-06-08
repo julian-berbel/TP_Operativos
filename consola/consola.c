@@ -1,8 +1,8 @@
-#include <commons/config.h>
-#include <commons/log.h>
 #include "consola.h"
 
 int main(int cantidadArgumentos, char* argumentos[]){
+	char* programa = leerArchivo(RUTA_PROGRAMA);
+	signal(SIGINT, senialTerminar);
 
 	abrirConfiguracion();
 	log_info(logger, "Inicia proceso Consola");
@@ -11,14 +11,18 @@ int main(int cantidadArgumentos, char* argumentos[]){
 
 	log_info(logger_pantalla, "Consola y Nucleo conectados");
 
-	char* comando = malloc(20);
-	memset(comando, '\0', 20);
-	printf("Introduzca 'prueba' para enviar mensaje\n");
-	scanf("%s", comando);
-	enviar_string(socket_nucleo, comando);
+	enviar_string(socket_nucleo, programa);
+
+	free(programa);
+
+	void* mensaje;
+
+	while(!flagTerminar){
+		mensaje = recibir(socket_nucleo);
+		procesarMensaje(mensaje);
+	}
 
 	close(socket_nucleo);
-	free(comando);
 	cerrar_todo();
 
 	return 0;
@@ -30,10 +34,6 @@ void abrirConfiguracion(){
 	puertoNucleo = config_get_string_value(configuracionConsola, "PUERTO_NUCLEO");
 	logger = log_create(RUTA_LOG, "Consola", false, LOG_LEVEL_INFO);
 	logger_pantalla = log_create(RUTA_LOG, "Consola", true, LOG_LEVEL_INFO);
-
-	/*printf("%s\n", ipNucleo);
-	printf("%s\n", puertoNucleo);*/
-
 }
 
 void cerrar_todo(){
@@ -73,8 +73,23 @@ char* leerArchivo(char* ruta){
 	}
 }
 
-void imprimirTexto(char* texto){
-	printf("%s",texto);
+void imprimir(char* mensaje){
+	printf("%s\n", mensaje);
 }
-void imprimir(){
+
+void senialTerminar(int n){
+	if(n == SIGINT){
+		void* mensaje;
+		int tamanio;
+		tamanio = serializarCancelar(&mensaje);
+
+		enviar(socket_nucleo, mensaje, tamanio);
+		free(mensaje);
+		terminar();
+	}
+}
+
+void terminar(){
+	flagTerminar = 1;
+	shutdown(socket_nucleo, 0);
 }

@@ -216,3 +216,21 @@ char* pedir_bytes_umc(int num_pagina, int offset, int tamanio){
 	free(recibido);
 	return instruccion;
 }
+
+void cargarPCB(t_PCB* pcb){
+	pcb_destroy(pcb_actual);
+	pcb_actual = pcb;
+}
+
+void ejecutarInstruccion(){
+	char* instruccion = obtener_instruccion(pcb_actual);
+	analizadorLinea(instruccion, &functions, &kernel_functions);
+}
+
+void cancelar(){
+	pcb_destroy(pcb_actual);
+}
+
+void terminar(){
+	// terminar lo recibe cuando se cierra el nucleo.
+}

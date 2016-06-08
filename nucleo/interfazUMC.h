@@ -13,7 +13,7 @@
 #include <string.h>
 #include <commons/string.h>
 
-typedef enum { INICIALIZAR, FINALIZAR = 3} tipoDeMensaje;
+typedef enum { /*TERMINAR,*/ INICIALIZAR = 1, FINALIZAR = 4} interfazUMC;
 
 int serializarInicializar(int id_programa, int paginas_requeridas, char* programa, void** serializacion);
 

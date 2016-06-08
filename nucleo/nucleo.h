@@ -9,6 +9,7 @@
 #include <commons/collections/queue.h>
 #include "pcb.h"
 #include "interfazUMC.h"
+#include "interfazCPU.h"
 #include <commons/collections/list.h>
 #include <signal.h>
 #include <pthread.h>
@@ -54,5 +55,11 @@ typedef struct{
 
 void abrirConfiguracion();
 void cerrar_todo();
+
+void cancelar(int socket);
+
+void imprimir(int pid, char* mensaje);
+
+void quantumTerminado(t_PCB* pcbActualizado);
 
 #endif

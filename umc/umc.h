@@ -83,5 +83,6 @@ void dump_cont_proceso(int idp);
 void dump_cont();
 void flush_tlb();
 void flush_memory(int idp, int cantidad_paginas);
+void terminar();
 
 #endif

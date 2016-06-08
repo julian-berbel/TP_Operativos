@@ -13,7 +13,7 @@
 #include <string.h>
 #include <commons/string.h>
 
-typedef enum {SOLICITAR = 1, ALMACENAR = 2} tipoDeMensaje;
+typedef enum {SOLICITAR = 2, ALMACENAR = 3} tipoDeMensaje;
 
 int serializarSolicitar(int num_pagina, int offset, size_t t, void** serializacion);
 

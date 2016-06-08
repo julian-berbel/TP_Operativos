@@ -7,6 +7,7 @@
 #include <stdio.h>
 #include <sys/stat.h>
 #include <signal.h>
+#include "interfazNucleo.h"
 
 #define RUTA_LOG "/home/utnso/consola.log"
 #define RUTA_CONFIG "/home/utnso/tp-2016-1c-Hellfish-Group/consola/config/consola.config"
@@ -19,9 +20,18 @@ t_log* logger;
 t_log* logger_pantalla;
 int socket_nucleo;
 
+int flagTerminar = 0;
+int pid;
+
 void abrirConfiguracion();
 void cerrar_todo();
 int archivoExiste();
 char* leerArchivo();
+
+void imprimir(char* mensaje);
+
+void senialTerminar(int n);
+
+void terminar();
 
 #endif

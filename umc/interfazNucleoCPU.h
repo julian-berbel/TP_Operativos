@@ -10,7 +10,7 @@
 
 #include <stdlib.h>
 
-typedef enum { INICIALIZAR, SOLICITAR, ALMACENAR, FINALIZAR} tipoDeMensaje;
+typedef enum { TERMINAR, INICIALIZAR, SOLICITAR, ALMACENAR, FINALIZAR} interfazPropia;
 
 void deserializarInicializar(void* parametrosSerializados);
 
@@ -21,6 +21,8 @@ void deserializarAlmacenar(void* parametrosSerializados);
 void deserializarFinalizar(void* parametrosSerializados);
 
 void procesarMensaje(void* mensaje);
+
+extern void terminar();
 
 extern void inicializar(int id_programa,int paginas_requeridas, char* programa);
 extern void finalizar(int num_programa);

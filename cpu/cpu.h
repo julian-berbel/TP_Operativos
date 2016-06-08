@@ -8,6 +8,7 @@
 #include <parser/parser.h>
 #include <commons/collections/list.h>
 #include "interfazUMC.h"
+#include "interfazNucleo.h"
 #include "pcb.h"
 
 #define RUTA_LOG "/home/utnso/cpu.log"
@@ -69,5 +70,13 @@ void abrirConfiguracion();
 void cerrar_todo();
 char* obtener_instruccion(t_PCB * pcb);
 char* pedir_bytes_umc(int num_pagina, int offset, int tamanio);
+
+void cargarPCB(t_PCB* pcb);
+
+void ejecutarInstruccion();
+
+void cancelar();
+
+void terminar();
 
 #endif
