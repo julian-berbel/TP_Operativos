@@ -23,11 +23,11 @@ int serializarTerminar(void** serializacion);
 
 int serializarEjecutarInstruccion(void** serializacion);
 
-void deserializarImprimir(void* parametrosSerializados);
+void deserializarImprimir(void* parametrosSerializados, void* dataAdicional);
 
-void deserializarQuantumTerminado(void* parametrosSerializados);
+void deserializarQuantumTerminado(void* parametrosSerializados, void* dataAdicional);
 
-void deserializarCancelar(void* parametrosSerializados);
+void deserializarCancelar(void* parametrosSerializados, void* dataAdicional);
 
 extern void imprimir(int pid, char* mensaje);
 
@@ -35,6 +35,6 @@ extern void quantumTerminado(t_PCB* pcbActualizado);
 
 extern void cancelar(int socketConsola);
 
-void procesarMensaje(void* mensaje);
+void procesarMensaje(void* mensaje, void* dataAdicional);
 
 #endif /* INTERFAZCPU_H_ */

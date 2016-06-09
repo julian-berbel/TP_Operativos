@@ -7,19 +7,19 @@
 
 #include "interfazNucleo.h"
 
-void deserializarImprimir(void* parametrosSerializados){
+void deserializarImprimir(void* parametrosSerializados, void* dataAdicional){
 	char* mensaje = parametrosSerializados;
 
 	imprimir(mensaje);
 }
 
-void (*deserializadores[2])(void*) = {terminar, deserializarImprimir};
+void (*deserializadores[2])(void*, void*) = {terminar, deserializarImprimir};
 
-void procesarMensaje(void* mensaje){
+void procesarMensaje(void* mensaje, void* dataAdicional){
 	interfazPropia tipo = *((interfazPropia*) mensaje);
 	void* aux = mensaje + sizeof(interfazPropia);
 
-	(*deserializadores[tipo])(aux);
+	(*deserializadores[tipo])(aux, dataAdicional);
 	free(mensaje);
 }
 

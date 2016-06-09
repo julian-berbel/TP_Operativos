@@ -41,13 +41,13 @@ int serializarEjecutarInstruccion(void** serializacion) {
 	return sizeof(interfazCPU);
 }
 
-void deserializarCancelar(void* parametrosSerializados){
+void deserializarCancelar(void* parametrosSerializados, void* dataAdicional){
 	int socket = *((int*) parametrosSerializados);
 
 	cancelar(socket);
 }
 
-void deserializarImprimir(void* parametrosSerializados){
+void deserializarImprimir(void* parametrosSerializados, void* dataAdicional){
 	int pid = *((int*) parametrosSerializados);
 	parametrosSerializados += sizeof(int);
 	char* mensaje = parametrosSerializados;
@@ -55,18 +55,18 @@ void deserializarImprimir(void* parametrosSerializados){
 	imprimir(pid, mensaje);
 }
 
-void deserializarQuantumTerminado(void* parametrosSerializados){
+void deserializarQuantumTerminado(void* parametrosSerializados, void* dataAdicional){
 	t_PCB* pcb = deserializarPCB(parametrosSerializados);
 
 	quantumTerminado(pcb);
 }
 
-void (*deserializadores[3])(void*) = {deserializarCancelar, deserializarImprimir, deserializarQuantumTerminado};
+void (*deserializadores[3])(void*, void*) = {deserializarCancelar, deserializarImprimir, deserializarQuantumTerminado};
 
-void procesarMensaje(void* mensaje){
+void procesarMensaje(void* mensaje, void* dataAdicional){
 	interfazPropia tipo = *((interfazPropia*) mensaje);
 	void* aux = mensaje + sizeof(interfazPropia);
 
-	(*deserializadores[tipo])(aux);
+	(*deserializadores[tipo])(aux, dataAdicional);
 	free(mensaje);
 }

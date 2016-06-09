@@ -19,9 +19,9 @@ int serializarImprimir(char* mensaje, void** serializacion);
 
 int serializarQuantumTerminado(t_PCB* pcbActualizado, void** serializacion);
 
-void deserializarCargarPCB(void* parametrosSerializados);
+void deserializarCargarPCB(void* parametrosSerializados, void* dataAdicional);
 
-void procesarMensaje(void* mensaje);
+void procesarMensaje(void* mensaje, void* dataAdicional);
 
 extern void cargarPCB(t_PCB* pcb);
 

@@ -19,7 +19,7 @@ int main(int cantidadArgumentos, char* argumentos[]){
 
 	while(!flagTerminar){
 		mensaje = recibir(socket_nucleo);
-		procesarMensaje(mensaje);
+		procesarMensaje(mensaje, NULL);
 	}
 
 	close(socket_nucleo);

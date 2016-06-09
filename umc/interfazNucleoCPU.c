@@ -1,8 +1,8 @@
 #include "interfazNucleoCPU.h"
 
-void (*deserializadores[5])(void*) = {terminar, deserializarInicializar, deserializarSolicitar, deserializarAlmacenar, deserializarFinalizar};
+void (*deserializadores[5])(void*, void*) = {terminar, deserializarInicializar, deserializarSolicitar, deserializarAlmacenar, deserializarFinalizar};
 
-void deserializarInicializar(void* parametrosSerializados){
+void deserializarInicializar(void* parametrosSerializados, void* dataAdicional){
 	int id_programa, paginas_requeridas;
 	char* programa;
 
@@ -17,7 +17,7 @@ void deserializarInicializar(void* parametrosSerializados){
 	inicializar(id_programa, paginas_requeridas, programa);
 }
 
-void deserializarSolicitar(void* parametrosSerializados){
+void deserializarSolicitar(void* parametrosSerializados, void* dataAdicional){
 	int num_pagina, offset;
 	size_t t;
 
@@ -32,7 +32,7 @@ void deserializarSolicitar(void* parametrosSerializados){
 	leer_pagina(num_pagina, offset, t);
 }
 
-void deserializarAlmacenar(void* parametrosSerializados){
+void deserializarAlmacenar(void* parametrosSerializados, void* dataAdicional){
 	int num_pagina, offset;
 	size_t t;
 	char* buffer;
@@ -51,17 +51,17 @@ void deserializarAlmacenar(void* parametrosSerializados){
 	escribir_pagina(num_pagina, offset, t, buffer);
 }
 
-void deserializarFinalizar(void* parametrosSerializados){
+void deserializarFinalizar(void* parametrosSerializados, void* dataAdicional){
 	int id_programa;
 	id_programa = *((int*) parametrosSerializados);
 
 	finalizar(id_programa);
 }
 
-void procesarMensaje(void* mensaje){
+void procesarMensaje(void* mensaje, void* dataAdicional){
 	interfazPropia tipo = *((interfazPropia*) mensaje);
 	void* aux = mensaje + sizeof(interfazPropia);
 
-	(*deserializadores[tipo])(aux);
+	(*deserializadores[tipo])(aux, dataAdicional);
 	free(mensaje);
 }

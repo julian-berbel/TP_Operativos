@@ -51,7 +51,7 @@ void threadCPU(void* param){
 
 	while(!flagTerminar){
 		mensaje = recibir(socket);
-		procesarMensaje(mensaje);
+		procesarMensaje(mensaje, NULL);
 	}
 
 	close(socket);

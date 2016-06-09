@@ -12,15 +12,15 @@
 
 typedef enum { TERMINAR, INICIALIZAR, SOLICITAR, ALMACENAR, FINALIZAR} interfazPropia;
 
-void deserializarInicializar(void* parametrosSerializados);
+void deserializarInicializar(void* parametrosSerializados, void* dataAdicional);
 
-void deserializarSolicitar(void* parametrosSerializados);
+void deserializarSolicitar(void* parametrosSerializados, void* dataAdicional);
 
-void deserializarAlmacenar(void* parametrosSerializados);
+void deserializarAlmacenar(void* parametrosSerializados, void* dataAdicional);
 
-void deserializarFinalizar(void* parametrosSerializados);
+void deserializarFinalizar(void* parametrosSerializados, void* dataAdicional);
 
-void procesarMensaje(void* mensaje);
+void procesarMensaje(void* mensaje, void* dataAdicional);
 
 extern void terminar();
 

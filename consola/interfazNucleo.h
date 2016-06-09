@@ -18,9 +18,9 @@ typedef enum {CANCELAR = 2} interfazNucleo;
 
 int serializarCancelar(void** serializacion);
 
-void deserializarImprimir(void* parametrosSerializados);
+void deserializarImprimir(void* parametrosSerializados, void* dataAdicional);
 
-void procesarMensaje(void* mensaje);
+void procesarMensaje(void* mensaje, void* dataAdicional);
 
 extern void imprimir(char* mensaje);
 

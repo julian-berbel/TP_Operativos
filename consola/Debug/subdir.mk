@@ -6,16 +6,19 @@
 C_SRCS += \
 ../cliente.c \
 ../consola.c \
+../interfazNucleo.c \
 ../socketComms.c 
 
 OBJS += \
 ./cliente.o \
 ./consola.o \
+./interfazNucleo.o \
 ./socketComms.o 
 
 C_DEPS += \
 ./cliente.d \
 ./consola.d \
+./interfazNucleo.d \
 ./socketComms.d 
 
 
