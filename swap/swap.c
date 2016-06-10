@@ -20,6 +20,18 @@ int main() {
 		;
 	mensaje = "inicializar";
 
+	//inicializo las lista de utilizados en vacio porque no hay nada todavia
+	//inicializo a la de disponible con el tamaño total de la swap
+	espacioUtilizado = list_create();
+	//espacioDisponible = list_create();
+	t_swap* swap = malloc(sizeof(t_swap));
+	swap->bit_uso = 0;
+	swap->offset = 0;
+	swap->pagina = 0;
+	swap->pid = 0;
+	swap->posicion = 0;
+	list_add(espacioUtilizado, (void*) swap);
+
 	if (strcmp(mensaje, "inicializar")) { //meter el programa en el archivo swap
 		inicializar(1, 2, "asdf");
 	} else if (strcmp(mensaje, "leer_pagina")) {
@@ -42,17 +54,7 @@ int main() {
 	close(socket_umc);
 	cerrar_todo();
 
-	//inicializo las lista de utilizados en vacio porque no hay nada todavia
-	//inicializo a la de disponible con el tamaño total de la swap
-	espacioUtilizado = list_create();
-	//espacioDisponible = list_create();
-	t_swap* swap = malloc(sizeof(t_swap));
-	swap->bit_uso = 0;
-	swap->offset = 0;
-	swap->pagina = 0;
-	swap->pid = 0;
-	swap->posicion = 0;
-	list_add(espacioUtilizado, (void*) swap);
+
 
 
 	return 0;
@@ -99,10 +101,40 @@ void inicializar(int id_programa, int paginas_requeridas, char* programa) {
 }*/
 
 int hayQueCompactar(int paginas_requeridas){
-
+	t_list espaciosLibres = list_filter(espacioUtilizado,estaUtilizado(espacioUtilizado));
+	int cantidadDeEspaciosLibres = list_size(espaciosLibres);
+	if(paginas_requeridas <= cantidadDeEspaciosLibres){
+		return 1;
+	}
+	else { return 0;
+	}
 }
 
+int estaUtilizado(t_list* espacioUtilizado){
+	int cantidadDeProcesos = list_size(espacioUtilizado);
+	bool esta = 1;
+	int i = 0;
+	for(i=0; i < cantidadDeProcesos; i++){
+		t_swap* datos = list_get(espacioUtilizado, i);
+		if(datos->bit_uso == 0){
+			esta = 0;
+		}
+	} return esta;
+}
+
+void compactar(){
+	//ver si el bit de uso del primer elemento esta libre (1), si está guardo esa pagina/marco
+	//cuando recorri toda la lista, al marco libre lo ocupo por el mas proximo ocupado y al ocupado
+	//lo lleno de ceros...
+
+	sleep(retardo_compactacion);
+}
+
+
+
+
 void agregarProcesoALista(int id_programa, int paginas_requeridas) {
+
 
 
 
