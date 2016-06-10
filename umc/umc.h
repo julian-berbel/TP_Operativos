@@ -57,6 +57,8 @@ int* memoria;
 int *marcos_libres;
 tabla_paginas tabla_procesos[50][20];
 TLB *tlb;
+int cant_paginas_procesos[50];
+int procesos_ocupados[50];
 
 void crear_tabla_de_paginas(int idp, int paginas_requeridas);
 int obtener_marco(int idp,int num_pagina);
@@ -78,11 +80,13 @@ void flush (int idp);
 //operaciones de consola
 void modificar_retardo(int ret);
 void dump_est_proceso(int idp);
-void dump_est();
+void dump_est_gen();
 void dump_cont_proceso(int idp);
-void dump_cont();
+void dump_cont_gen();
 void flush_tlb();
-void flush_memory(int idp, int cantidad_paginas);
+void flush_memory(int idp/*,int cantidad_paginas*/);
 void terminar();
+void reconocer_comando(char *comando, char* param);
+int buscar_marco_libre();
 
 #endif
