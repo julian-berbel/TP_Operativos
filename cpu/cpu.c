@@ -2,7 +2,7 @@
 #include <commons/log.h>
 #include "cpu.h"
 
-//Empiezo a definir primitivas
+//Definicion de primitivas
 
 t_puntero definirVariable(t_nombre_variable variable) {
 	int nodos_stack = list_size(pcb_actual->indiceStack);
@@ -10,9 +10,12 @@ t_puntero definirVariable(t_nombre_variable variable) {
 	int cantidad_variables;
 	int cantidad_argumentos;
 	int encontre_valor = 1;
+	char tipo;
 	nodo_stack *nodo;
 	pos_mem *posicion_memoria;
 	t_variable *var;
+	pos_mem* nueva_posicion_memoria;
+	t_variable *nueva_variable;
 	for(posicion_stack = (nodos_stack - 1); posicion_stack >= 0; posicion_stack--){
 		nodo = list_get(pcb_actual->indiceStack, posicion_stack);
 		cantidad_variables = list_size(nodo->vars);
@@ -29,48 +32,103 @@ t_puntero definirVariable(t_nombre_variable variable) {
 		}
 	}
 
-	pos_mem* nueva_posicion_memoria = malloc(sizeof(pos_mem));
-	t_variable *nueva_variable = malloc(sizeof(t_variable));
-	nodo = list_get(pcb_actual->indiceStack, (nodos_stack - 1));
-	if(encontre_valor == 0){
-		if(((posicion_memoria->offset + posicion_memoria->size) + 4) > tamanio_pagina){
-			nueva_posicion_memoria->pagina = (posicion_memoria->pagina + 1);
-			nueva_posicion_memoria->offset = 0;
-			nueva_posicion_memoria->size = 4;
-			nueva_variable->nombre_var = variable;
-			nueva_variable->dir_var = nueva_posicion_memoria;
-			list_add(nodo->vars, nueva_variable);
+	if((variable >= '0') && (variable <= '9')){
+		nueva_posicion_memoria = malloc(sizeof(pos_mem));
+		nodo = list_get(pcb_actual->indiceStack, (nodos_stack - 1));
+		if(encontre_valor == 0){
+			if(((posicion_memoria->offset + posicion_memoria->size) + 4) > tamanio_pagina){
+				nueva_posicion_memoria->pagina = (posicion_memoria->pagina + 1);
+				nueva_posicion_memoria->offset = 0;
+				nueva_posicion_memoria->size = 4;
+				list_add(nodo->args, nueva_posicion_memoria);
+			} else {
+				nueva_posicion_memoria->pagina = posicion_memoria->pagina;
+				nueva_posicion_memoria->offset = (posicion_memoria->offset + posicion_memoria->size);
+				nueva_posicion_memoria->size = 4;
+				list_add(nodo->args, nueva_posicion_memoria);
+			}
 		} else {
-			nueva_posicion_memoria->pagina = posicion_memoria->pagina;
-			nueva_posicion_memoria->offset = (posicion_memoria->offset + posicion_memoria->size);
-			nueva_posicion_memoria->size = 4;
-			nueva_variable->nombre_var = variable;
-			nueva_variable->dir_var = nueva_posicion_memoria;
-			list_add(nodo->vars, nueva_variable);
+			if(tamanio_pagina < 4){
+				printf("Tamaño de pagina menor a 4 bytes\n");
+			} else {
+				nueva_posicion_memoria->pagina = (pcb_actual->cantidadPaginas + 1);
+				nueva_posicion_memoria->offset = 0;
+				nueva_posicion_memoria->size = 4;
+				list_add(nodo->args, nueva_posicion_memoria);
+			}
 		}
 	} else {
-		if(tamanio_pagina < 4){
-			printf("Tamaño de pagina menor a 4 bytes\n");
+		nueva_posicion_memoria = malloc(sizeof(pos_mem));
+		nueva_variable = malloc(sizeof(t_variable));
+		nodo = list_get(pcb_actual->indiceStack, (nodos_stack - 1));
+		if(encontre_valor == 0){
+			if(((posicion_memoria->offset + posicion_memoria->size) + 4) > tamanio_pagina){
+				nueva_posicion_memoria->pagina = (posicion_memoria->pagina + 1);
+				nueva_posicion_memoria->offset = 0;
+				nueva_posicion_memoria->size = 4;
+				nueva_variable->nombre_var = variable;
+				nueva_variable->dir_var = nueva_posicion_memoria;
+				list_add(nodo->vars, nueva_variable);
+			} else {
+				nueva_posicion_memoria->pagina = posicion_memoria->pagina;
+				nueva_posicion_memoria->offset = (posicion_memoria->offset + posicion_memoria->size);
+				nueva_posicion_memoria->size = 4;
+				nueva_variable->nombre_var = variable;
+				nueva_variable->dir_var = nueva_posicion_memoria;
+				list_add(nodo->vars, nueva_variable);
+			}
 		} else {
-			nueva_posicion_memoria->pagina = (pcb_actual->cantidadPaginas + 1);
-			nueva_posicion_memoria->offset = 0;
-			nueva_posicion_memoria->size = 4;
-			nueva_variable->nombre_var = variable;
-			nueva_variable->dir_var = nueva_posicion_memoria;
-			list_add(nodo->vars, nueva_variable);
+			if(tamanio_pagina < 4){
+				printf("Tamaño de pagina menor a 4 bytes\n");
+			} else {
+				nueva_posicion_memoria->pagina = (pcb_actual->cantidadPaginas + 1);
+				nueva_posicion_memoria->offset = 0;
+				nueva_posicion_memoria->size = 4;
+				nueva_variable->nombre_var = variable;
+				nueva_variable->dir_var = nueva_posicion_memoria;
+				list_add(nodo->vars, nueva_variable);
+			}
 		}
 	}
 
 	int posicion_serializada = (nueva_posicion_memoria->pagina * tamanio_pagina) + nueva_posicion_memoria->offset;
+
 	return posicion_serializada;
 }
 
 t_puntero obtenerPosicionVariable(t_nombre_variable variable) {
-	printf("Obtener posicion de %c\n", variable);
-	char *mensaje=string_new();
-	string_append(&mensaje,"umc: busque la variable\n");
-	enviar_string(socket_umc, mensaje);
-	return POSICION_MEMORIA;
+	int nodos_stack = list_size(pcb_actual->indiceStack);
+	int cantidad_variables;
+	int i;
+	int encontre_valor = 1;
+	nodo_stack *nodo;
+	pos_mem *posicion_memoria;
+	t_variable *var;
+	nodo = list_get(pcb_actual->indiceStack, (nodos_stack - 1));
+	if((variable >= '0') && (variable <= '9')){
+		int variable_int = variable - '0';
+		posicion_memoria = list_get(nodo->args, variable_int);
+		if(posicion_memoria != NULL){
+			encontre_valor = 0;
+		}
+	} else {
+		cantidad_variables = list_size(nodo->vars);
+		for(i = 0; i < cantidad_variables; i++){
+			var = list_get(nodo->vars, i);
+			if(var->nombre_var == variable){
+				posicion_memoria = var->dir_var;
+				encontre_valor = 0;
+			}
+		}
+	}
+
+	if(encontre_valor == 1){
+		printf("ObtenerPosicionVariable: No se encontro variable o argumento\n");
+		//Escribir en log
+		return -1;
+	}
+	int posicion_serializada = (posicion_memoria->pagina * tamanio_pagina) + posicion_memoria->offset;
+	return posicion_serializada;
 }
 
 t_valor_variable dereferenciar(t_puntero puntero) {
