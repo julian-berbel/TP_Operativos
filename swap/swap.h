@@ -53,6 +53,7 @@ void abrirConfiguracion();
 void cerrar_todo();
 
 void inicializar(int id_programa,int paginas_requeridas, char* programa);
+void finzalizar(int id_programa);
 
 int cant_pags_disponibles();
 int hayEspacio(int paginas_requeridas);

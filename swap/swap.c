@@ -20,7 +20,7 @@ int main() {
 		;
 	mensaje = "inicializar";
 
-	//inicializo las lista de utilizados en vacio porque no hay nada todavia
+	//inicializo las lista de utilizados en vacio porque no hay nada todavia? o como esta ahora???
 	espacioTotal = list_create();
 	t_swap* swap = malloc(sizeof(t_swap));
 	swap->bit_uso = 0;
@@ -127,7 +127,7 @@ void compactar(){
 	//cuando recorri toda la lista, al marco libre lo ocupo por el mas proximo ocupado y al ocupado
 	//lo lleno de ceros...
 
-	sleep(retardo_compactacion);
+	sleep(retardo_compactacion/1000);
 }
 
 
@@ -171,10 +171,44 @@ void agregarProcesoALista(int id_programa, int paginas_requeridas) {
 		lista_swap[posicion].posicion = lista_swap[posicion].pagina * pagina_size;
 		lista_swap[posicion].bit_uso = 1;
 	}*/
+
+
+void finalizar(int id_programa){
+	int cantidadAlgo = list_size(espacioTotal);
+		int i;
+		for(i=0; i < cantidadAlgo; i++){
+			t_swap* proceso = list_get(espacioTotal, i);
+			if(proceso->pid == id_programa){
+				proceso->bit_uso = 0;
+				proceso->pid = NULL;
+				//TODO borrarArchivoBinario(proceso->pagina);
+			}
+
+		}
+
+
+}
+
+//NO ES ALGO, BUSCAR MEJOR ABSTRACCION
+Bool noEstaUtilizado(){
+	int cantidadDeAlgo = list_size(espacioTotal);
+	Bool esta = true;
+	int i = 0;
+	for(i=0; i < cantidadDeAlgo; i++){
+		t_swap* algo = list_get(espacioTotal, i);
+		if(algo->bit_uso == 1){
+			esta = false;
+		}
+	} return esta;
 }
 
 int cant_pags_disponibles() {
-	int paginas_usadas,i;
+	t_list* espaciosOcupados = list_filter(espacioTotal,(void*) noEstaUtilizado);
+	int paginas_usadas = sizeof(espaciosOcupados);
+	return cant_paginas - paginas_usadas;
+
+
+	/*int paginas_usadas,i;
 
 	for (i = 0; i < tamanioListaSwap(); i++) { //obtengo paginas usadas actualmente
 		if(lista_swap[i].bit_uso == 1){
@@ -182,11 +216,11 @@ int cant_pags_disponibles() {
 		}
 	}
 
-	return tamanioListaSwap()	- paginas_usadas;
+	return tamanioListaSwap()	- paginas_usadas;*/
 }
 
-int tamanioListaSwap(){
+/*int tamanioListaSwap(){
 	size_t t;
 	t = sizeof(lista_swap) / sizeof(t_swap);
 	return (int)t;
-}
+}*/
