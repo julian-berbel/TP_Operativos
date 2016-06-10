@@ -42,6 +42,19 @@ int main() {
 	close(socket_umc);
 	cerrar_todo();
 
+	//inicializo las lista de utilizados en vacio porque no hay nada todavia
+	//inicializo a la de disponible con el tamaño total de la swap
+	espacioUtilizado = list_create();
+	//espacioDisponible = list_create();
+	t_swap* swap = malloc(sizeof(t_swap));
+	swap->bit_uso = 0;
+	swap->offset = 0;
+	swap->pagina = 0;
+	swap->pid = 0;
+	swap->posicion = 0;
+	list_add(espacioUtilizado, (void*) swap);
+
+
 	return 0;
 }
 
@@ -65,20 +78,34 @@ void cerrar_todo() {
 	config_destroy(configuracion_swap);
 }
 
+
 void inicializar(int id_programa, int paginas_requeridas, char* programa) {
-	if (hayEspacio(paginas_requeridas)) {
+	if (cant_pags_disponibles() >= paginas_requeridas) { //antes estaba hay espacio
+		if(hayQueCompactar(paginas_requeridas)){
+			compactar();
+		}
 		agregarProcesoALista(id_programa, paginas_requeridas);
 		escribirArchivoBinario(programa);
+	}else{
+		//decirle a la umc que no se pudo iniciar porque no hay espacio
 	}
 }
-int hayEspacio(int paginas_requeridas) {
+
+/*int hayEspacio(int paginas_requeridas) {
 	if (cant_pags_disponibles() >= paginas_requeridas) {
 		return 1;
 	} else
 		return 0;
+}*/
+
+int hayQueCompactar(int paginas_requeridas){
+
 }
 
 void agregarProcesoALista(int id_programa, int paginas_requeridas) {
+
+
+
 	int posicion,i,j;
 	for(i = 0; i < paginas_requeridas; i++){
 		for(j = 0; j < tamanioListaSwap(); j++){//recorre hasta el final de la lista

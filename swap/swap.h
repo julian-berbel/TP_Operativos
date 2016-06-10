@@ -2,6 +2,8 @@
 #define SWAP_H_
 
 #include<stdio.h>
+#include<commons/collections/list.h>
+#include<commons/bitarray.h>
 #include<commons/log.h>
 #include<commons/config.h>
 #include"servidor.h"
@@ -15,7 +17,16 @@ typedef struct{
 	int posicion;
 	int offset;
 	int bit_uso;
-} t_swap;
+} t_swap; // otro nombre?
+
+/*typedef struct{
+	int pid;
+	int marcoInicial;
+	int cantidadPaginasQueOcupa;
+}t_proceso;*/
+
+t_list* espacioUtilizado;
+t_list* espacioDisponible;
 
 t_swap lista_swap[];
 
