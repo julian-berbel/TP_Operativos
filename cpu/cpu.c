@@ -132,18 +132,21 @@ t_puntero obtenerPosicionVariable(t_nombre_variable variable) {
 }
 
 t_valor_variable dereferenciar(t_puntero puntero) {
-	printf("Dereferenciar %d y su valor es: %d\n", puntero, CONTENIDO_VARIABLE);
-	char *mensaje=string_new();
-		string_append(&mensaje,"umc: dereferencie la variable\n");
-		enviar_string(socket_umc, mensaje);
-	return CONTENIDO_VARIABLE;
+	int num_pagina = puntero / tamanio_pagina;
+	int offset = puntero - (num_pagina * tamanio_pagina);
+	char *valor_variable_char = pedir_bytes_umc(num_pagina, offset, 4);
+	char *ptr;
+	int valor_variable = strtol(valor_variable_char, &ptr, 10);
+	free(valor_variable_char);
+	return valor_variable;
 }
 
 void asignar(t_puntero puntero, t_valor_variable variable) {
-	printf("Asignando en %d el valor %d\n", puntero, variable);
-	char *mensaje=string_new();
-		string_append(&mensaje,"umc: asigne la variable\n");
-		enviar_string(socket_umc, mensaje);
+	int num_pagina = puntero / tamanio_pagina;
+	int offset = puntero - (num_pagina * tamanio_pagina);
+	char *valor_variable = string_itoa(variable);
+	enviar_bytes_umc(num_pagina, offset, 4, valor_variable);
+	free(valor_variable);
 }
 
 t_valor_variable obtenerValorCompartida(t_nombre_compartida variable){
@@ -265,7 +268,7 @@ char* obtener_instruccion(t_PCB * pcb){
 
 
 char* pedir_bytes_umc(int num_pagina, int offset, int tamanio){
-	char* instruccion;
+	char* instruccion = string_new();
 	void* pedido;
 	int tamanioSerializacion = serializarSolicitar(num_pagina, offset, tamanio, &pedido);
 	enviar(socket_umc, pedido, tamanioSerializacion);
@@ -273,6 +276,10 @@ char* pedir_bytes_umc(int num_pagina, int offset, int tamanio){
 	string_append(&instruccion, recibido);
 	free(recibido);
 	return instruccion;
+}
+
+void enviar_bytes_umc(int num_pagina, int offset, int tamanio, char* buffer){
+	//umc_almacena(num_pagina, offset, tamanio, buffer);
 }
 
 void cargarPCB(t_PCB* pcb){
