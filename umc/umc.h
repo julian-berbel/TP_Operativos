@@ -9,6 +9,7 @@
 #include"servidor.h"
 #include"cliente.h"
 #include "interfazNucleoCPU.h"
+#include "interfazSwap.h"
 
 #define RUTA_LOG "/home/utnso/umc.log"
 #define RUTA_CONFIG "/home/utnso/tp-2016-1c-Hellfish-Group/umc/config/umc.config"

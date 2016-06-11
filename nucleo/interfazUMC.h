@@ -15,6 +15,8 @@
 
 typedef enum { /*TERMINAR,*/ INICIALIZAR = 1, FINALIZAR = 4} interfazUMC;
 
+//int serializarTerminar(void** serializacion); - En interfazCPU.h
+
 int serializarInicializar(int id_programa, int paginas_requeridas, char* programa, void** serializacion);
 
 int serializarFinalizar(int id_programa, void** serializacion);

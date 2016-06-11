@@ -6,6 +6,7 @@
 C_SRCS += \
 ../cliente.c \
 ../interfazNucleoCPU.c \
+../interfazSwap.c \
 ../servidor.c \
 ../socketComms.c \
 ../umc.c 
@@ -13,6 +14,7 @@ C_SRCS += \
 OBJS += \
 ./cliente.o \
 ./interfazNucleoCPU.o \
+./interfazSwap.o \
 ./servidor.o \
 ./socketComms.o \
 ./umc.o 
@@ -20,6 +22,7 @@ OBJS += \
 C_DEPS += \
 ./cliente.d \
 ./interfazNucleoCPU.d \
+./interfazSwap.d \
 ./servidor.d \
 ./socketComms.d \
 ./umc.d 

@@ -8,6 +8,8 @@
 #include<commons/config.h>
 //#include<stdbool.h>
 #include"servidor.h"
+#include"binFile.h"
+#include "interfazUMC.h"
 
 #define RUTA_LOG "/home/utnso/swap.log"
 #define RUTA_CONFIG "/home/utnso/tp-2016-1c-Hellfish-Group/swap/config/swap.config"
@@ -63,5 +65,9 @@ int tamanioListaSwap();
 int hayQueCompactar(int paginas_requeridas);
 Bool estaUtilizado();
 void compactar();
+
+void terminar();
+void leer_pagina(int id_programa, int num_pagina);
+void escribir_pagina(int id_programa, int num_pagina, char* buffer);
 
 #endif

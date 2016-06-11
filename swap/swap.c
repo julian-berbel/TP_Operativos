@@ -1,7 +1,5 @@
-#include <commons/config.h>
-#include<commons/log.h>
 #include"swap.h"
-#include"binFile.h"
+
 
 int main() {
 	abrirConfiguracion();
@@ -39,6 +37,12 @@ int main() {
 	} else if (strcmp(mensaje, "finalizar_programa")) {
 		//TODO completar
 	}
+
+	/*while(!flagTerminar){
+		mensaje = recibir(socket_umc);      // se usa asi
+		procesarMensaje(mensaje, NULL);
+	}*/
+
 
 	/*char * mensaje_logger = string_new();
 	 string_append(&mensaje_logger, "Pase por la Swap - "); //->checkpoint 1
@@ -196,3 +200,15 @@ int cant_pags_disponibles() {
 	t = sizeof(lista_swap) / sizeof(t_swap);
 	return (int)t;
 }*/
+
+void leer_pagina(int id_programa, int num_pagina){
+
+}
+
+void escribir_pagina(int id_programa, int num_pagina, char* buffer){
+
+}
+
+void terminar(){
+
+}
