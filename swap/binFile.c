@@ -33,8 +33,9 @@ char* tamanioArchivo(int pagina_tamanio, int cantidad_pags) {
 
 void escribirArchivoBinario(char* programa){
 
-	char *ruta_archivo = strcpy(ruta_archivo,RUTA_BINFILE );
-	ruta_archivo = strcat(ruta_archivo,nombre_data);
+	char *ruta_archivo = string_new();
+	string_append(&ruta_archivo, RUTA_BINFILE);
+	string_append(&ruta_archivo, nombre_data);
 
 	archivo = fopen(ruta_archivo,"w");
 

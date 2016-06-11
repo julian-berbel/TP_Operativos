@@ -31,7 +31,7 @@ int main() {
 	list_add(espacioTotal, (void*) swap);
 
 	if (strcmp(mensaje, "inicializar")) { //meter el programa en el archivo swap
-		inicializar(1, 2, "asdf");
+		inicializar(1, 1, "asdf");
 	} else if (strcmp(mensaje, "leer_pagina")) {
 		//TODO completar
 	} else if (strcmp(mensaje, "escribir_pagina")) {
@@ -153,24 +153,6 @@ void agregarProcesoALista(int id_programa, int paginas_requeridas) {
 		}
 	}
 
-	/*int posicion,i,j;
-	for(i = 0; i < paginas_requeridas; i++){
-		for(j = 0; j < tamanioListaSwap(); j++){//recorre hasta el final de la lista
-			if(lista_swap[i].pagina == NULL){ //fin de lista
-				posicion = j;
-				j = tamanioListaSwap();
-			}
-		}
-
-		lista_swap[posicion].pid = id_programa;
-		if (posicion > 0)
-			lista_swap[posicion].pagina = lista_swap[posicion-1].pagina + 1;
-		else
-			lista_swap[posicion].pagina = 0;
-
-		lista_swap[posicion].posicion = lista_swap[posicion].pagina * pagina_size;
-		lista_swap[posicion].bit_uso = 1;
-	}*/
 
 
 void finalizar(int id_programa){
@@ -207,16 +189,6 @@ int cant_pags_disponibles() {
 	int paginas_usadas = sizeof(espaciosOcupados);
 	return cant_paginas - paginas_usadas;
 
-
-	/*int paginas_usadas,i;
-
-	for (i = 0; i < tamanioListaSwap(); i++) { //obtengo paginas usadas actualmente
-		if(lista_swap[i].bit_uso == 1){
-			paginas_usadas++;
-		}
-	}
-
-	return tamanioListaSwap()	- paginas_usadas;*/
 }
 
 /*int tamanioListaSwap(){
