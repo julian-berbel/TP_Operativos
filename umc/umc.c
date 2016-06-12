@@ -5,20 +5,20 @@
 #include <string.h>
 
 
-int main() {
-	pthread_attr_t attr;
-	pthread_attr_init(&attr);
-	pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
-	pthread_t thread_cpu;
-	pthread_t thread_nucleo;
+ int main() {
+ pthread_attr_t attr;
+ pthread_attr_init(&attr);
+ pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
+ pthread_t thread_cpu;
+ pthread_t thread_nucleo;
 
 
-	abrirConfiguracion();
-	log_info(logger, "Inicia proceso UMC");
+ abrirConfiguracion();
+ log_info(logger, "Inicia proceso UMC");
 
-	//comienzo inicializacion
+ //comienzo inicializacion
 
-	//array de disponibilidad de marcos
+ 	//array de disponibilidad de marcos
 	marcos_libres = (int*) malloc(sizeof(int) * marcos);
 	int k;
 	for (k = 0; k < marcos; k++) { //lo inicializo en cero:testeado
@@ -28,63 +28,63 @@ int main() {
 	int p;
 	for (p = 0; p < 50; p++) { //inicializo en cero
 		cant_paginas_procesos[p] = 0;
-		procesos_ocupados[p]=0;
+		procesos_ocupados[p] = 0;
 	}
 
 	//memoria
-	memoria = (int *) malloc(marcos * marco_size);
+	memoria = (char *) malloc(marcos * marco_size *sizeof(char));
 
 	//TLB
 	tlb = (TLB*) malloc(entradas_tlb * sizeof(TLB));
 	int i;
 	for (i = 0; i < entradas_tlb; i++) { //inicializo la tlb con idp en -1:testeado
-				tlb[i].idp = -1;
+		tlb[i].idp = -1;
 	}
-	//fin inicializacion
+ //fin inicializacion
 
-	socket_swap = crear_socket_cliente(ipSwap, puertoSwap);
-	log_info(logger_pantalla, "UMC y Swap conectados");
+ socket_swap = crear_socket_cliente(ipSwap, puertoSwap);
+ log_info(logger_pantalla, "UMC y Swap conectados");
 
-	int socket_servidor = crear_socket_servidor(ipUmc, puertoUmc);
-	int socket_cliente = recibirConexion(socket_servidor);
-	char* mensaje;
+ int socket_servidor = crear_socket_servidor(ipUmc, puertoUmc);
+ int socket_cliente = recibirConexion(socket_servidor);
+ char* mensaje;
 
-	while (string_is_empty(mensaje = recibir_string_generico(socket_cliente)))
-		;
+ while (string_is_empty(mensaje = recibir_string_generico(socket_cliente)))
+ ;
 
-		mensaje = recibir_string_generico(socket_cliente);
-	if (strcmp(mensaje, "n")) {
-		int *args_nucleo = malloc(sizeof(*args_nucleo));
-		if (args_nucleo == NULL) {
-			log_info(logger_pantalla,
-					"No se pudo asignar memoria para un hilo del CPU");
-			cerrar_todo();
-		}
-		*args_nucleo = socket_cliente;
-		int r = pthread_create(&thread_nucleo, NULL, funcion_nucleo,
-				args_nucleo);
-		//Hay que hacer el pthread_join en algun lugar del main. Posiblemente en el cerrar_todo.
-	} else if (strcmp(mensaje, "c")) {
-		int *args_cpu = malloc(sizeof(*args_cpu));
-		if (args_cpu == NULL) {
-			cerrar_todo();
-		}
-		*args_cpu = socket_cliente;
-		pthread_create(&thread_cpu, &attr, funcion_cpu, args_cpu);
-	}
-	//si es otro mensaje, llamar a la funcion procesarMensaje
+ mensaje = recibir_string_generico(socket_cliente);
+ if (strcmp(mensaje, "n")) {
+ int *args_nucleo = malloc(sizeof(*args_nucleo));
+ if (args_nucleo == NULL) {
+ log_info(logger_pantalla,
+ "No se pudo asignar memoria para un hilo del CPU");
+ cerrar_todo();
+ }
+ *args_nucleo = socket_cliente;
+ int r = pthread_create(&thread_nucleo, NULL, funcion_nucleo,
+ args_nucleo);
+ //Hay que hacer el pthread_join en algun lugar del main. Posiblemente en el cerrar_todo.
+ } else if (strcmp(mensaje, "c")) {
+ int *args_cpu = malloc(sizeof(*args_cpu));
+ if (args_cpu == NULL) {
+ cerrar_todo();
+ }
+ *args_cpu = socket_cliente;
+ pthread_create(&thread_cpu, &attr, funcion_cpu, args_cpu);
+ }
+ //si es otro mensaje, llamar a la funcion procesarMensaje
 
-	//Comienza el cierre del main.
-	free(mensaje);
-	close(socket_swap);
-	close(socket_servidor);
-	close(socket_cliente);
-	pthread_attr_destroy(&attr);
-	pthread_join(thread_nucleo, NULL);
-	pthread_cancel(thread_cpu);
-	cerrar_todo();
-	return 0;
-}
+ //Comienza el cierre del main.
+ free(mensaje);
+ close(socket_swap);
+ close(socket_servidor);
+ close(socket_cliente);
+ pthread_attr_destroy(&attr);
+ pthread_join(thread_nucleo, NULL);
+ pthread_cancel(thread_cpu);
+ cerrar_todo();
+ return 0;
+ }
 
 void abrirConfiguracion() {
 	configuracionUMC = config_create(RUTA_CONFIG);
@@ -131,7 +131,7 @@ void *funcion_cpu(void *argumento) {
 }
 
 void inicializar(int id_programa, int paginas_requeridas, char* programa) {
-	crear_tabla_de_paginas(id_programa, paginas_requeridas);//testeado
+	crear_tabla_de_paginas(id_programa, paginas_requeridas); //testeado
 
 	//serializar inicializar
 	//enviar_string(socket_swap, mensaje);
@@ -142,14 +142,15 @@ void inicializar(int id_programa, int paginas_requeridas, char* programa) {
 void finalizar(int id_programa) { //testeado
 	memset(tabla_procesos[id_programa], '0', sizeof(tabla_paginas) * 20);
 	//avisar al swap para que libere memoria
-	procesos_ocupados[id_programa]=0;
+	procesos_ocupados[id_programa] = 0;
 }
 
 void leer_pagina(int num_pagina, int offset, size_t t) {
 	int marco = obtener_marco(id_proceso_activo, num_pagina);
 	if (marco >= 0) { //si esta en MP
 		modificar_bit_uso(id_proceso_activo, num_pagina);
-		int contenido = memoria[marco * marco_size + offset]; //hacer funcion leer memoria, tener en cuenta el tamaño
+		char* contenido = leer_posicion_memoria(marco * marco_size + offset,t);
+		printf("%s\n",contenido);
 		//enviar a la cpu el contenido
 	} else { //si no esta en MP envio la solicitud a SWAP
 		//serializar y enviar a swap
@@ -158,13 +159,15 @@ void leer_pagina(int num_pagina, int offset, size_t t) {
 }
 
 void escribir_pagina(int num_pagina, int offset, size_t t, char *buffer) {
-	int marco_libre=buscar_marco_libre();
-	if(marco_libre!=-1){
+	int marco_libre = buscar_marco_libre();
+	if (marco_libre != -1) {
 		escribir_posicion_memoria(marco_libre * marco_size + offset, t, buffer);
-		escribir_marco_en_TP(id_proceso_activo,num_pagina,marco_libre);
+		escribir_marco_en_TP(id_proceso_activo, num_pagina, marco_libre);
+		marco_ocupado(marco_libre);
+	}else{
+		//reempĺazar pagina con clock
 	}
 }
-
 
 void crear_tabla_de_paginas(int idp, int paginas_requeridas) { //testeado
 	tabla_paginas tabla_paginas;
@@ -174,8 +177,8 @@ void crear_tabla_de_paginas(int idp, int paginas_requeridas) { //testeado
 		tabla_paginas.marco = -1;
 		tabla_procesos[idp][i] = tabla_paginas;
 	}
-	cant_paginas_procesos[idp]=paginas_requeridas;
-	procesos_ocupados[idp]=1;
+	cant_paginas_procesos[idp] = paginas_requeridas;
+	procesos_ocupados[idp] = 1;
 }
 
 int obtener_marco(int idp, int num_pagina) { //testeado
@@ -254,12 +257,21 @@ void modificar_bit_modificado(int idp, int num_pagina) {
 
 void escribir_posicion_memoria(int posicion, size_t tamanio, char *buffer) {
 	usleep(retardo * 1000);
-	printf("o");
-//escribir buffer
+		int i;
+		for(i=0;i<tamanio;i++)
+			memoria[posicion+i]=buffer[i];
 }
-/*char* leer_posicion_memoria(int posicion, size_t tamanio){
- sleep(retardo/1000);
- */
+
+
+char* leer_posicion_memoria(int posicion, size_t tamanio){
+	usleep(retardo*1000);
+	int i;
+	char * leido = malloc((tamanio+1) * sizeof(char));
+	for(i=0;i<tamanio;i++)
+		leido[i] = memoria[posicion+i];
+	leido[tamanio]='\0';
+	return leido;
+}
 
 int buscar_indice_libre_tlb() { //testeado
 	int i;
@@ -307,36 +319,73 @@ void modificar_retardo(int ret) { //testeado
 	retardo = ret;
 }
 
-void dump_est_proceso(int idp) {//generar reporte en pantalla y un archivo sobre la tabla de paginas del proceso
-	printf("Tabla de Paginas del Proceso: %d\n",idp);
-	int pag;
-	int cantidad_paginas=cant_paginas_procesos[idp];
-	for (pag=0;pag<cantidad_paginas;pag++){
-	printf("Pagina: %d, Marco: %d, Bit_uso: %d, Modificado: %d\n",pag, tabla_procesos[idp][pag].marco, tabla_procesos[idp][pag].bit_uso, tabla_procesos[idp][pag].modificado);
-	}printf("\n");
+void dump_est_proceso(int idp,const char * nombreArchivo) { //generar reporte en pantalla y un archivo sobre la tabla de paginas del proceso
+	int pag, bandera = 1;
+	int cantidad_paginas = cant_paginas_procesos[idp];
+	FILE *archivo;
+	if(strcmp(nombreArchivo,"tablas_de_paginas.txt"))
+		archivo = fopen(nombreArchivo, "a");
+	else
+		archivo = fopen("tablas_de_paginas.txt", "a");
+	if (!archivo) {
+		printf("Error al abrir/crear el archivo! :(\n");
+		bandera = 0;
+	} else
+		fprintf(archivo, "Tabla de Paginas del Proceso: %d\n", idp);
+	printf("Tabla de Paginas del Proceso: %d\n", idp);
+	for (pag = 0; pag < cantidad_paginas; pag++) {
+		printf("Pagina: %d, Marco: %d, Bit_uso: %d, Modificado: %d\n", pag,
+				tabla_procesos[idp][pag].marco,
+				tabla_procesos[idp][pag].bit_uso,
+				tabla_procesos[idp][pag].modificado);
+		fprintf(archivo, "Pagina: %d, Marco: %d, Bit_uso: %d, Modificado: %d\n",
+				pag, tabla_procesos[idp][pag].marco,
+				tabla_procesos[idp][pag].bit_uso,
+				tabla_procesos[idp][pag].modificado);
+	}
+	printf("\n");
+	if (archivo) {
+		fprintf(archivo, "\n");
+		fclose(archivo);
+	}
 }
 
 void dump_est_gen() { //generar un reporte en pantalla y un archivo con las tablas de paginas de todos los procesos
+	int bandera = 1;
+	FILE *archivo = fopen("tablas_de_paginas_todos_los_procesos.txt", "a");
+	if (!archivo) {
+		printf("Error al abrir/crear el archivo! :(\n");
+		bandera = 0;
+	}else{
+		fprintf(archivo,"Tablas de Paginas de todos los Procesos:\n\n");
+		fclose(archivo);
+	}
 	printf("Tablas de Paginas de todos los Procesos:\n\n");
 	int proceso;
-	for(proceso=0;proceso<50;proceso++){
-		int proceso_existente=procesos_ocupados[proceso];
-			if(proceso_existente){
-				dump_est_proceso(proceso);
-			}
+	for (proceso = 0; proceso < 50; proceso++) {
+		int proceso_existente = procesos_ocupados[proceso];
+		if (proceso_existente) {
+			dump_est_proceso(proceso,"tablas_de_paginas_todos_los_procesos.txt");
 		}
 	}
-
+	fopen("tablas_de_paginas_todos_los_procesos.txt", "a");
+	if (!archivo) {
+		printf("Error al escribir finalizacion de archivo! :(\n");
+	}else{
+		fprintf(archivo, "------------------------------------------------------------------------------\n");
+		fclose(archivo);
+	}
+}
 
 void dump_cont_proceso(int idp) {
-	//generar un reporte en pantalla y un archivo sobre los datos almacenados en memoria
-	//de ese proceso
+//generar un reporte en pantalla y un archivo sobre los datos almacenados en memoria
+//de ese proceso
 	printf("llegue a dump_cont_proceso");
 }
 
 void dump_cont_gen() {
-	//generar un reporte en pantalla y un archivo sobre los datos almacenados en memoria
-	//de todos los procesos
+//generar un reporte en pantalla y un archivo sobre los datos almacenados en memoria
+//de todos los procesos
 	printf("llegue a dump_cont_gen");
 }
 
@@ -348,56 +397,56 @@ void flush_tlb() { //limpia completamente la tlb
 }
 
 void flush_memory(int idp) { //marca todas las paginas del proceso como modificadas
-	int cant_paginas=cant_paginas_procesos[idp];
+	int cant_paginas = cant_paginas_procesos[idp];
 	int i;
 	for (i = 0; i < cant_paginas; i++) {
 		tabla_procesos[idp][i].modificado = 1;
 	}
 }
 
-void terminar(){
+void terminar() {
 
 }
 
-void reconocer_comando(char *comando, char* param){
-	 if(!strcmp(comando,"retardo")){
-		 modificar_retardo(atoi(param));
-			}else if(!strcmp(comando,"dump_est")&& !strcmp(param,"gen")){
-				dump_est_gen();
-			}else if(!strcmp(comando,"dump_est")&& strcmp(param,"gen")){
-				dump_est_proceso(atoi(param));
-			}else if(!strcmp(comando,"dump_cont")&& !strcmp(param,"gen")){
-				dump_cont_gen();
-			}else if(!strcmp(comando,"dump_cont")&& strcmp(param,"gen")){
-				dump_cont_proceso(atoi(param));
-			}else if(!strcmp(comando,"flush")&& !strcmp(param,"tlb")){
-				flush_tlb();
-			}else if(!strcmp(comando,"flush_memory")){
-				flush_memory(atoi(param));
-			}else{
-				printf("No existe el comando");
-			}
-}
-
-int buscar_marco_libre(){
+int buscar_marco_libre() {
 	int i;
-	for(i=0;i<marcos;i++){
-		if(marcos_libres[i]==0){
+	for (i = 0; i < marcos; i++) {
+		if (marcos_libres[i] == 0) {
 			return i;
 		}
 	}
-return -1;
+	return -1;
+}
+void reconocer_comando(char *comando, char* param) {
+	if (!strcmp(comando, "retardo")) {
+		modificar_retardo(atoi(param));
+	} else if (!strcmp(comando, "dump_est") && !strcmp(param, "gen")) {
+		dump_est_gen();
+	} else if (!strcmp(comando, "dump_est") && strcmp(param, "gen")) {
+		dump_est_proceso(atoi(param),"");
+	} else if (!strcmp(comando, "dump_cont") && !strcmp(param, "gen")) {
+		dump_cont_gen();
+	} else if (!strcmp(comando, "dump_cont") && strcmp(param, "gen")) {
+		dump_cont_proceso(atoi(param));
+	} else if (!strcmp(comando, "flush") && !strcmp(param, "tlb")) {
+		flush_tlb();
+	} else if (!strcmp(comando, "flush_memory")) {
+		flush_memory(atoi(param));
+	} else {
+		printf("No existe el comando");
+	}
 }
 
 
+
 /*consola
-	char* comando,*parametro,*comandoAEjecutar;
-	comando = malloc(sizeof(char)*20);
-	comandoAEjecutar = malloc(sizeof(char)*20);
-	parametro = malloc(sizeof(char)*10);
-	//while (1){
-		scanf("%[^\n]",comando);
-		comandoAEjecutar = strtok(comando," ");
-		parametro = strtok(0," ");
-		reconocer_comando(comandoAEjecutar,parametro);
-	//}*/
+ char* comando,*parametro,*comandoAEjecutar;
+ comando = malloc(sizeof(char)*20);
+ comandoAEjecutar = malloc(sizeof(char)*20);
+ parametro = malloc(sizeof(char)*10);
+ //while (1){
+ scanf("%[^\n]",comando);
+ comandoAEjecutar = strtok(comando," ");
+ parametro = strtok(0," ");
+ reconocer_comando(comandoAEjecutar,parametro);
+ //}*/

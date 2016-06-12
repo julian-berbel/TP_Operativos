@@ -54,7 +54,7 @@ typedef struct{
 } TLB;
 
 
-int* memoria;
+char* memoria;
 int *marcos_libres;
 tabla_paginas tabla_procesos[50][20];
 TLB *tlb;
@@ -80,7 +80,7 @@ int buscar_indice_menos_accedido_tlb();
 void flush (int idp);
 //operaciones de consola
 void modificar_retardo(int ret);
-void dump_est_proceso(int idp);
+void dump_est_proceso(int idp, const char*);
 void dump_est_gen();
 void dump_cont_proceso(int idp);
 void dump_cont_gen();
