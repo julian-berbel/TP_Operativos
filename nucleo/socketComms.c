@@ -29,21 +29,26 @@ void enviar(int socket, void* cosaAEnviar, int tamanio){
 }
 
 void* recibir(int socket){
+	int checkSocket = -1;
+
 	void* recibido = malloc(sizeof(int));
 
-	memset(recibido, 0, sizeof(int));
-
-	read(socket, recibido, sizeof(int));
+	checkSocket = read(socket, recibido, sizeof(int));
 
 	int tamanioDelMensaje = *((int*)recibido);
 
 	free(recibido);
 
+	if(!checkSocket) return NULL;
+
 	recibido = malloc(tamanioDelMensaje);
 
 	int bytesRecibidos = 0;
 
-	while(bytesRecibidos < tamanioDelMensaje) bytesRecibidos += read(socket, (recibido + bytesRecibidos), (tamanioDelMensaje - bytesRecibidos));
+	while(bytesRecibidos < tamanioDelMensaje && checkSocket){
+		checkSocket = read(socket, (recibido + bytesRecibidos), (tamanioDelMensaje - bytesRecibidos));
+		bytesRecibidos += checkSocket;
+	}
 
-	return recibido;
+	return !checkSocket ? NULL:recibido;
 }

@@ -190,14 +190,12 @@ t_PCB* deserializarPCB(void* pcb_serializado){
 	return pcb;
 }
 
-t_PCB* crearPCB(const char* programa){
-	static int pid = 0;
+t_PCB* crearPCB(const char* programa, int pid){
 
 	t_PCB* pcb = malloc(sizeof(t_PCB));
 	t_metadata_program* metadata = metadata_desde_literal(programa);
 
 	pcb->pid = pid;
-	pid++;
 
 	pcb->programCounter = 0;
 //	pcb->cantidadPaginas = string_length(programa)*sizeof(char) / tamanioDePagina; // tamanioDePagina lo tiene que pasar la umc por socket

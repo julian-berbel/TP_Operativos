@@ -72,7 +72,7 @@ char* obtener_instruccion(t_PCB * pcb);
 char* pedir_bytes_umc(int num_pagina, int offset, int tamanio);
 void enviar_bytes_umc(int num_pagina, int offset, int tamanio, char* buffer);
 
-void cargarPCB(t_PCB* pcb);
+void cargarPCB(t_PCB* pcb, int quantum);
 
 void ejecutarInstruccion();
 

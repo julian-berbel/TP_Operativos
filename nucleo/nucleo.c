@@ -4,14 +4,23 @@ void cancelar(int socket){
 
 }
 
+int buscarSocketConsola(int pid){
+	_Bool compararPid(t_consola* consola){
+		return consola->pid == pid;
+	}
+
+	t_consola* consola = list_find(consolas, (void*)compararPid);
+	return consola->socketConsola;
+}
+
 void imprimir(int pid, char* mensaje){
-	// obtener socket de la consola correspondiente a partir del pid
-	/* void* mensajeSerializado;
-	 int tamanio = serializarImprimir(mensaje, &mensajeSerializado);
-	 enviar(socket_consola, mensajeSerializado);
-	 free(mensajeSerializado);
-	*/
-	printf("Imprimir en consola del proceso: %d: %s\n", pid, mensaje);
+	int socket_consola = buscarSocketConsola(pid);
+
+	void* mensajeSerializado;
+	int tamanio = serializarImprimir(mensaje, &mensajeSerializado);
+	enviar(socket_consola, mensajeSerializado, tamanio);
+
+	free(mensajeSerializado);
 }
 
 void quantumTerminado(t_PCB* pcbActualizado){//????
@@ -23,25 +32,93 @@ void quantumTerminado(t_PCB* pcbActualizado){//????
 	pcb_destroy(pcbActualizado);
 }
 
-void threadReceptorConsolas(void* param){
-	int socketServer = *((int*)param);
-	int* conexionRecibida = malloc(sizeof(int));
+void nuevoPrograma(int socket_consola){
+	char* programa = recibir_string_generico(socket_consola);
+	static int pid = 0;
+	int paginasRequeridas = ceil((double) string_length(programa) / (double) tamanioDePagina);
 
-	*conexionRecibida = recibirConexion(socketServer);
+	void* mensaje;
+	int tamanio = serializarInicializar(pid, paginasRequeridas, programa, &mensaje);
+	enviar(socket_umc, mensaje, tamanio);
 
-	while(!flagTerminar){
-		printf("Conectado a una Consola\n");
-		list_add(consolas, (void*) conexionRecibida);
-		conexionRecibida = malloc(sizeof(int));
-		*conexionRecibida = recibirConexion(socketServer);
-	}
-	free(conexionRecibida);
+	// Manejo de error: No hay espacio para el programa
 
-	close(socketServer);
+	t_consola* consola = malloc(sizeof(t_consola));
+	consola->pid = pid;
+	consola->socketConsola = socket_consola;
+	list_add(consolas, consola);
 
+	t_PCB* pcb = crearPCB(programa, pid);
+	queue_push(colaPCBReady, pcb);
+
+	pid++;
 }
 
-void threadCPU(void* param){
+int mayorSocket(int mayor){
+	int i;
+	t_consola* consola;
+
+	for(i = 0; i < consolas->elements_count; i++){
+		consola = (t_consola*) list_get(consolas, i);
+		if(consola->socketConsola > mayor) mayor = consola->socketConsola;
+	}
+
+	return mayor;
+}
+
+void destruirConsola(t_consola* consola){
+	close(consola->socketConsola);
+	free(consola);
+}
+
+void threadReceptorYEscuchaConsolas(void* param){
+	fd_set* bagDeSockets = malloc(sizeof(fd_set));
+
+	int i, conexionRecibida, socketServer = *((int*)param), n = mayorSocket(socketServer) + 1;
+
+	t_consola* consola;
+
+	void* mensaje;
+
+	while(!flagTerminar){
+		FD_ZERO(bagDeSockets);
+		FD_SET(socketServer, bagDeSockets);
+
+		for(i = 0; i < consolas->elements_count; i++){
+			consola = (t_consola*) list_get(consolas, i);
+			FD_SET(consola->socketConsola, bagDeSockets);
+		}
+
+		select(n, bagDeSockets, NULL, NULL, NULL);
+
+		if(flagTerminar) break;
+
+		if(FD_ISSET(socketServer, bagDeSockets)){
+			conexionRecibida = recibirConexion(socketServer);
+			printf("Conectado a una consola!\n");
+			nuevoPrograma(conexionRecibida);
+			n = mayorSocket(socketServer) + 1;
+		}else{
+			for(i = 0; i < consolas->elements_count; i++){
+				consola = list_get(consolas, i);
+				if (FD_ISSET(consola->socketConsola, bagDeSockets)) {
+					mensaje = recibir(consola->socketConsola);
+					if(mensaje){
+						procesarMensaje(mensaje, consola);
+					}else{
+						printf("Consola desconectada!\n");
+						list_remove_and_destroy_element(consolas, i,(void*) destruirConsola);
+					}
+					free(mensaje);
+				}
+			}
+		}
+	}
+	free(bagDeSockets);
+	close(socketServer);
+}
+
+void threadEscuchaCPU(void* param){
 	int socket = *((int*) param);
 	free(param);
 
@@ -58,18 +135,18 @@ void threadCPU(void* param){
 }
 
 void crearThreadDeCPU(int conexionRecibida){
-	pthread_t* hiloCPU = malloc(sizeof(pthread_t));
+	pthread_t* hiloEscuchaCPU = malloc(sizeof(pthread_t));
 
 	t_cpu* cpu = malloc(sizeof(t_cpu));
 	cpu->socketCPU = conexionRecibida;
-	cpu->hiloCPU = hiloCPU;
+	cpu->hiloCPU = hiloEscuchaCPU;
 
 	list_add(cpus, (void*) cpu);
 
 	int* socket = malloc(sizeof(int));
 	*socket = conexionRecibida;
 
-	pthread_create(hiloCPU, NULL,(void*) threadCPU,(void*) socket);
+	pthread_create(hiloEscuchaCPU, NULL,(void*) threadEscuchaCPU,(void*) socket);
 }
 
 void threadReceptorCPUs(void* param){
@@ -92,9 +169,8 @@ void terminar(int n){
 	}
 }
 
-void cerrarSocket(int* socket){
-	close(*socket);
-	free(socket);
+void bloquearConsola(t_consola* consola){
+	shutdown(consola->socketConsola, 0);
 }
 
 void destruirCPU(t_cpu* cpu){
@@ -105,6 +181,7 @@ void destruirCPU(t_cpu* cpu){
 }
 
 int main(){
+
 	abrirConfiguracion();
 
 	sem_init(&semTerminar, 0, 0);
@@ -121,11 +198,11 @@ int main(){
 
 	socket_consolas = crear_socket_servidor(ipNucleo, puertoNucleo);
 
-	pthread_create(&thrdReceptorConsolas, NULL,(void*) threadReceptorConsolas, &socket_consolas);
+	pthread_create(&hiloConsolas, NULL,(void*) threadReceptorYEscuchaConsolas, &socket_consolas);
 
 	socket_cpus = crear_socket_servidor(ipNucleo, puertoCPU);
 
-	pthread_create(&thrdReceptorCPUs, NULL,(void*) threadReceptorCPUs, &socket_cpus);
+	pthread_create(&hiloReceptorCPUs, NULL,(void*) threadReceptorCPUs, &socket_cpus);
 
 	sem_wait(&semTerminar);
 
@@ -167,13 +244,13 @@ void cerrar_todo(){
 	shutdown(socket_cpus, 0);
 	shutdown(socket_umc, 0);
 
-	list_destroy_and_destroy_elements(consolas,(void*) cerrarSocket);
+	list_iterate(consolas, (void*) bloquearConsola);
+	pthread_join(hiloConsolas, NULL);
+	list_destroy_and_destroy_elements(consolas, (void*) destruirConsola);
 
 	list_destroy_and_destroy_elements(cpus,(void*) destruirCPU);
 
-	pthread_join(thrdReceptorConsolas, NULL);
-
-	pthread_join(thrdReceptorCPUs, NULL);
+	pthread_join(hiloReceptorCPUs, NULL);
 
 	sem_destroy(&semTerminar);
 

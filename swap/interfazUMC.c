@@ -1,6 +1,6 @@
 #include "interfazUMC.h"
 
-void (*deserializadores[5])(void*, void*) = {terminar, deserializarInicializar, deserializarLeerPagina, deserializarEscribirPagina, deserializarFinalizar};
+void (*deserializadores[5])(void*, void*) = {deserializarInicializar, terminar, deserializarLeerPagina, deserializarEscribirPagina, deserializarFinalizar};
 
 void deserializarInicializar(void* parametrosSerializados, void* dataAdicional){
 	int id_programa, paginas_requeridas;

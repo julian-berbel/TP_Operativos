@@ -5,23 +5,25 @@
  *      Author: utnso
  */
 
-#ifndef INTERFAZCPU_H_
-#define INTERFAZCPU_H_
+#ifndef INTERFAZCPUCONSOLA_H_
+#define INTERFAZCPUCONSOLA_H_
 
 #include <stdlib.h>
 #include "pcb.h"
 
-typedef enum {TERMINAR, CARGAR_PCB, EJECUTAR_INSTRUCCION /*, CANCELAR*/} interfazCPU;
+typedef enum {CARGAR_PCB, TERMINAR /*, CANCELAR*/} interfazCPU;
 
-typedef enum {/*TERMINAR, */ CANCELAR = 1, IMPRIMIR = 2, QUANTUM_TERMINADO = 3} interfazPropia;
+typedef enum{IMPRIMIR /*, TERMINAR*/ } interfazConsola;
 
-int serializarCargarPCB(t_PCB* pcb, void** serializacion);
+typedef enum {/*IMPRIMIR, */ QUANTUM_TERMINADO = 1, CANCELAR = 2} interfazPropia;
+
+int serializarCargarPCB(t_PCB* pcb, int quantum, void** serializacion);
 
 int serializarCancelar(void** serializacion);
 
 int serializarTerminar(void** serializacion);
 
-int serializarEjecutarInstruccion(void** serializacion);
+int serializarImprimir(char* mensaje, void** serializacion); //para consola
 
 void deserializarImprimir(void* parametrosSerializados, void* dataAdicional);
 
@@ -35,6 +37,8 @@ extern void quantumTerminado(t_PCB* pcbActualizado);
 
 extern void cancelar(int socketConsola);
 
+void (*deserializadores[3])(void*, void*);
+
 void procesarMensaje(void* mensaje, void* dataAdicional);
 
-#endif /* INTERFAZCPU_H_ */
+#endif /* INTERFAZCPUCONSOLA_H_ */

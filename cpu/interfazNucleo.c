@@ -40,12 +40,14 @@ int serializarQuantumTerminado(t_PCB* pcbActualizado, void** serializacion){
 }
 
 void deserializarCargarPCB(void* parametrosSerializados, void* dataAdicional){
+	int quantum = *((int*) parametrosSerializados);
+	parametrosSerializados += sizeof(int);
 	t_PCB* pcb = deserializarPCB(parametrosSerializados);
 
-	cargarPCB(pcb);
+	cargarPCB(pcb, quantum);
 }
 
-void (*deserializadores[4])(void*, void*) = {terminar, cancelar, deserializarCargarPCB, ejecutarInstruccion};
+void (*deserializadores[3])(void*, void*) = {deserializarCargarPCB, terminar, cancelar};
 
 void procesarMensaje(void* mensaje, void* dataAdicional){
 	interfazPropia tipo = *((interfazPropia*) mensaje);

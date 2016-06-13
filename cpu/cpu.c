@@ -280,9 +280,13 @@ char* pedir_bytes_umc(int num_pagina, int offset, int tamanio){
 
 void enviar_bytes_umc(int num_pagina, int offset, int tamanio, char* buffer){
 	//umc_almacena(num_pagina, offset, tamanio, buffer);
+	/*void* serializacion;
+	int tamanioSerializacion;
+	tamanioSerializacion = serializarAlmacenar(num_pagina, offset, tamanio, buffer, &serializacion);
+	enviar(socket_umc, serializacion, tamanioSerializacion);*/
 }
 
-void cargarPCB(t_PCB* pcb){
+void cargarPCB(t_PCB* pcb, int quantum){
 	pcb_destroy(pcb_actual);
 	pcb_actual = pcb;
 }

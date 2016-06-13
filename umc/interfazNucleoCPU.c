@@ -1,6 +1,6 @@
 #include "interfazNucleoCPU.h"
 
-void (*deserializadores[5])(void*, void*) = {terminar, deserializarInicializar, deserializarSolicitar, deserializarAlmacenar, deserializarFinalizar};
+void (*deserializadores[5])(void*, void*) = {deserializarInicializar, terminar, deserializarSolicitar, deserializarAlmacenar, deserializarFinalizar};
 
 void deserializarInicializar(void* parametrosSerializados, void* dataAdicional){
 	int id_programa, paginas_requeridas;

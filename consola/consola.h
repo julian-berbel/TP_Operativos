@@ -21,7 +21,6 @@ t_log* logger_pantalla;
 int socket_nucleo;
 
 int flagTerminar = 0;
-int pid;
 
 void abrirConfiguracion();
 void cerrar_todo();

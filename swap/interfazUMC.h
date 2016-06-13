@@ -10,7 +10,7 @@
 
 #include <stdlib.h>
 
-typedef enum { TERMINAR, INICIALIZAR, LEER_PAGINA, ESCRIBIR_PAGINA, FINALIZAR} interfazPropia;
+typedef enum { INICIALIZAR, TERMINAR, LEER_PAGINA, ESCRIBIR_PAGINA, FINALIZAR} interfazPropia;
 
 void deserializarInicializar(void* parametrosSerializados, void* dataAdicional);
 
@@ -19,6 +19,8 @@ void deserializarLeerPagina(void* parametrosSerializados, void* dataAdicional);
 void deserializarEscribirPagina(void* parametrosSerializados, void* dataAdicional);
 
 void deserializarFinalizar(void* parametrosSerializados, void* dataAdicional);
+
+void (*deserializadores[5])(void*, void*);
 
 void procesarMensaje(void* mensaje, void* dataAdicional);
 

@@ -5,15 +5,18 @@
  *      Author: utnso
  */
 
-#include "interfazCPU.h"
+#include "interfazCPUConsola.h"
 
-int serializarCargarPCB(t_PCB* pcb, void** serializacion){
-	int tamanio = sizeof(interfazCPU) + calcularTamanioPCB(pcb);
+int serializarCargarPCB(t_PCB* pcb, int quantum, void** serializacion){
+	int tamanio = sizeof(interfazCPU) + calcularTamanioPCB(pcb) + sizeof(int);
 	*serializacion = malloc(tamanio);
 	void* aux = *serializacion;
 
 	*((interfazCPU*) aux) = CARGAR_PCB;
 	aux += sizeof(interfazCPU);
+
+	*((int*) aux) = quantum;
+	aux += sizeof(int);
 
 	serializarPCB(pcb, aux);
 
@@ -34,15 +37,24 @@ int serializarTerminar(void** serializacion) {
 	return sizeof(interfazCPU);
 }
 
-int serializarEjecutarInstruccion(void** serializacion) {
-	*serializacion = malloc(sizeof(interfazCPU));
-	*(interfazCPU*)*serializacion = EJECUTAR_INSTRUCCION;
+int serializarImprimir(char* mensaje, void** serializacion){
+	int tamanioMensaje = sizeof(char) * (string_length(mensaje) + 1);
+	int tamanio = sizeof(interfazConsola) + tamanioMensaje;
+	*serializacion = malloc(tamanio);
+	void* aux = *serializacion;
 
-	return sizeof(interfazCPU);
+	memset(aux, '\0', tamanio);
+
+	*((interfazConsola*) aux) = IMPRIMIR;
+	aux += sizeof(interfazConsola);
+
+	memcpy(aux, mensaje, tamanioMensaje);
+
+	return tamanio;
 }
 
 void deserializarCancelar(void* parametrosSerializados, void* dataAdicional){
-	int socket = *((int*) parametrosSerializados);
+	int socket = *((int*) dataAdicional);
 
 	cancelar(socket);
 }
@@ -61,7 +73,7 @@ void deserializarQuantumTerminado(void* parametrosSerializados, void* dataAdicio
 	quantumTerminado(pcb);
 }
 
-void (*deserializadores[3])(void*, void*) = {deserializarCancelar, deserializarImprimir, deserializarQuantumTerminado};
+void (*deserializadores[3])(void*, void*) = {deserializarImprimir, deserializarQuantumTerminado, deserializarCancelar};
 
 void procesarMensaje(void* mensaje, void* dataAdicional){
 	interfazPropia tipo = *((interfazPropia*) mensaje);

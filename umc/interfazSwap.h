@@ -13,7 +13,7 @@
 #include <string.h>
 #include <commons/string.h>
 
-typedef enum { TERMINAR, INICIALIZAR , LEER_PAGINA, ESCRIBIR_PAGINA, FINALIZAR} interfazSwap;
+typedef enum { INICIALIZAR, TERMINAR, LEER_PAGINA, ESCRIBIR_PAGINA, FINALIZAR} interfazSwap;
 
 int serializarTerminar(void** serializacion);
 

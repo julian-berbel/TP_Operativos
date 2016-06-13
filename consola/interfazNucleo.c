@@ -13,7 +13,7 @@ void deserializarImprimir(void* parametrosSerializados, void* dataAdicional){
 	imprimir(mensaje);
 }
 
-void (*deserializadores[2])(void*, void*) = {terminar, deserializarImprimir};
+void (*deserializadores[2])(void*, void*) = {deserializarImprimir, terminar};
 
 void procesarMensaje(void* mensaje, void* dataAdicional){
 	interfazPropia tipo = *((interfazPropia*) mensaje);
@@ -24,13 +24,10 @@ void procesarMensaje(void* mensaje, void* dataAdicional){
 }
 
 int serializarCancelar(void** serializacion) {
-	*serializacion = malloc(sizeof(interfazPropia)) + sizeof(int);
+	*serializacion = malloc(sizeof(interfazPropia));
 	void* aux = *serializacion;
 
 	*(interfazPropia*)aux = CANCELAR;
-	aux += sizeof(interfazPropia);
-
-	*(int*)aux = pid;
 
 	return sizeof(interfazPropia);
 }

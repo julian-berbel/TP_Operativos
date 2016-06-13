@@ -51,7 +51,7 @@ int serializarPCB(t_PCB* pcb, void** pcbSerializado);
 
 t_PCB* deserializarPCB(void* pcb_serializado);
 
-t_PCB* crearPCB(const char* programa);
+t_PCB* crearPCB(const char* programa, int pid);
 
 void imprimirPCB(t_PCB* pcb);
 
