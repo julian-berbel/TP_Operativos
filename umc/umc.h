@@ -26,6 +26,7 @@ int marco_x_proc;
 int entradas_tlb;
 int tlb_habilitada;
 int retardo;
+char* alg_reemplazo;
 t_log* logger;
 t_log* logger_pantalla;
 int socket_swap;
@@ -42,6 +43,7 @@ void escribir_pagina(int num_pagina, int offset, size_t t, char *buffer);
 
 typedef struct{
 	int marco;
+	int presencia;
 	int bit_uso;
 	int modificado;
 } tabla_paginas;
@@ -60,6 +62,8 @@ tabla_paginas tabla_procesos[50][20];
 TLB *tlb;
 int cant_paginas_procesos[50];
 int procesos_ocupados[50];
+int punteros_clock[50];
+
 
 void crear_tabla_de_paginas(int idp, int paginas_requeridas);
 int obtener_marco(int idp,int num_pagina);
@@ -89,5 +93,8 @@ void flush_memory(int idp/*,int cantidad_paginas*/);
 void terminar();
 void reconocer_comando(char *comando, char* param);
 int buscar_marco_libre();
+int cant_paginas_asignadas(int idp);
+int reemplazar_MP(int idp,int num_pagina);
+int  buscar_pagina_victima(int idp);
 
 #endif

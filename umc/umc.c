@@ -1,9 +1,7 @@
 #include<commons/config.h>
 #include<commons/log.h>
 #include"umc.h"
-#include "CUnit/Basic.h"
 #include <string.h>
-
 
  int main() {
  pthread_attr_t attr;
@@ -17,29 +15,33 @@
  log_info(logger, "Inicia proceso UMC");
 
  //comienzo inicializacion
+	 	//array de a donde apunta los punteros clock de los procesos
+	 	 int h;
+	 	 for(h=0;h<50;h++){
+	 		 punteros_clock[h]=0;//comienzan apuntando a la pagina 0
+	 	 }
+	 	//array de disponibilidad de marcos
+		marcos_libres = (int*) malloc(sizeof(int) * marcos);
+		int k;
+		for (k = 0; k < marcos; k++) { //lo inicializo en cero:testeado
+			marcos_libres[k] = 0;
+		}
+		//array con la cantidad de paginas de cada proceso y procesos ocupados
+		int p;
+		for (p = 0; p < 50; p++) { //inicializo en cero
+			cant_paginas_procesos[p] = 0;
+			procesos_ocupados[p] = 0;
+		}
 
- 	//array de disponibilidad de marcos
-	marcos_libres = (int*) malloc(sizeof(int) * marcos);
-	int k;
-	for (k = 0; k < marcos; k++) { //lo inicializo en cero:testeado
-		marcos_libres[k] = 0;
-	}
-	//array con la cantidad de paginas de cada proceso y procesos ocupados
-	int p;
-	for (p = 0; p < 50; p++) { //inicializo en cero
-		cant_paginas_procesos[p] = 0;
-		procesos_ocupados[p] = 0;
-	}
+		//memoria
+		memoria = (char *) malloc(marcos * marco_size *sizeof(char));
 
-	//memoria
-	memoria = (char *) malloc(marcos * marco_size *sizeof(char));
-
-	//TLB
-	tlb = (TLB*) malloc(entradas_tlb * sizeof(TLB));
-	int i;
-	for (i = 0; i < entradas_tlb; i++) { //inicializo la tlb con idp en -1:testeado
-		tlb[i].idp = -1;
-	}
+		//TLB
+		tlb = (TLB*) malloc(entradas_tlb * sizeof(TLB));
+		int i;
+		for (i = 0; i < entradas_tlb; i++) { //inicializo la tlb con idp en -1:testeado
+			tlb[i].idp = -1;
+		}
  //fin inicializacion
 
  socket_swap = crear_socket_cliente(ipSwap, puertoSwap);
@@ -98,9 +100,11 @@ void abrirConfiguracion() {
 	entradas_tlb = config_get_int_value(configuracionUMC, "ENTRADAS_TLB");
 	tlb_habilitada = config_get_int_value(configuracionUMC, "TLB_HABILITADA");
 	retardo = config_get_int_value(configuracionUMC, "RETARDO");
+	alg_reemplazo = config_get_string_value(configuracionUMC, "ALG_REEMPLAZO");
 	logger = log_create(RUTA_LOG, "UMC", false, LOG_LEVEL_INFO);
 	logger_pantalla = log_create(RUTA_LOG, "UMC", true, LOG_LEVEL_INFO);
-}
+	}
+
 
 void cerrar_todo() {
 	log_destroy(logger);
@@ -139,16 +143,16 @@ void inicializar(int id_programa, int paginas_requeridas, char* programa) {
 
 }
 
-void finalizar(int id_programa) { //testeado
+void finalizar(int id_programa) {
 	memset(tabla_procesos[id_programa], '0', sizeof(tabla_paginas) * 20);
 	//avisar al swap para que libere memoria
 	procesos_ocupados[id_programa] = 0;
 }
 
 void leer_pagina(int num_pagina, int offset, size_t t) {
+	//obtener el proceso activo
 	int marco = obtener_marco(id_proceso_activo, num_pagina);
 	if (marco >= 0) { //si esta en MP
-		modificar_bit_uso(id_proceso_activo, num_pagina);
 		char* contenido = leer_posicion_memoria(marco * marco_size + offset,t);
 		printf("%s\n",contenido);
 		//enviar a la cpu el contenido
@@ -158,23 +162,31 @@ void leer_pagina(int num_pagina, int offset, size_t t) {
 	}
 }
 
-void escribir_pagina(int num_pagina, int offset, size_t t, char *buffer) {
-	int marco_libre = buscar_marco_libre();
-	if (marco_libre != -1) {
-		escribir_posicion_memoria(marco_libre * marco_size + offset, t, buffer);
-		escribir_marco_en_TP(id_proceso_activo, num_pagina, marco_libre);
-		marco_ocupado(marco_libre);
+void escribir_pagina(int num_pagina, int offset, size_t t, char *buffer) { //testeado
+	if(cant_paginas_asignadas(id_proceso_activo)<marco_x_proc){
+		int marco_libre = buscar_marco_libre();
+			if (marco_libre != -1) {
+				escribir_posicion_memoria(marco_libre * marco_size + offset, t, buffer);
+				escribir_marco_en_TP(id_proceso_activo, num_pagina, marco_libre);
+				marco_ocupado(marco_libre);
+			}else{}
 	}else{
-		//reempĺazar pagina con clock
+	int marco_destino=reemplazar_MP(id_proceso_activo,num_pagina);
+	escribir_posicion_memoria(marco_destino*marco_size + offset,t,buffer);
+	escribir_marco_en_TP(id_proceso_activo,num_pagina,marco_destino);
 	}
+
 }
 
 void crear_tabla_de_paginas(int idp, int paginas_requeridas) { //testeado
 	tabla_paginas tabla_paginas;
-	//inicializo los marcos en -1
+	//inicializo
 	int i;
 	for (i = 0; i < paginas_requeridas; i++) {
 		tabla_paginas.marco = -1;
+		tabla_paginas.presencia=0;
+		tabla_paginas.bit_uso=0;
+		tabla_paginas.modificado=0;
 		tabla_procesos[idp][i] = tabla_paginas;
 	}
 	cant_paginas_procesos[idp] = paginas_requeridas;
@@ -200,7 +212,12 @@ int obtener_marco(int idp, int num_pagina) { //testeado
 
 int obtener_marco_tabla_paginas(int idp, int numero_pagina) { //testeado
 	usleep(retardo * 1000);
+	if(tabla_procesos[idp][numero_pagina].presencia==1){
+		tabla_procesos[idp][numero_pagina].bit_uso=1;
 	return tabla_procesos[idp][numero_pagina].marco;
+	}else{
+		return -1;
+	}
 
 }
 
@@ -217,7 +234,10 @@ int obtener_marco_tlb(int idp, int num_pagina) { //testeado
 }
 
 void escribir_marco_en_TP(int idp, int pagina, int marco) { //al guardar en MP devuelve el marco en que se guardo y se guarda en la tabla de paginas del proceso
-	tabla_procesos[idp][pagina].marco = marco;					//testeado
+	tabla_procesos[idp][pagina].marco = marco; //testeado
+	tabla_procesos[idp][pagina].presencia=1;
+	tabla_procesos[idp][pagina].bit_uso=1;
+	tabla_procesos[idp][pagina].modificado=0;
 }
 
 void escribir_marco_en_tlb(int idp, int num_pagina, int marco) {	//testeado
@@ -236,10 +256,10 @@ void escribir_marco_en_tlb(int idp, int num_pagina, int marco) {	//testeado
 	}
 }
 
-void marco_ocupado(int num_marco) { //testeado
+void marco_ocupado(int num_marco) { 	//testeado
 	marcos_libres[num_marco] = 1;
 }
-void marco_desocupado(int num_marco) { //testeado
+void marco_desocupado(int num_marco) { 	//testeado
 	marcos_libres[num_marco] = 0;
 }
 
@@ -320,7 +340,7 @@ void modificar_retardo(int ret) { //testeado
 }
 
 void dump_est_proceso(int idp,const char * nombreArchivo) { //generar reporte en pantalla y un archivo sobre la tabla de paginas del proceso
-	int pag, bandera = 1;
+	int pag;
 	int cantidad_paginas = cant_paginas_procesos[idp];
 	FILE *archivo;
 	if(strcmp(nombreArchivo,"tablas_de_paginas.txt"))
@@ -329,17 +349,19 @@ void dump_est_proceso(int idp,const char * nombreArchivo) { //generar reporte en
 		archivo = fopen("tablas_de_paginas.txt", "a");
 	if (!archivo) {
 		printf("Error al abrir/crear el archivo! :(\n");
-		bandera = 0;
+
 	} else
 		fprintf(archivo, "Tabla de Paginas del Proceso: %d\n", idp);
 	printf("Tabla de Paginas del Proceso: %d\n", idp);
 	for (pag = 0; pag < cantidad_paginas; pag++) {
-		printf("Pagina: %d, Marco: %d, Bit_uso: %d, Modificado: %d\n", pag,
+		printf("Pagina: %d, Marco: %d, Presencia: %d, Bit_uso: %d, Modificado: %d\n", pag,
 				tabla_procesos[idp][pag].marco,
+				tabla_procesos[idp][pag].presencia,
 				tabla_procesos[idp][pag].bit_uso,
 				tabla_procesos[idp][pag].modificado);
-		fprintf(archivo, "Pagina: %d, Marco: %d, Bit_uso: %d, Modificado: %d\n",
+		fprintf(archivo, "Pagina: %d, Marco: %d, Presencia: %d, Bit_uso: %d, Modificado: %d\n",
 				pag, tabla_procesos[idp][pag].marco,
+				tabla_procesos[idp][pag].presencia,
 				tabla_procesos[idp][pag].bit_uso,
 				tabla_procesos[idp][pag].modificado);
 	}
@@ -351,11 +373,9 @@ void dump_est_proceso(int idp,const char * nombreArchivo) { //generar reporte en
 }
 
 void dump_est_gen() { //generar un reporte en pantalla y un archivo con las tablas de paginas de todos los procesos
-	int bandera = 1;
 	FILE *archivo = fopen("tablas_de_paginas_todos_los_procesos.txt", "a");
 	if (!archivo) {
 		printf("Error al abrir/crear el archivo! :(\n");
-		bandera = 0;
 	}else{
 		fprintf(archivo,"Tablas de Paginas de todos los Procesos:\n\n");
 		fclose(archivo);
@@ -423,7 +443,7 @@ void reconocer_comando(char *comando, char* param) {
 	} else if (!strcmp(comando, "dump_est") && !strcmp(param, "gen")) {
 		dump_est_gen();
 	} else if (!strcmp(comando, "dump_est") && strcmp(param, "gen")) {
-		dump_est_proceso(atoi(param),"");
+		dump_est_proceso(atoi(param),"tabla_paginas_proceso");
 	} else if (!strcmp(comando, "dump_cont") && !strcmp(param, "gen")) {
 		dump_cont_gen();
 	} else if (!strcmp(comando, "dump_cont") && strcmp(param, "gen")) {
@@ -436,8 +456,51 @@ void reconocer_comando(char *comando, char* param) {
 		printf("No existe el comando");
 	}
 }
+int cant_paginas_asignadas(int idp){ //falta testear
+	int i;
+	int contador=0;
+	for(i=0;i<cant_paginas_procesos[idp];i++){
+		if(tabla_procesos[idp][i].presencia==1){
+			contador++;
+		}
+	}
+	return contador;
+}
 
+int reemplazar_MP(int idp,int num_pagina){ //testeado
+	int pagina_victima=buscar_pagina_victima(idp);
+	if(tabla_procesos[idp][pagina_victima].modificado){
+		//enviar a swap que escriba la pagina victima (en swap quedo desactualizada)
+	}
+	tabla_procesos[idp][pagina_victima].presencia=0;
+	int marco_destino=tabla_procesos[idp][pagina_victima].marco;
+	return marco_destino;
 
+}
+
+int  buscar_pagina_victima(int idp){
+	//segun clock o clock modificado
+	if(strcmp(alg_reemplazo,"CLOCK")){	//clock    //testeado clock
+	int paginas_proceso=cant_paginas_procesos[idp];
+	int i;
+	for(i=0;i<=paginas_proceso;i++){
+		i=punteros_clock[idp];
+		if(tabla_procesos[idp][i].bit_uso==0 &&tabla_procesos[idp][i].presencia==1){
+			punteros_clock[idp]=i+1;
+				return i; //devuelve la pagina(indice) victima
+				}else{
+					tabla_procesos[idp][i].bit_uso=0;
+					punteros_clock[idp]+=1;
+					if(i==paginas_proceso-1){
+						punteros_clock[idp]=0;
+					}
+				}
+	}
+return  -1;
+	}else{//clock modificado
+		return -1;
+	}
+}
 
 /*consola
  char* comando,*parametro,*comandoAEjecutar;
