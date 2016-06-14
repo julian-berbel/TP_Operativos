@@ -28,13 +28,13 @@ int main() {
 	//swap pos = 0;
 	list_add(espacioTotal, (void*) swap);
 
-	if (strcmp(mensaje, "inicializar")) { //meter el programa en el archivo swap
+	if (strcmp(mensaje, "inicializar") == 0) { //meter el programa en el archivo swap
 		inicializar(1, 1, "asdf");
-	} else if (strcmp(mensaje, "leer_pagina")) {
+	} else if (strcmp(mensaje, "leer_pagina") == 0) {
 		//TODO completar
-	} else if (strcmp(mensaje, "escribir_pagina")) {
+	} else if (strcmp(mensaje, "escribir_pagina") == 0) {
 		//TODO completar
-	} else if (strcmp(mensaje, "finalizar_programa")) {
+	} else if (strcmp(mensaje, "finalizar_programa") == 0) {
 		//TODO completar
 	}
 
@@ -190,7 +190,7 @@ Bool noEstaUtilizado(){
 
 int cant_pags_disponibles() {
 	t_list* espaciosOcupados = list_filter(espacioTotal,(void*) noEstaUtilizado);
-	int paginas_usadas = sizeof(espaciosOcupados);
+	int paginas_usadas = list_size(espaciosOcupados);
 	return cant_paginas - paginas_usadas;
 
 }
