@@ -50,6 +50,7 @@ typedef struct{
 int socket_servidor;
 
 void abrirConfiguracion();
+void inicializar_estructuras();
 void cerrar_todo();
 void *funcion_nucleo(void *argumento);
 void *funcion_cpu(void *argumento);

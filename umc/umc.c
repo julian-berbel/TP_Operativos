@@ -67,35 +67,7 @@ int main() {
  abrirConfiguracion();
  log_info(logger, "Inicia proceso UMC");
 
- //comienzo inicializacion
- //array de a donde apunta los punteros clock de los procesos
- int i;
- for (i = 0; i < 50; i++) {
- punteros_clock[i] = 0;	//comienzan apuntando a la pagina 0
- }
- //array de disponibilidad de marcos
- marcos_libres = (int*) malloc(sizeof(int) * marcos);
-
- for (i = 0; i < marcos; i++) { //lo inicializo en cero:testeado
- marcos_libres[i] = 0;
- }
- //array con la cantidad de paginas de cada proceso y procesos ocupados
-
- for (i = 0; i < 50; i++) { //inicializo en cero
- cant_paginas_procesos[i] = 0;
- procesos_ocupados[i] = 0;
- }
-
- //memoria
- memoria = (char *) malloc(marcos * marco_size * sizeof(char));
-
- //TLB
- tlb = (TLB*) malloc(entradas_tlb * sizeof(TLB));
-
- for (i = 0; i < entradas_tlb; i++) { //inicializo la tlb con idp en -1:testeado
- tlb[i].idp = -1;
- }
- //fin inicializacion
+ inicializar_estructuras();
 
  sem_init(&semTerminar, 0, 0);
 
@@ -119,6 +91,35 @@ int main() {
  return 0;
  }
 
+void inicializar_estructuras(){
+	int i;
+	 for (i = 0; i < 50; i++) {
+	 punteros_clock[i] = 0;	//comienzan apuntando a la pagina 0
+	 }
+	 //array de disponibilidad de marcos
+	 marcos_libres = (int*) malloc(sizeof(int) * marcos);
+
+	 for (i = 0; i < marcos; i++) { //lo inicializo en cero:testeado
+	 marcos_libres[i] = 0;
+	 }
+	 //array con la cantidad de paginas de cada proceso y procesos ocupados
+
+	 for (i = 0; i < 50; i++) { //inicializo en cero
+	 cant_paginas_procesos[i] = 0;
+	 procesos_ocupados[i] = 0;
+	 }
+
+	 //memoria
+	 memoria = (char *) malloc(marcos * marco_size * sizeof(char));
+
+	 //TLB
+	 tlb = (TLB*) malloc(entradas_tlb * sizeof(TLB));
+
+	 for (i = 0; i < entradas_tlb; i++) { //inicializo la tlb con idp en -1:testeado
+	 tlb[i].idp = -1;
+	 }
+
+}
 void abrirConfiguracion() {
 	configuracionUMC = config_create(RUTA_CONFIG);
 	ipUmc = config_get_string_value(configuracionUMC, "IP_UMC");
@@ -374,8 +375,7 @@ void dump_est_proceso(int idp, const char * nombreArchivo) { //generar reporte e
 		fprintf(archivo, "Tabla de Paginas del Proceso: %d\n", idp);
 	printf("Tabla de Paginas del Proceso: %d\n", idp);
 	for (pag = 0; pag < cantidad_paginas; pag++) {
-		printf(
-				"Pagina: %d, Marco: %d, Presencia: %d, Bit_uso: %d, Modificado: %d\n",
+		printf(	"Pagina: %d, Marco: %d, Presencia: %d, Bit_uso: %d, Modificado: %d\n",
 				pag, tabla_procesos[idp][pag].marco,
 				tabla_procesos[idp][pag].presencia,
 				tabla_procesos[idp][pag].bit_uso,
@@ -505,43 +505,46 @@ int reemplazar_MP(int idp, int num_pagina) { //testeado
 
 int buscar_pagina_victima(int idp) {
 	//segun clock o clock modificado
-	int paginas_proceso = cant_paginas_procesos[idp];
-	if (!strcmp(alg_reemplazo, "CLOCK_MODIFICADO")) { //clock modificado   falta testear
-		int i;
-		while (1) {	//recorro una vez buscando U=0 y M=0.
-					//si encuentra, el puntero queda apuntando al siguiente.
-			for (i = 0; i < paginas_proceso; i++) {
-				if (tabla_procesos[idp][i].bit_uso == 0
-						&& tabla_procesos[idp][i].presencia == 1
-						&& tabla_procesos[idp][i].modificado == 0) {
-					punteros_clock[idp] = i + 1;
+	 int paginas_proceso = cant_paginas_procesos[idp];
+		if (!strcmp(alg_reemplazo, "CLOCK_MODIFICADO")) { //clock modificado   testeado
+			int i;
+			int indice;
+			int iteracion;
+		for(iteracion=0;iteracion<2;iteracion++){
+			for(i=0;i<paginas_proceso;i++){
+				indice=punteros_clock[idp];
+				if(tabla_procesos[idp][indice].bit_uso==0 && tabla_procesos[idp][indice].modificado==0 && tabla_procesos[idp][indice].presencia==1){
+					punteros_clock[idp]+=1;
 					if(punteros_clock[idp]==paginas_proceso){
 						punteros_clock[idp]=0;
 					}
-					return i; //devuelve la pagina(indice) victima
-				}
-			}
-			//busco U=0 y M=1, cambiando U a 0.
-			for (i = 0; i <= paginas_proceso; i++) {
-				i = punteros_clock[idp];
-				if (tabla_procesos[idp][i].bit_uso == 0
-						&& tabla_procesos[idp][i].presencia == 1
-						&& tabla_procesos[idp][i].modificado == 1) {
-					punteros_clock[idp] = i + 1;
+					return indice;
+				}else{
+					punteros_clock[idp] +=1;
 					if(punteros_clock[idp]==paginas_proceso){
 						punteros_clock[idp]=0;
 					}
-					return i; //devuelve la pagina(indice) victima
-				} else {
-					tabla_procesos[idp][i].bit_uso = 0;
-					punteros_clock[idp] += 1;
-					if (i == paginas_proceso - 1) {
-						punteros_clock[idp] = 0;
+				}
+			}
+			//busco U=0, M=1
+			for(i=0;i<paginas_proceso;i++){
+				indice=punteros_clock[idp];
+				if(tabla_procesos[idp][indice].bit_uso==0 && tabla_procesos[idp][indice].modificado==1 && tabla_procesos[idp][indice].presencia==1){
+					punteros_clock[idp]+=1;
+					if(punteros_clock[idp]==paginas_proceso){
+						punteros_clock[idp]=0;
+					}
+					return indice;
+				}else{
+					tabla_procesos[idp][indice].bit_uso=0;
+					punteros_clock[idp]+=1;
+					if(punteros_clock[idp]==paginas_proceso){
+						punteros_clock[idp]=0;
 					}
 				}
 			}
-		} //fin del while:repite el ciclo hasta que se encuentre una victima
-		return -1;
+		}//termina el ciclo
+
 	} else if (!strcmp(alg_reemplazo, "CLOCK")) { //clock	testeado
 		int i;
 		for (i = 0; i <= paginas_proceso; i++) {
