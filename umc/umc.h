@@ -92,8 +92,6 @@ void escribir_marco_en_tlb(int idp,int num_pagina,int marco);
 void marco_ocupado(int num_marco);
 void marco_desocupado(int num_marco);
 void cambiar_proceso_activo(int pid, void* cliente);
-void modificar_bit_uso(int idp,int num_pagina);
-void modificar_bit_modificado(int idp, int num_pagina);
 void escribir_posicion_memoria(int posicion,size_t tamanio,char *buffer);
 char* leer_posicion_memoria(int posicion, size_t tamanio);
 int buscar_indice_libre_tlb();
