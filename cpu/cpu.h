@@ -5,7 +5,7 @@
 #include <commons/config.h>
 #include <commons/log.h>
 #include <stdio.h>
-#include <parser/parser.h>
+#include <parser/metadata_program.h>
 #include <commons/collections/list.h>
 #include "interfazUMC.h"
 #include "interfazNucleo.h"
@@ -29,6 +29,7 @@ void finalizar();
 void retornar(t_valor_variable retorno);
 void imprimir(t_valor_variable valor);
 void imprimirTexto(char* texto);
+void entradaSalida(t_nombre_dispositivo dispositivo, int tiempo);
 void wait(t_nombre_semaforo identificador_semaforo);
 void signal(t_nombre_semaforo identificador_semaforo);
 
@@ -46,7 +47,7 @@ AnSISOP_funciones functions = {
 		.AnSISOP_retornar               = retornar,
 		.AnSISOP_imprimir				= imprimir,
 		.AnSISOP_imprimirTexto			= imprimirTexto,
-
+		.AnSISOP_entradaSalida			= entradaSalida,
 };
 AnSISOP_kernel kernel_functions = {
 		.AnSISOP_wait                   = wait,

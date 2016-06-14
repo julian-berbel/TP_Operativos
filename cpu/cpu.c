@@ -158,7 +158,12 @@ t_valor_variable asignarValorCompartida(t_nombre_compartida variable, t_valor_va
 }
 
 void irAlLabel(t_nombre_etiqueta etiqueta){
-
+	int program_counter = metadata_buscar_etiqueta(etiqueta, pcb_actual->indiceEtiquetas, pcb_actual->tamanioIndiceEtiquetas);
+	if(program_counter == -1){
+		printf("No se encontro la etiqueta %s en el indice de etiquetas\n", etiqueta);
+	} else {
+		pcb_actual->programCounter = program_counter;
+	}
 }
 
 void llamarSinRetorno(t_nombre_etiqueta etiqueta){
@@ -166,7 +171,24 @@ void llamarSinRetorno(t_nombre_etiqueta etiqueta){
 }
 
 void llamarConRetorno(t_nombre_etiqueta etiqueta, t_puntero donde_retornar){
-
+	nodo_stack *nodo = malloc(sizeof(nodo_stack));
+	nodo->args = list_create();
+	nodo->vars = list_create();
+	nodo->dir_retorno = (pcb_actual->programCounter + 1);
+	int num_pagina = donde_retornar / tamanio_pagina;
+	int offset = donde_retornar - (num_pagina * tamanio_pagina);
+	pos_mem *retorno = malloc(sizeof(pos_mem));
+	retorno->pagina = num_pagina;
+	retorno->offset = offset;
+	retorno->size = 4;
+	nodo->var_retorno = retorno;
+	list_add(pcb_actual->indiceStack, nodo);
+	int program_counter = metadata_buscar_etiqueta(etiqueta, pcb_actual->indiceEtiquetas, pcb_actual->tamanioIndiceEtiquetas);
+	if(program_counter == -1){
+		printf("No se encontro la funcion %s en el indice de etiquetas\n", etiqueta);
+	} else {
+		pcb_actual->programCounter = program_counter;
+	}
 }
 
 void finalizar(){
@@ -174,7 +196,39 @@ void finalizar(){
 }
 
 void retornar(t_valor_variable retorno){
+	nodo_stack *nodo;
+	int cantidad_nodos = list_size(pcb_actual->indiceStack);
+	nodo = list_remove(pcb_actual->indiceStack, (cantidad_nodos - 1));
+	pos_mem *posicion_memoria;
+	posicion_memoria = nodo->var_retorno;
+	int num_pagina = posicion_memoria->pagina;
+	int offset = posicion_memoria->offset;
+	char *valor_variable = string_itoa(retorno);
+	enviar_bytes_umc(num_pagina, offset, 4, valor_variable);
+	free(valor_variable);
+	pcb_actual->programCounter = nodo->dir_retorno;
 
+	//Elimino el nodo de la lista
+	int cantidad_argumentos;
+	int cantidad_variables;
+	t_variable *var;
+	cantidad_argumentos = list_size(nodo->args);
+	while(cantidad_argumentos != 0){
+		posicion_memoria = list_remove(nodo->args, (cantidad_argumentos - 1));
+		free(posicion_memoria);
+		cantidad_argumentos = list_size(nodo->args);
+	}
+	list_destroy(nodo->args);
+	cantidad_variables = list_size(nodo->vars);
+	while(cantidad_variables != 0){
+		var = list_remove(nodo->vars, (cantidad_variables - 1));
+		free(var->dir_var);
+		free(var);
+		cantidad_variables = list_size(nodo->vars);
+	}
+	list_destroy(nodo->vars);
+	free(nodo->var_retorno);
+	free(nodo);
 }
 
 void imprimir(t_valor_variable valor) {
@@ -183,6 +237,10 @@ void imprimir(t_valor_variable valor) {
 
 void imprimirTexto(char* texto) {
 	printf("ImprimirTexto: %s", texto);
+}
+
+void entradaSalida(t_nombre_dispositivo dispositivo, int tiempo){
+
 }
 
 void wait(t_nombre_semaforo identificador_semaforo){
