@@ -65,7 +65,7 @@ typedef struct{
 void abrirConfiguracion();
 void cerrar_todo();
 
-void cancelar(int socket);
+void cancelar(int pid);
 
 void imprimir(int pid, char* mensaje);
 

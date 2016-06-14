@@ -10,6 +10,9 @@
 #include"cliente.h"
 #include "interfazNucleoCPU.h"
 #include "interfazSwap.h"
+#include <string.h>
+#include <semaphore.h>
+#include <commons/collections/list.h>
 
 #define RUTA_LOG "/home/utnso/umc.log"
 #define RUTA_CONFIG "/home/utnso/tp-2016-1c-Hellfish-Group/umc/config/umc.config"
@@ -30,6 +33,21 @@ char* alg_reemplazo;
 t_log* logger;
 t_log* logger_pantalla;
 int socket_swap;
+
+pthread_t hiloReceptor;
+pthread_t hiloInterpreteConsola;
+
+t_list* clientes;
+_Bool flagTerminar;
+sem_t semTerminar;
+
+typedef struct{
+	pthread_t* hiloCliente;
+	int socket;
+	int proceso_activo;
+} t_cliente;
+
+int socket_servidor;
 
 void abrirConfiguracion();
 void cerrar_todo();
@@ -73,7 +91,7 @@ void escribir_marco_en_TP(int idp,int pagina, int marco);
 void escribir_marco_en_tlb(int idp,int num_pagina,int marco);
 void marco_ocupado(int num_marco);
 void marco_desocupado(int num_marco);
-void cambiar_proceso_activo(int proceso);
+void cambiar_proceso_activo(int pid, void* cliente);
 void modificar_bit_uso(int idp,int num_pagina);
 void modificar_bit_modificado(int idp, int num_pagina);
 void escribir_posicion_memoria(int posicion,size_t tamanio,char *buffer);

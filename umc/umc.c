@@ -1,92 +1,122 @@
-#include<commons/config.h>
-#include<commons/log.h>
-#include"umc.h"
-#include <string.h>
+#include "umc.h"
 
- int main() {
- pthread_attr_t attr;
- pthread_attr_init(&attr);
- pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
- pthread_t thread_cpu;
- pthread_t thread_nucleo;
+void threadEscucha(t_cliente* cliente){
+	int socket = cliente->socket;
 
+	void* mensaje;
 
- abrirConfiguracion();
- log_info(logger, "Inicia proceso UMC");
-
- //comienzo inicializacion
-	 	//array de a donde apunta los punteros clock de los procesos
-	 	 int h;
-	 	 for(h=0;h<50;h++){
-	 		 punteros_clock[h]=0;//comienzan apuntando a la pagina 0
-	 	 }
-	 	//array de disponibilidad de marcos
-		marcos_libres = (int*) malloc(sizeof(int) * marcos);
-		int k;
-		for (k = 0; k < marcos; k++) { //lo inicializo en cero:testeado
-			marcos_libres[k] = 0;
+	while(!flagTerminar){
+		mensaje = recibir(socket);
+		if(!mensaje){
+			printf("Cliente desconectado!\n");
+			// remover de la lista clientes
+			break;
 		}
-		//array con la cantidad de paginas de cada proceso y procesos ocupados
-		int p;
-		for (p = 0; p < 50; p++) { //inicializo en cero
-			cant_paginas_procesos[p] = 0;
-			procesos_ocupados[p] = 0;
-		}
+		procesarMensaje(mensaje, cliente);
+	}
 
-		//memoria
-		memoria = (char *) malloc(marcos * marco_size *sizeof(char));
+	close(socket);
+}
 
-		//TLB
-		tlb = (TLB*) malloc(entradas_tlb * sizeof(TLB));
-		int i;
-		for (i = 0; i < entradas_tlb; i++) { //inicializo la tlb con idp en -1:testeado
-			tlb[i].idp = -1;
-		}
- //fin inicializacion
+void crearThreadEscucha(int conexionRecibida){
+	pthread_t* hiloEscucha = malloc(sizeof(pthread_t));
 
- socket_swap = crear_socket_cliente(ipSwap, puertoSwap);
- log_info(logger_pantalla, "UMC y Swap conectados");
+	t_cliente* cliente = malloc(sizeof(t_cliente));
+	cliente->socket = conexionRecibida;
 
- int socket_servidor = crear_socket_servidor(ipUmc, puertoUmc);
- int socket_cliente = recibirConexion(socket_servidor);
- char* mensaje;
+	cliente->hiloCliente = hiloEscucha;
 
- while (string_is_empty(mensaje = recibir_string_generico(socket_cliente)))
- ;
+	list_add(clientes, (void*) cliente);
 
- mensaje = recibir_string_generico(socket_cliente);
- if (strcmp(mensaje, "n")) {
- int *args_nucleo = malloc(sizeof(*args_nucleo));
- if (args_nucleo == NULL) {
- log_info(logger_pantalla,
- "No se pudo asignar memoria para un hilo del CPU");
- cerrar_todo();
- }
- *args_nucleo = socket_cliente;
- int r = pthread_create(&thread_nucleo, NULL, funcion_nucleo,
- args_nucleo);
- //Hay que hacer el pthread_join en algun lugar del main. Posiblemente en el cerrar_todo.
- } else if (strcmp(mensaje, "c")) {
- int *args_cpu = malloc(sizeof(*args_cpu));
- if (args_cpu == NULL) {
- cerrar_todo();
- }
- *args_cpu = socket_cliente;
- pthread_create(&thread_cpu, &attr, funcion_cpu, args_cpu);
- }
- //si es otro mensaje, llamar a la funcion procesarMensaje
+	pthread_create(hiloEscucha, NULL,(void*) threadEscucha,(void*) cliente);
+}
 
- //Comienza el cierre del main.
- free(mensaje);
- close(socket_swap);
- close(socket_servidor);
- close(socket_cliente);
- pthread_attr_destroy(&attr);
- pthread_join(thread_nucleo, NULL);
- pthread_cancel(thread_cpu);
- cerrar_todo();
- return 0;
- }
+void threadReceptor(void* param){
+	int socketServer = *((int*)param);
+
+	int conexionRecibida = recibirConexion(socketServer);
+
+	while(!flagTerminar){
+		crearThreadEscucha(conexionRecibida);
+		conexionRecibida = recibirConexion(socketServer);
+	}
+
+	close(socketServer);
+}
+
+void threadInterpreteConsola(){
+	char* mensaje = NULL;
+	size_t a = 0;
+	int leido;
+
+	while(!flagTerminar){
+		getline(&mensaje, &a, stdin);
+		leido = string_length(mensaje);
+		*(mensaje+leido-1) = '\0';
+
+//		 comandoAEjecutar = strtok(comando," ");
+//		 parametro = strtok(0," ");
+//		 reconocer_comando(comandoAEjecutar,parametro);
+	}
+
+	free(mensaje);
+}
+
+int main() {
+
+	abrirConfiguracion();
+	log_info(logger, "Inicia proceso UMC");
+
+	//comienzo inicializacion
+	//array de a donde apunta los punteros clock de los procesos
+	int i;
+	for(i = 0; i < 50; i++){
+		punteros_clock[i]=0;//comienzan apuntando a la pagina 0
+	}
+	//array de disponibilidad de marcos
+	marcos_libres = (int*) malloc(sizeof(int) * marcos);
+
+	for (i = 0; i < marcos; i++) { //lo inicializo en cero:testeado
+		marcos_libres[i] = 0;
+	}
+	//array con la cantidad de paginas de cada proceso y procesos ocupados
+
+	for (i = 0; i < 50; i++) { //inicializo en cero
+		cant_paginas_procesos[i] = 0;
+		procesos_ocupados[i] = 0;
+	}
+
+	//memoria
+	memoria = (char *) malloc(marcos * marco_size *sizeof(char));
+
+	//TLB
+	tlb = (TLB*) malloc(entradas_tlb * sizeof(TLB));
+
+	for (i = 0; i < entradas_tlb; i++) { //inicializo la tlb con idp en -1:testeado
+		tlb[i].idp = -1;
+	}
+	//fin inicializacion
+
+	sem_init(&semTerminar, 0, 0);
+
+//	socket_swap = crear_socket_cliente(ipSwap, puertoSwap);
+	log_info(logger_pantalla, "UMC y Swap conectados");
+
+	socket_servidor = crear_socket_servidor(ipUmc, puertoUmc);
+
+	clientes = list_create();
+
+//	pthread_create(&hiloReceptor, NULL,(void*) threadReceptor, &socket_servidor);
+
+	pthread_create(&hiloInterpreteConsola, NULL, (void*) threadInterpreteConsola, NULL);
+
+	sem_wait(&semTerminar);
+
+	//Comienza el cierre del main.
+
+	cerrar_todo();
+	return 0;
+}
 
 void abrirConfiguracion() {
 	configuracionUMC = config_create(RUTA_CONFIG);
@@ -103,35 +133,29 @@ void abrirConfiguracion() {
 	alg_reemplazo = config_get_string_value(configuracionUMC, "ALG_REEMPLAZO");
 	logger = log_create(RUTA_LOG, "UMC", false, LOG_LEVEL_INFO);
 	logger_pantalla = log_create(RUTA_LOG, "UMC", true, LOG_LEVEL_INFO);
-	}
+}
 
+void destruirCliente(t_cliente* cliente){
+	shutdown(cliente->socket, 0);
+	pthread_join(*cliente->hiloCliente, NULL);
+	free(cliente->hiloCliente);
+	free(cliente);
+}
 
 void cerrar_todo() {
+	shutdown(socket_servidor, 0);
+	pthread_join(hiloReceptor, NULL);
+	shutdown(socket_swap, 0);
+	fclose(stdin);
+
+	pthread_join(hiloInterpreteConsola, NULL);
+
+	list_destroy_and_destroy_elements(clientes, (void*) destruirCliente);
+
+	close(socket_swap);
 	log_destroy(logger);
 	log_destroy(logger_pantalla);
 	config_destroy(configuracionUMC);
-}
-
-void *funcion_nucleo(void *argumento) { // thread para nucleo
-	int socket_nucleo = *((int *) argumento);
-	char* mensaje = string_new();
-	string_append(&mensaje, "okey\n");
-	enviar_string(socket_nucleo, mensaje);
-	free(mensaje);
-	free(argumento);
-	pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
-}
-
-void *funcion_cpu(void *argumento) {
-	int socket_cpu = *((int *) argumento);
-	char* mensaje = string_new();
-	string_append(&mensaje, "okey\n");
-	enviar_string(socket_cpu, mensaje);
-	free(mensaje);
-	close(socket_cpu);
-	free(argumento);
-	pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
-
 }
 
 void inicializar(int id_programa, int paginas_requeridas, char* programa) {
@@ -263,11 +287,11 @@ void marco_desocupado(int num_marco) { 	//testeado
 	marcos_libres[num_marco] = 0;
 }
 
-void cambiar_proceso_activo(int proceso) {
-	int id_proceso_viejo = id_proceso_activo;
-	id_proceso_activo = proceso;
-	flush(id_proceso_viejo); //limpio lo que haya de ese proceso en la tlb
+void cambiar_proceso_activo(int pid, void* cliente){
+	flush(((t_cliente*)cliente)->proceso_activo); //limpio lo que haya de ese proceso en la tlb
+	((t_cliente*)cliente)->proceso_activo = pid;
 }
+
 void modificar_bit_uso(int idp, int num_pagina) {
 	tabla_procesos[idp][num_pagina].bit_uso = 1;
 }
@@ -425,7 +449,8 @@ void flush_memory(int idp) { //marca todas las paginas del proceso como modifica
 }
 
 void terminar() {
-
+	flagTerminar = 1;
+	sem_post(&semTerminar);
 }
 
 int buscar_marco_libre() {
@@ -501,15 +526,3 @@ return  -1;
 		return -1;
 	}
 }
-
-/*consola
- char* comando,*parametro,*comandoAEjecutar;
- comando = malloc(sizeof(char)*20);
- comandoAEjecutar = malloc(sizeof(char)*20);
- parametro = malloc(sizeof(char)*10);
- //while (1){
- scanf("%[^\n]",comando);
- comandoAEjecutar = strtok(comando," ");
- parametro = strtok(0," ");
- reconocer_comando(comandoAEjecutar,parametro);
- //}*/

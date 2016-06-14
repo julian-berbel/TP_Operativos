@@ -1,6 +1,6 @@
 #include "interfazNucleoCPU.h"
 
-void (*deserializadores[5])(void*, void*) = {deserializarInicializar, terminar, deserializarSolicitar, deserializarAlmacenar, deserializarFinalizar};
+void (*deserializadores[6])(void*, void*) = {deserializarInicializar, terminar, deserializarSolicitar, deserializarAlmacenar, deserializarFinalizar, deserializarCambiarProcesoActivo};
 
 void deserializarInicializar(void* parametrosSerializados, void* dataAdicional){
 	int id_programa, paginas_requeridas;
@@ -56,6 +56,11 @@ void deserializarFinalizar(void* parametrosSerializados, void* dataAdicional){
 	id_programa = *((int*) parametrosSerializados);
 
 	finalizar(id_programa);
+}
+
+void deserializarCambiarProcesoActivo(void* parametrosSerializados, void* dataAdicional){
+	int pid = *(int*) parametrosSerializados;
+	cambiar_proceso_activo(pid, dataAdicional);
 }
 
 void procesarMensaje(void* mensaje, void* dataAdicional){

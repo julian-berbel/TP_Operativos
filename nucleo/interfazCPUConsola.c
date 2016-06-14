@@ -54,9 +54,9 @@ int serializarImprimir(char* mensaje, void** serializacion){
 }
 
 void deserializarCancelar(void* parametrosSerializados, void* dataAdicional){
-	int socket = *((int*) dataAdicional);
+	int pid = *((int*) dataAdicional);
 
-	cancelar(socket);
+	cancelar(pid);
 }
 
 void deserializarImprimir(void* parametrosSerializados, void* dataAdicional){

@@ -1,6 +1,6 @@
 #include "nucleo.h"
 
-void cancelar(int socket){
+void cancelar(int pid){
 
 }
 
@@ -23,13 +23,13 @@ void imprimir(int pid, char* mensaje){
 	free(mensajeSerializado);
 }
 
-void quantumTerminado(t_PCB* pcbActualizado){//????
-	/* buscar por pid y remover pcb desactualizado de colaPCBExec y destruirlo. (referirse a list_remove_and_destroy_by_condition de la commons)
-	 meter pcbActualizado en la cola que corresponda.
-	*/
-	printf("Quantum Terminado del PCB: \n");
-	imprimirPCB(pcbActualizado);
-	pcb_destroy(pcbActualizado);
+void quantumTerminado(t_PCB* pcbActualizado){// cambiar para recibir como termino la ejecucion -> bloqueado/finalizado/quantum terminado
+	_Bool compararPid(t_PCB* pcb){
+		return pcb->pid == pcbActualizado->pid;
+	}
+	list_remove_and_destroy_by_condition(colaPCBExec->elements, (void*) compararPid,(void*) pcb_destroy);
+
+	queue_push(colaPCBReady, pcbActualizado);
 }
 
 void nuevoPrograma(int socket_consola){
@@ -49,6 +49,7 @@ void nuevoPrograma(int socket_consola){
 	list_add(consolas, consola);
 
 	t_PCB* pcb = crearPCB(programa, pid);
+
 	queue_push(colaPCBReady, pcb);
 
 	pid++;
@@ -118,17 +119,17 @@ void threadReceptorYEscuchaConsolas(void* param){
 	close(socketServer);
 }
 
-void threadEscuchaCPU(void* param){
-	int socket = *((int*) param);
-	free(param);
+void threadEscuchaCPU(t_cpu* cpu){
+	int socket = cpu->socketCPU;
 
-	void* mensaje = NULL;
+	void* mensaje;
 
 	printf("Conectado a un CPU\n");
 
 	while(!flagTerminar){
 		mensaje = recibir(socket);
-		procesarMensaje(mensaje, NULL);
+		if(!mensaje) break;
+		procesarMensaje(mensaje, cpu);
 	}
 
 	close(socket);
@@ -143,10 +144,7 @@ void crearThreadDeCPU(int conexionRecibida){
 
 	list_add(cpus, (void*) cpu);
 
-	int* socket = malloc(sizeof(int));
-	*socket = conexionRecibida;
-
-	pthread_create(hiloEscuchaCPU, NULL,(void*) threadEscuchaCPU,(void*) socket);
+	pthread_create(hiloEscuchaCPU, NULL,(void*) threadEscuchaCPU, cpu);
 }
 
 void threadReceptorCPUs(void* param){
