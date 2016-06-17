@@ -1,6 +1,5 @@
 #include"swap.h"
 
-
 int main() {
 	abrirConfiguracion();
 	crearArchivoBinario(nombre_data, pagina_size, cant_paginas);
@@ -20,13 +19,17 @@ int main() {
 
 	//inicializo las lista de utilizados en vacio porque no hay nada todavia? o como esta ahora???
 	espacioTotal = list_create();
+	int iterator;
 	t_swap* swap = malloc(sizeof(t_swap));
-	swap->bit_uso = 0;
-	//swap->offset = 0;
-	swap->pagina = 0;
-	swap->pid = 0;
-	//swap pos = 0;
-	list_add(espacioTotal, (void*) swap);
+	for (iterator = 0; iterator < cant_paginas; iterator++) {
+		swap->bit_uso = 0;
+		//swap->offset = 0;
+		swap->pagina = iterator;
+		//swap pos = 0;
+		list_add(espacioTotal, (void*) swap);
+	}
+
+	listaDeProcesos = list_create();
 
 	if (strcmp(mensaje, "inicializar") == 0) { //meter el programa en el archivo swap
 		inicializar(1, 1, "asdf");
@@ -39,10 +42,9 @@ int main() {
 	}
 
 	/*while(!flagTerminar){
-		mensaje = recibir(socket_umc);      // se usa asi
-		procesarMensaje(mensaje, NULL);
-	}*/
-
+	 mensaje = recibir(socket_umc);      // se usa asi
+	 procesarMensaje(mensaje, NULL);
+	 }*/
 
 	/*char * mensaje_logger = string_new();
 	 string_append(&mensaje_logger, "Pase por la Swap - "); //->checkpoint 1
@@ -55,9 +57,6 @@ int main() {
 	close(socket_servidor);
 	close(socket_umc);
 	cerrar_todo();
-
-
-
 
 	return 0;
 }
@@ -82,133 +81,153 @@ void cerrar_todo() {
 	config_destroy(configuracion_swap);
 }
 
-
 void inicializar(int id_programa, int paginas_requeridas, char* programa) {
-	if (cant_pags_disponibles() >= paginas_requeridas) { //antes estaba hay espacio
-		if(hayQueCompactar(paginas_requeridas)){
+	if (cant_pags_disponibles() >= paginas_requeridas) {
+		if (hayQueCompactar(paginas_requeridas)) {
 			compactar();
 		}
 		agregarProcesoALista(id_programa, paginas_requeridas);
 		escribirArchivoBinario(programa);
-	}else{
+	} else {
 		// TODO decirle a la umc que no se pudo iniciar porque no hay espacio
 	}
 }
 
 /*int hayEspacio(int paginas_requeridas) {
-	if (cant_pags_disponibles() >= paginas_requeridas) {
-		return 1;
-	} else
-		return 0;
-}*/
+ if (cant_pags_disponibles() >= paginas_requeridas) {
+ return 1;
+ } else
+ return 0;
+ }*/
 
-int hayQueCompactar(int paginas_requeridas){
-	t_list* espaciosLibres = list_filter(espacioTotal,(void*) estaUtilizado);
-	int cantidadDeEspaciosLibres = list_size(espaciosLibres);
-	if(paginas_requeridas <= cantidadDeEspaciosLibres){
-		return 1;
-	}
-	else { return 0;
-	}
+int hayQueCompactar(int paginas_requeridas) {
+	//filtrar por no estautilizado entonces despues tenemos que ver si estan los numeros
+	//de las paginas en orden o continuos y despues tenemos que comparar con paginas requeridas
+	//para ver si hay una cantidad minima de paginas requeridas juntas
+
+	t_list* espaciosLibres = list_filter(espacioTotal,(void*) noEstaUtilizado);
+	return estanPaginasContinuas(espaciosLibres, paginas_requeridas);
 }
 
-//NO ES ALGO, BUSCAR MEJOR ABSTRACCION
-Bool estaUtilizado(){
+int estanPaginasContinuas(t_list espaciosLibres, int paginas_requeridas){
+	int i;
+	int contadorDeEspaciosContiguos = 1;
+	for(i=0; i < list_size(espaciosLibres); i++){
+		t_swap* swap = list_get(espaciosLibres,i);
+		t_swap* swapPosterior = list_get(espaciosLibres,i+1);
+		if(swap->pagina == swapPosterior->pagina-1){
+			contadorDeEspaciosContiguos ++;
+		}
+		else{
+			contadorDeEspaciosContiguos = 1;
+		}
+	} if(contadorDeEspaciosContiguos >= paginas_requeridas){
+		return 0;
+	}else{return 1;}
+}
+
+//AHORA NO SE ESTA UTILIZANDO EN NINGUN LADO
+Bool estaUtilizado() {
 	int cantidadDeAlgo = list_size(espacioTotal);
 	Bool esta = true;
 	int i = 0;
-	for(i=0; i < cantidadDeAlgo; i++){
+	for (i = 0; i < cantidadDeAlgo; i++) {
 		t_swap* algo = list_get(espacioTotal, i);
-		if(algo->bit_uso == 0){
+		if (algo->bit_uso == 0) {
 			esta = false;
 		}
-	} return esta;
+	}
+	return esta;
 }
 
-void compactar(){
+void compactar() {
 	// TODO
 	//ver si el bit de uso del primer elemento esta libre (1), si está guardo esa pagina/marco
 	//cuando recorri toda la lista, al marco libre lo ocupo por el mas proximo ocupado y al ocupado
 	//lo lleno de ceros...
 
-	sleep(retardo_compactacion/1000);
+	sleep(retardo_compactacion / 1000);
 }
-
-
-
 
 void agregarProcesoALista(int id_programa, int paginas_requeridas) {
 
-// tiene que recorrer como en estautilizado y reemplazar? o directamente agregarlo al final?
-	//como le agrego la pagina? como se la ultima posicion de la lista?
-
-	int cantidadAlgo = list_size(espacioTotal);
-	int i;
-	for(i=0; i < paginas_requeridas; i++){
-			t_swap* proceso = malloc(sizeof(proceso));
+	t_proceso* proceso = malloc(sizeof(t_proceso));
+	int j;
+	for (j = 0 /*todo ultima pagina usada*/; j < paginas_requeridas; j++) {
+			proceso->pagina = j /* +1 */;
 			proceso->pid = id_programa;
-			proceso->bit_uso = 1;
-			proceso->pagina = (cantidadAlgo + 1);
-			paginas_requeridas --;
-			list_add(espacioTotal, proceso);
-
-
-
-		}
+			list_add(listaDeProcesos, (void*) proceso);
+			t_swap* swap = list_get(espacioTotal, j+1);
+			swap->bit_uso = 1;
+			list_replace(espacioTotal,j+1,swap);
 	}
+}
 
-
-
-void finalizar(int id_programa){
-	int cantidadAlgo = list_size(espacioTotal);
-		int i;
-		for(i=0; i < cantidadAlgo; i++){
-			t_swap* proceso = list_get(espacioTotal, i);
-			if(proceso->pid == id_programa){
-				proceso->bit_uso = 0;
-				proceso->pid = NULL;
-				//TODO borrarArchivoBinario(proceso->pagina);
-			}
-
-		}
-
+int ultimaPaginaUsada(){
+	int l;
+	for(l = cant_paginas)
 
 }
 
-//NO ES ALGO, BUSCAR MEJOR ABSTRACCION
-Bool noEstaUtilizado(){
-	int cantidadDeAlgo = list_size(espacioTotal);
-	Bool esta = true;
-	int i = 0;
-	for(i=0; i < cantidadDeAlgo; i++){
-		t_swap* algo = list_get(espacioTotal, i);
-		if(algo->bit_uso == 1){
-			esta = false;
-		}
-	} return esta;
+void finalizar(int id_programa) {
+
+	int j;
+	for(j = 0; j < list_size(listaDeProcesos); j++ ){
+		t_proceso* proceso = list_get(listaDeProcesos, j);
+		if(proceso->pid == id_programa){
+			int paginaALiberar = proceso->pagina;
+			list_remove(listaDeProcesos, j);
+			t_swap* swap = list_get(espacioTotal, paginaALiberar);
+			swap->bit_uso = 0;
+			list_replace(espacioTotal,paginaALiberar,swap);
+			}
+
+
+
+	/*int cantidadAlgo = list_size(espacioTotal);
+	int i;
+	for (i = 0; i < cantidadAlgo; i++) {
+		t_swap* proceso = list_get(espacioTotal, i);
+		if (proceso->pid == id_programa) {
+			proceso->bit_uso = 0;
+			proceso->pid = NULL;
+			//TODO borrarArchivoBinario(proceso->pagina);
+		}*/
+
+	}
+
+}
+
+
+Bool noEstaUtilizado(t_swap* swap) {
+
+	if(swap->bit_uso == 0){
+	return true;
+	}else{
+		return false;
+	}
 }
 
 int cant_pags_disponibles() {
-	t_list* espaciosOcupados = list_filter(espacioTotal,(void*) noEstaUtilizado);
-	int paginas_usadas = list_size(espaciosOcupados);
-	return cant_paginas - paginas_usadas;
-
+	t_list* espaciosLibres = list_filter(espacioTotal,
+			(void*) noEstaUtilizado);
+	return listsize(espaciosLibres);
 }
 
 /*int tamanioListaSwap(){
-	size_t t;
-	t = sizeof(lista_swap) / sizeof(t_swap);
-	return (int)t;
-}*/
+ size_t t;
+ t = sizeof(lista_swap) / sizeof(t_swap);
+ return (int)t;
+ }*/
 
-void leer_pagina(int id_programa, int num_pagina){
-
-}
-
-void escribir_pagina(int id_programa, int num_pagina, char* buffer){
+void leer_pagina(int id_programa, int num_pagina) {
 
 }
 
-void terminar(){
+void escribir_pagina(int id_programa, int num_pagina, char* buffer) {
+
+}
+
+void terminar() {
 
 }

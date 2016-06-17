@@ -23,8 +23,13 @@ typedef struct{
 	int pagina;
 	//int posicion; pagina = posicion
 	//int offset;
+	//int bit_uso;
+} t_proceso;
+
+typedef struct{
+	int pagina;
 	int bit_uso;
-} t_swap; // otro nombre?
+} t_swap;
 
 
 /*typedef struct{
@@ -36,6 +41,7 @@ typedef struct{
 
 
 t_list* espacioTotal;
+t_list* listaDeProcesos;
 
 
 t_swap lista_swap[];
