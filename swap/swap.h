@@ -53,6 +53,7 @@ char* nombre_data;
 int cant_paginas;
 int pagina_size;
 int retardo_compactacion;
+int retardo_acceso;
 t_log* logger;
 t_log* logger_pantalla;
 

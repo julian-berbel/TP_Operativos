@@ -72,6 +72,7 @@ void abrirConfiguracion() {
 	pagina_size = config_get_int_value(configuracion_swap, "TAMAÑO_PAGINA");
 	retardo_compactacion = config_get_int_value(configuracion_swap,
 			"RETARDO_COMPACTACION");
+	retardo_acceso = config_get_int_value(configuracion_swap,"RETARDO_ACCESO");
 	logger = log_create(RUTA_LOG, "Swap", false, LOG_LEVEL_INFO);
 	logger_pantalla = log_create(RUTA_LOG, "Swap", true, LOG_LEVEL_INFO);
 
