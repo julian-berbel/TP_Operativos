@@ -28,6 +28,7 @@ int main() {
 		swap->pagina = iterator;
 		//swap pos = 0;
 		list_add(espacioTotal, (void*) swap);
+		free(swap); //liberar swap
 	}
 
 	listaDeProcesos = list_create();
@@ -46,7 +47,7 @@ int main() {
 	 mensaje = recibir(socket_umc);      // se usa asi
 	 procesarMensaje(mensaje, NULL);
 	 }*/
-
+	//enviar(socket_umc, mensaje, tamanio);   ---> devolver pagina a la umc
 	/*char * mensaje_logger = string_new();
 	 string_append(&mensaje_logger, "Pase por la Swap - "); //->checkpoint 1
 	 string_append(&mensaje_logger, mensaje);
@@ -69,7 +70,8 @@ void abrirConfiguracion() {
 	nombre_data = config_get_string_value(configuracion_swap, "NOMBRE_SWAP");
 	cant_paginas = config_get_int_value(configuracion_swap, "CANTIDAD_PAGINAS");
 	pagina_size = config_get_int_value(configuracion_swap, "TAMAÑO_PAGINA");
-	retardo_compactacion = config_get_int_value(configuracion_swap,"RETARDO_COMPACTACION");
+	retardo_compactacion = config_get_int_value(configuracion_swap,
+			"RETARDO_COMPACTACION");
 	logger = log_create(RUTA_LOG, "Swap", false, LOG_LEVEL_INFO);
 	logger_pantalla = log_create(RUTA_LOG, "Swap", true, LOG_LEVEL_INFO);
 
@@ -144,21 +146,39 @@ int estanPaginasContinuas(t_list* espaciosLibres, int paginas_requeridas) {
 	}
 }
 
+t_list* sacarRepetidos(t_list* lista) {
+	int i, j, tamanioLista;
+	tamanioLista = list_size(lista);
+	for (i = 0; i < tamanioLista; i++) {
+		t_swap* primerElemento = list_get(lista, i);
+		for (j = i + 1; j <= tamanioLista - 1; j++) {
+			t_swap* siguienteElemento = list_get(lista, j);
+			if (primerElemento->pagina == siguienteElemento->pagina) {
+				list_remove(lista, j + 1);
+				j=j-1;
+			}
+		}
+
+	}
+	return lista;
+}
+
 t_list* paginasAReemplazar(t_list* espaciosLibres, int paginas_requeridas) {
 	int i;
-	//int contadorDeEspaciosContiguos = 1;
 	t_list* paginasContiguas = list_create();
 	int cantidadEspaciosLibres = list_size(espaciosLibres);
 	for (i = 0; i < cantidadEspaciosLibres - 1 && i < paginas_requeridas; i++) {
 		t_swap* swap = list_get(espaciosLibres, i);
 		t_swap* swapPosterior = list_get(espaciosLibres, i + 1);
 		if (swap->pagina == swapPosterior->pagina - 1) {
-			//contadorDeEspaciosContiguos++;
-			list_add(paginasContiguas,swap);
-			list_add(paginasContiguas,swapPosterior);
+			list_add(paginasContiguas, swap);
+			list_add(paginasContiguas, swapPosterior);
 		}
-		//hay que sacarle los repetidos a paginasContiguas
-	} return paginasContiguas/*sin repetidos*/;
+
+
+	}
+	t_list* pagsContSinRepetidos = sacarRepetidos(paginasContiguas);
+	return pagsContSinRepetidos;
 
 }
 
@@ -187,73 +207,58 @@ void compactar() {
 
 void agregarProcesoALista(int id_programa, int paginas_requeridas) {
 	int j;
+	t_list* listaLibres = espaciosLibres();
 	if (paginas_requeridas == 1) {
-		t_list* listaLibres = espaciosLibres();
 		t_swap* primerEspacioLibre = list_get(listaLibres, 0);
 		primerEspacioLibre->bit_uso = 1;
 		list_replace(espacioTotal, primerEspacioLibre->pagina,
 				primerEspacioLibre);
+	} else {
+		t_list* pagsAReemplazar = paginasAReemplazar(listaLibres,paginas_requeridas);
+		for (j = 0 ; j < paginas_requeridas; j++) {
+			t_swap* swap = list_get(pagsAReemplazar, j);
+			swap->bit_uso = 1;
+			list_replace(espacioTotal, swap->pagina, swap);
+
+			t_proceso* proceso = malloc(sizeof(t_proceso));
+			proceso->pagina = swap->pagina ;
+			proceso->pid = id_programa;
+			list_add(listaDeProcesos, (void*) proceso);
+			free(proceso); //liberar proceso
+		}
+
 	}
-else {
-	for (j = 0 /*todo ultima pagina usada*/; j < paginas_requeridas; j++) {
-		t_proceso* proceso = malloc(sizeof(t_proceso));
-		proceso->pagina = j /* +1 */;
-		proceso->pid = id_programa;
-		list_add(listaDeProcesos, (void*) proceso);
-		t_swap* swap = list_get(espacioTotal, j+1);
-		swap->bit_uso = 1;
-		list_replace(espacioTotal,j+1,swap);
-		// no hace falta saber cual es la ultima porque tambien tengo que revisar el
-		//espacio total y su bit de uso, y en ese me lo va a agregar (dos for?)
-	}}
 }
-
-
 
 void finalizar(int id_programa) {
 
-int j;
-for (j = 0; j < list_size(listaDeProcesos); j++) {
-	t_proceso* proceso = list_get(listaDeProcesos, j);
-	if (proceso->pid == id_programa) {
-		int paginaALiberar = proceso->pagina;
-		list_remove(listaDeProcesos, j);
-		t_swap* swap = list_get(espacioTotal, paginaALiberar);
-		swap->bit_uso = 0;
-		list_replace(espacioTotal, paginaALiberar, swap);
+	int j;
+	for (j = 0; j < list_size(listaDeProcesos); j++) {
+		t_proceso* proceso = list_get(listaDeProcesos, j);
+		if (proceso->pid == id_programa) {
+			int paginaALiberar = proceso->pagina;
+			list_remove(listaDeProcesos, j);
+			t_swap* swap = list_get(espacioTotal, paginaALiberar);
+			swap->bit_uso = 0;
+			list_replace(espacioTotal, paginaALiberar, swap);
+		}
+
 	}
-
-	/*int cantidadAlgo = list_size(espacioTotal);
-	 int i;
-	 for (i = 0; i < cantidadAlgo; i++) {
-	 t_swap* proceso = list_get(espacioTotal, i);
-	 if (proceso->pid == id_programa) {
-	 proceso->bit_uso = 0;
-	 proceso->pid = NULL;
-	 //TODO borrarArchivoBinario(proceso->pagina);
-	 }*/
-
-}
 
 }
 
 int cant_pags_disponibles() {
-int cantidadDisponibles = list_size(espaciosLibres());
-return cantidadDisponibles;
+	int cantidadDisponibles = list_size(espaciosLibres());
+	return cantidadDisponibles;
 }
 
-/*int tamanioListaSwap(){
- size_t t;
- t = sizeof(lista_swap) / sizeof(t_swap);
- return (int)t;
- }*/
 
 void leer_pagina(int id_programa, int num_pagina) {
 
 }
 
 void escribir_pagina(int id_programa, int num_pagina, char* buffer) {
-
+// escribir archivo binario
 }
 
 void terminar() {
