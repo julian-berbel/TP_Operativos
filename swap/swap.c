@@ -7,14 +7,14 @@ int main() {
 	log_info(logger, "Inicia proceso Swap");
 
 	int socket_servidor = crear_socket_servidor(ipSwap, puertoSwap);
-	//int socket_umc = recibirConexion(socket_servidor);
+	int socket_umc = recibirConexion(socket_servidor);
 
 	log_info(logger_pantalla, "Swap y UMC conectados");
 
 	char* mensaje;
 
-	//while (string_is_empty(mensaje = recibir_string_generico(socket_umc)))
-	//	;
+	while (string_is_empty(mensaje = recibir_string_generico(socket_umc)))
+		;
 	mensaje = "inicializar";
 
 	//inicializo las lista de utilizados en vacio porque no hay nada todavia? o como esta ahora???
@@ -56,7 +56,7 @@ int main() {
 
 	free(mensaje);
 	close(socket_servidor);
-	//close(socket_umc);
+	close(socket_umc);
 	cerrar_todo();
 
 	return 0;
@@ -69,8 +69,7 @@ void abrirConfiguracion() {
 	nombre_data = config_get_string_value(configuracion_swap, "NOMBRE_SWAP");
 	cant_paginas = config_get_int_value(configuracion_swap, "CANTIDAD_PAGINAS");
 	pagina_size = config_get_int_value(configuracion_swap, "TAMAÑO_PAGINA");
-	retardo_compactacion = config_get_int_value(configuracion_swap,
-			"RETARDO_COMPACTACION");
+	retardo_compactacion = config_get_int_value(configuracion_swap,"RETARDO_COMPACTACION");
 	logger = log_create(RUTA_LOG, "Swap", false, LOG_LEVEL_INFO);
 	logger_pantalla = log_create(RUTA_LOG, "Swap", true, LOG_LEVEL_INFO);
 
