@@ -62,7 +62,7 @@ void threadInterpreteConsola() {
 	free(mensaje);
 }
 
-int main() {
+int main(int cantidadArgumentos, char* argumentos[]) {
 
  abrirConfiguracion();
  log_info(logger, "Inicia proceso UMC");
@@ -71,14 +71,14 @@ int main() {
 
  sem_init(&semTerminar, 0, 0);
 
- //	socket_swap = crear_socket_cliente(ipSwap, puertoSwap);
+ socket_swap = crear_socket_cliente(ipSwap, puertoSwap);
  log_info(logger_pantalla, "UMC y Swap conectados");
 
  socket_servidor = crear_socket_servidor(ipUmc, puertoUmc);
 
  clientes = list_create();
 
- //	pthread_create(&hiloReceptor, NULL,(void*) threadReceptor, &socket_servidor);
+ pthread_create(&hiloReceptor, NULL,(void*) threadReceptor, &socket_servidor);
 
  pthread_create(&hiloInterpreteConsola, NULL,
  (void*) threadInterpreteConsola, NULL);
@@ -160,49 +160,65 @@ void cerrar_todo() {
 	config_destroy(configuracionUMC);
 }
 
-void inicializar(int id_programa, int paginas_requeridas, char* programa) {
+void inicializar(int id_programa, int paginas_requeridas, char* programa, void* cliente) {
 	crear_tabla_de_paginas(id_programa, paginas_requeridas); //testeado
 
-	//serializar inicializar
-	//enviar_string(socket_swap, mensaje);
-	//enviar a swap para que lo guarde
-
+	void* mensaje;
+	int tamanioMensaje = serializarInicializar(id_programa, paginas_requeridas, programa, &mensaje);
+	enviar(socket_swap, mensaje, tamanioMensaje);
+	char* respuesta=recibir_string_generico(socket_swap);
+	respuesta = (strcmp(respuesta, "OK")) ? "NO OK": "OK";
+	enviar_string(((t_cliente*)cliente)->socket, respuesta);
 }
 
 void finalizar(int id_programa) {
 	memset(tabla_procesos[id_programa], '0', sizeof(tabla_paginas) * 20);
-	//avisar al swap para que libere memoria
 	procesos_ocupados[id_programa] = 0;
+	//avisar al swap para que libere memoria
+	void* mensaje;
+		int tamanioMensaje = serializarFinalizar(id_programa, &mensaje);
+		enviar(socket_swap, mensaje, tamanioMensaje);
 }
 
-void leer_pagina(int num_pagina, int offset, size_t t) {
+void leer_pagina(int num_pagina, int offset, size_t t, void* cpu) {
+	int idp=((t_cliente*)cpu)->proceso_activo;
 	//obtener el proceso activo
-	int marco = obtener_marco(id_proceso_activo, num_pagina);
+	int marco = obtener_marco(idp, num_pagina);
 	if (marco >= 0) { //si esta en MP
 		char* contenido = leer_posicion_memoria(marco * marco_size + offset, t);
-		printf("%s\n", contenido);
 		//enviar a la cpu el contenido
+		enviar_string(((t_cliente*)cpu)->socket,contenido);
+
 	} else { //si no esta en MP envio la solicitud a SWAP
 		//serializar y enviar a swap
-		//enviar_string(socket_swap, mensaje);
+		void* mensaje;
+		int tamanioMensaje = serializarLeerPagina(idp, num_pagina, &mensaje);
+		enviar(socket_swap, mensaje, tamanioMensaje);
+		char* cont=recibir_string_generico(socket_swap);
+		enviar_string(((t_cliente*)cpu)->socket,cont);
 	}
 }
 
-void escribir_pagina(int num_pagina, int offset, size_t t, char *buffer) { //testeado
-	if (cant_paginas_asignadas(id_proceso_activo) < marco_x_proc) {
+void escribir_pagina(int num_pagina, int offset, size_t t, char *buffer,void* cpu) { //testeado
+	int idp=((t_cliente*)cpu)->proceso_activo;
+	if (cant_paginas_asignadas(idp) < marco_x_proc) {
 		int marco_libre = buscar_marco_libre();
 		if (marco_libre != -1) {
 			escribir_posicion_memoria(marco_libre * marco_size + offset, t,
 					buffer);
-			escribir_marco_en_TP(id_proceso_activo, num_pagina, marco_libre);
+			escribir_marco_en_TP(idp, num_pagina, marco_libre);
 			marco_ocupado(marco_libre);
-		} else {
+		} else {//memoria ocupada
 		}
 	} else {
-		int marco_destino = reemplazar_MP(id_proceso_activo, num_pagina);
+		int marco_destino = reemplazar_MP(idp, num_pagina);
+		void* mensaje;
+				int tamanioMensaje = serializarEscribirPagina(idp, num_pagina,buffer,&mensaje);
+				enviar(socket_swap, mensaje, tamanioMensaje);
+
 		escribir_posicion_memoria(marco_destino * marco_size + offset, t,
 				buffer);
-		escribir_marco_en_TP(id_proceso_activo, num_pagina, marco_destino);
+		escribir_marco_en_TP(idp, num_pagina, marco_destino);
 	}
 
 }
