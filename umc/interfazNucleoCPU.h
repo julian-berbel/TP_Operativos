@@ -28,10 +28,10 @@ void procesarMensaje(void* mensaje, void* dataAdicional);
 
 extern void terminar();
 
-extern void inicializar(int id_programa,int paginas_requeridas, char* programa);
+extern void inicializar(int id_programa,int paginas_requeridas, char* programa, void* cliente);
 extern void finalizar(int num_programa);
-extern void leer_pagina(int num_pagina, int offset,size_t t);
-extern void escribir_pagina(int num_pagina, int offset, size_t t, char *buffer);
+extern void leer_pagina(int num_pagina, int offset,size_t t, void* cliente);
+extern void escribir_pagina(int num_pagina, int offset, size_t t, char *buffer,void* cliente);
 extern void cambiar_proceso_activo(int pid, void* dataAdicional);
 
 #endif /* INTERFAZSWAP_H_ */

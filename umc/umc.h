@@ -17,7 +17,6 @@
 #define RUTA_LOG "/home/utnso/umc.log"
 #define RUTA_CONFIG "/home/utnso/tp-2016-1c-Hellfish-Group/umc/config/umc.config"
 
-int id_proceso_activo;
 t_config* configuracionUMC;
 char* puertoUmc;
 char* ipUmc;
@@ -55,10 +54,10 @@ void cerrar_todo();
 void *funcion_nucleo(void *argumento);
 void *funcion_cpu(void *argumento);
 
-void inicializar(int id_programa,int paginas_requeridas, char* programa);
+void inicializar(int id_programa,int paginas_requeridas, char* programa, void* cliente);
 void finalizar(int num_programa);
-void leer_pagina(int num_pagina, int offset,size_t t);
-void escribir_pagina(int num_pagina, int offset, size_t t, char *buffer);
+void leer_pagina(int num_pagina, int offset,size_t t, void* cliente);
+void escribir_pagina(int num_pagina, int offset, size_t t, char *buffer, void* cliente);
 
 typedef struct{
 	int marco;

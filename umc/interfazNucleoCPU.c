@@ -14,7 +14,7 @@ void deserializarInicializar(void* parametrosSerializados, void* dataAdicional){
 
 	programa = parametrosSerializados;
 
-	inicializar(id_programa, paginas_requeridas, programa);
+	inicializar(id_programa, paginas_requeridas, programa, dataAdicional);
 }
 
 void deserializarSolicitar(void* parametrosSerializados, void* dataAdicional){
@@ -29,7 +29,7 @@ void deserializarSolicitar(void* parametrosSerializados, void* dataAdicional){
 
 	t = *((int*) parametrosSerializados);
 
-	leer_pagina(num_pagina, offset, t);
+	leer_pagina(num_pagina, offset, t, dataAdicional);
 }
 
 void deserializarAlmacenar(void* parametrosSerializados, void* dataAdicional){
@@ -48,7 +48,7 @@ void deserializarAlmacenar(void* parametrosSerializados, void* dataAdicional){
 
 	buffer = parametrosSerializados;
 
-	escribir_pagina(num_pagina, offset, t, buffer);
+	escribir_pagina(num_pagina, offset, t, buffer, dataAdicional);
 }
 
 void deserializarFinalizar(void* parametrosSerializados, void* dataAdicional){
