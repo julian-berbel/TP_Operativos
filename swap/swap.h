@@ -69,7 +69,9 @@ void agregarProcesoALista(int id_programa,int paginas_requeridas);
 int tamanioListaSwap();
 
 int hayQueCompactar(int paginas_requeridas);
+int estanPaginasContinuas(t_list* espaciosLibres, int paginas_requeridas);
 Bool estaUtilizado();
+Bool noEstaUtilizado();
 void compactar();
 
 void terminar();
