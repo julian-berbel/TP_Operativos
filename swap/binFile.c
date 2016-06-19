@@ -7,6 +7,18 @@
 #include"swap.h"
 #include"binFile.h"
 
+char* rutaArchivoSwap(){
+	char *ruta_archivo = string_new();
+	string_append(&ruta_archivo, RUTA_BINFILE);
+	string_append(&ruta_archivo, nombre_data);
+
+	return ruta_archivo;
+}
+
+long int paginaEnBytes(int numPagina){
+	return numPagina * pagina_size;
+}
+
 void crearArchivoBinario(char* nombre_data, int pagina_size, int cant_paginas) {
 	char* comando = string_new();
 	string_append(&comando, "dd if=/dev/zero ");
@@ -33,14 +45,21 @@ char* tamanioArchivo(int pagina_tamanio, int cantidad_pags) {
 
 void escribirArchivoBinario(char* programa){
 
-	char *ruta_archivo = string_new();
-	string_append(&ruta_archivo, RUTA_BINFILE);
-	string_append(&ruta_archivo, nombre_data);
-
-	archivo = fopen(ruta_archivo,"w");
+	archivo = fopen(rutaArchivoSwap(),"w");
 
 	fputs(programa,archivo);
 
 	fclose(archivo);
 }
 
+
+void escribirArchivoBinarioEnPag(int numPagina, char* buffer){
+
+	archivo = fopen(rutaArchivoSwap(), "wb");
+
+	fseek(archivo,paginaEnBytes(numPagina),SEEK_SET);
+
+	fputs(buffer,archivo);
+
+	fclose(archivo);
+}

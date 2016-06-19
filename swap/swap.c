@@ -7,14 +7,14 @@ int main() {
 	log_info(logger, "Inicia proceso Swap");
 
 	int socket_servidor = crear_socket_servidor(ipSwap, puertoSwap);
-	int socket_umc = recibirConexion(socket_servidor);
+	//int socket_umc = recibirConexion(socket_servidor);
 
 	log_info(logger_pantalla, "Swap y UMC conectados");
 
 	char* mensaje;
 
-	while (string_is_empty(mensaje = recibir_string_generico(socket_umc)))
-		;
+	//while (string_is_empty(mensaje = recibir_string_generico(socket_umc)))
+	//	;
 	mensaje = "inicializar";
 
 	//inicializo las lista de utilizados en vacio porque no hay nada todavia? o como esta ahora???
@@ -35,10 +35,11 @@ int main() {
 
 	if (strcmp(mensaje, "inicializar") == 0) { //meter el programa en el archivo swap
 		inicializar(1, 1, "asdf");
+		mensaje = "escribir_pagina";
 	} else if (strcmp(mensaje, "leer_pagina") == 0) {
 		//TODO completar
 	} else if (strcmp(mensaje, "escribir_pagina") == 0) {
-		//TODO completar
+		escribir_pagina(1,0,"hola");
 	} else if (strcmp(mensaje, "finalizar_programa") == 0) {
 		//TODO completar
 	}
@@ -57,7 +58,7 @@ int main() {
 
 	free(mensaje);
 	close(socket_servidor);
-	close(socket_umc);
+	//close(socket_umc);
 	cerrar_todo();
 
 	return 0;
@@ -72,7 +73,7 @@ void abrirConfiguracion() {
 	pagina_size = config_get_int_value(configuracion_swap, "TAMAÑO_PAGINA");
 	retardo_compactacion = config_get_int_value(configuracion_swap,
 			"RETARDO_COMPACTACION");
-	retardo_acceso = config_get_int_value(configuracion_swap,"RETARDO_ACCESO");
+	retardo_acceso = config_get_int_value(configuracion_swap, "RETARDO_ACCESO");
 	logger = log_create(RUTA_LOG, "Swap", false, LOG_LEVEL_INFO);
 	logger_pantalla = log_create(RUTA_LOG, "Swap", true, LOG_LEVEL_INFO);
 
@@ -156,7 +157,7 @@ t_list* sacarRepetidos(t_list* lista) {
 			t_swap* siguienteElemento = list_get(lista, j);
 			if (primerElemento->pagina == siguienteElemento->pagina) {
 				list_remove(lista, j + 1);
-				j=j-1;
+				j = j - 1;
 			}
 		}
 
@@ -175,7 +176,6 @@ t_list* paginasAReemplazar(t_list* espaciosLibres, int paginas_requeridas) {
 			list_add(paginasContiguas, swap);
 			list_add(paginasContiguas, swapPosterior);
 		}
-
 
 	}
 	t_list* pagsContSinRepetidos = sacarRepetidos(paginasContiguas);
@@ -215,14 +215,15 @@ void agregarProcesoALista(int id_programa, int paginas_requeridas) {
 		list_replace(espacioTotal, primerEspacioLibre->pagina,
 				primerEspacioLibre);
 	} else {
-		t_list* pagsAReemplazar = paginasAReemplazar(listaLibres,paginas_requeridas);
-		for (j = 0 ; j < paginas_requeridas; j++) {
+		t_list* pagsAReemplazar = paginasAReemplazar(listaLibres,
+				paginas_requeridas);
+		for (j = 0; j < paginas_requeridas; j++) {
 			t_swap* swap = list_get(pagsAReemplazar, j);
 			swap->bit_uso = 1;
 			list_replace(espacioTotal, swap->pagina, swap);
 
 			t_proceso* proceso = malloc(sizeof(t_proceso));
-			proceso->pagina = swap->pagina ;
+			proceso->pagina = swap->pagina;
 			proceso->pid = id_programa;
 			list_add(listaDeProcesos, (void*) proceso);
 			free(proceso); //liberar proceso
@@ -253,13 +254,35 @@ int cant_pags_disponibles() {
 	return cantidadDisponibles;
 }
 
-
 void leer_pagina(int id_programa, int num_pagina) {
 
 }
 
 void escribir_pagina(int id_programa, int num_pagina, char* buffer) {
-// escribir archivo binario
+	//TODO recv de la umc
+	int i;
+	t_list* paginasDelProceso = list_create();
+	int paginaAEscribir = -1;
+	for (i = 0; i < list_size(listaDeProcesos); i++) { //Recorre la lista de procesos para ver si existe en la Swap
+		t_proceso* proceso = list_get(listaDeProcesos, i); //Fallo acá
+		if (proceso->pid == id_programa) {
+			list_add(paginasDelProceso, proceso);
+		}
+	}
+	if (list_get(paginasDelProceso, 0) == NULL) //si no encuentra el preoceso
+		log_info(logger, "No existe la pagina solicitada en la Swap");
+
+	for (i = 0; i <= list_size(paginasDelProceso); i++) {
+		if (i == num_pagina) {
+			t_proceso* proceso = list_get(paginasDelProceso, i);
+			paginaAEscribir = proceso->pagina;
+		}
+	}
+	if(paginaAEscribir == -1)
+		log_info(logger, "No existe la pagina solicitada en la Swap");
+	else
+		escribirArchivoBinarioEnPag(paginaAEscribir,buffer);
+
 }
 
 void terminar() {

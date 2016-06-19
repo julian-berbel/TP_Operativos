@@ -19,5 +19,6 @@ FILE *archivo;
 void crearArchivoBinario(char* nombre_data,int pagina_size,int cant_paginas);
 char* tamanioArchivo(int pag_size,int cantidad);
 void escribirArchivoBinario(char* programa);
+void escribirArchivoBinarioEnPag(int paginaAEscrbir, char* buffer);
 
 #endif /* BINFILE_H_ */
