@@ -1,6 +1,6 @@
 #include "nucleo.h"
 
-void cancelar(int pid){
+void cancelar(void* consola){
 
 }
 
@@ -67,15 +67,28 @@ int mayorSocket(int mayor){
 	return mayor;
 }
 
+void leerCambios(){
+	t_config* configAux = config_create(RUTA_CONFIG);
+	quantum = config_get_int_value(configAux, "QUANTUM");
+	quantum_sleep = config_get_int_value(configAux, "QUANTUM_SLEEP");
+
+	config_destroy(configAux);
+}
+
 void destruirConsola(t_consola* consola){
 	close(consola->socketConsola);
 	free(consola);
 }
 
-void threadReceptorYEscuchaConsolas(void* param){
+void threadReceptorYEscuchaConsolas(){
 	fd_set* bagDeSockets = malloc(sizeof(fd_set));
+	socket_consolas = crear_socket_servidor(ipNucleo, puertoNucleo);
 
-	int i, conexionRecibida, socketServer = *((int*)param), n = mayorSocket(socketServer) + 1;
+	int i, conexionRecibida, descriptor_inotify = inotify_init(), n;
+	inotify_add_watch(descriptor_inotify, RUTA_CONFIG, IN_MODIFY);
+
+	n = (socket_consolas> descriptor_inotify) ? socket_consolas:descriptor_inotify;
+	n = mayorSocket(n) + 1;
 
 	t_consola* consola;
 
@@ -83,7 +96,8 @@ void threadReceptorYEscuchaConsolas(void* param){
 
 	while(!flagTerminar){
 		FD_ZERO(bagDeSockets);
-		FD_SET(socketServer, bagDeSockets);
+		FD_SET(socket_consolas, bagDeSockets);
+		FD_SET(descriptor_inotify, bagDeSockets);
 
 		for(i = 0; i < consolas->elements_count; i++){
 			consola = (t_consola*) list_get(consolas, i);
@@ -94,11 +108,21 @@ void threadReceptorYEscuchaConsolas(void* param){
 
 		if(flagTerminar) break;
 
-		if(FD_ISSET(socketServer, bagDeSockets)){
-			conexionRecibida = recibirConexion(socketServer);
+		if(FD_ISSET(socket_consolas, bagDeSockets)){
+			conexionRecibida = recibirConexion(socket_consolas);
 			printf("Conectado a una consola!\n");
+			consola = malloc(sizeof(t_consola));
+			consola->socketConsola = conexionRecibida;
+			list_add(consolas, consola);
 			nuevoPrograma(conexionRecibida);
-			n = mayorSocket(socketServer) + 1;
+			n = mayorSocket(n) + 1;
+		}else if(FD_ISSET(descriptor_inotify, bagDeSockets)){
+			mensaje = malloc(sizeof(struct inotify_event));
+			read(descriptor_inotify, mensaje, sizeof(struct inotify_event));
+			read(descriptor_inotify, mensaje, sizeof(struct inotify_event)); //odio esto con furor, pero sino corre esta parte del codigo 2 veces
+			usleep(10000);
+			leerCambios();
+			free(mensaje);
 		}else{
 			for(i = 0; i < consolas->elements_count; i++){
 				consola = list_get(consolas, i);
@@ -116,7 +140,7 @@ void threadReceptorYEscuchaConsolas(void* param){
 		}
 	}
 	free(bagDeSockets);
-	close(socketServer);
+	close(socket_consolas);
 }
 
 void threadEscuchaCPU(t_cpu* cpu){
@@ -194,9 +218,7 @@ int main(){
 	socket_umc = crear_socket_cliente(ipUMC, puertoUMC);
 	log_info(logger_pantalla, "Nucleo y UMC conectados");
 
-	socket_consolas = crear_socket_servidor(ipNucleo, puertoNucleo);
-
-	pthread_create(&hiloConsolas, NULL,(void*) threadReceptorYEscuchaConsolas, &socket_consolas);
+	pthread_create(&hiloConsolas, NULL,(void*) threadReceptorYEscuchaConsolas, NULL);
 
 	socket_cpus = crear_socket_servidor(ipNucleo, puertoCPU);
 
@@ -241,6 +263,7 @@ void cerrar_todo(){
 	shutdown(socket_consolas, 0);
 	shutdown(socket_cpus, 0);
 	shutdown(socket_umc, 0);
+	close(descriptor_inotify);
 
 	list_iterate(consolas, (void*) bloquearConsola);
 	pthread_join(hiloConsolas, NULL);

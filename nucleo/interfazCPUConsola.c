@@ -53,10 +53,8 @@ int serializarImprimir(char* mensaje, void** serializacion){
 	return tamanio;
 }
 
-void deserializarCancelar(void* parametrosSerializados, void* dataAdicional){
-	int pid = *((int*) dataAdicional);
-
-	cancelar(pid);
+void deserializarCancelar(void* parametrosSerializados, void* consola){
+	cancelar(consola);
 }
 
 void deserializarImprimir(void* parametrosSerializados, void* dataAdicional){

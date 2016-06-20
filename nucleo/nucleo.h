@@ -16,6 +16,9 @@
 #include "interfazCPUConsola.h"
 #include <sys/epoll.h>
 #include <math.h>
+#include <sys/inotify.h>
+#include <termios.h>
+#include <unistd.h>
 
 #define RUTA_LOG "/home/utnso/nucleo.log"
 #define RUTA_CONFIG "/home/utnso/tp-2016-1c-Hellfish-Group/nucleo/config/nucleo.config"
@@ -50,6 +53,7 @@ pthread_t hiloReceptorCPUs;
 sem_t semTerminar;
 sig_atomic_t flagTerminar = 0;
 int tamanioDePagina;
+int descriptor_inotify;
 
 typedef struct{
 	pthread_t* hiloCPU;
@@ -65,7 +69,7 @@ typedef struct{
 void abrirConfiguracion();
 void cerrar_todo();
 
-void cancelar(int pid);
+void cancelar(void* consola);
 
 void imprimir(int pid, char* mensaje);
 

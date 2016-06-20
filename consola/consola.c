@@ -48,29 +48,23 @@ int archivoExiste(char *ruta) {
 }
 
 char* leerArchivo(char* ruta){
-	FILE* archivo;
-	if (archivoExiste(ruta)){
-		archivo = fopen(ruta,"r");
+	char* buffer = NULL;
+	long largo;
+	FILE* f = fopen (ruta, "rb");
 
-		char* buffer = string_new();
-
-		char* aux = malloc(100);
-		memset(aux, '\0', 100);
-
-		while(!feof(archivo)){
-			fgets(aux, 99, archivo);
-			string_append(&buffer, aux);
-			memset(aux, '\0', 100);
-		}
-
-		free(aux);
-		fclose(archivo);
-		return buffer;
-
+	if (archivoExiste(f)){
+		fseek (f, 0, SEEK_END);
+		largo = ftell (f);
+		fseek (f, 0, SEEK_SET);
+		buffer = malloc (largo);
+		if (buffer) fread (buffer, 1, largo, f);
+		fclose (f);
 	}else{
-		printf("El archivo no existe\n");
+		printf("El archivo no existe!\n");
 		exit(1);
 	}
+
+	return buffer;
 }
 
 void imprimir(char* mensaje){

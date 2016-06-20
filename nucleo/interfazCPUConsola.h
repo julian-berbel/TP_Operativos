@@ -35,7 +35,7 @@ extern void imprimir(int pid, char* mensaje);
 
 extern void quantumTerminado(t_PCB* pcbActualizado);
 
-extern void cancelar(int pid);
+extern void cancelar(void* consola);
 
 void (*deserializadores[3])(void*, void*);
 
