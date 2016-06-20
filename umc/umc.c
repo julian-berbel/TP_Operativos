@@ -62,6 +62,25 @@ void threadInterpreteConsola() {
 	free(mensaje);
 }
 
+int main(){
+	abrirConfiguracion();
+	inicializar_estructuras();
+
+	crear_tabla_de_paginas(0,2);
+	escribir_posicion_memoria(0,4,"abue");
+	escribir_posicion_memoria(6,1,"y");
+	escribir_posicion_memoria(8,4,"yami");
+	escribir_marco_en_TP(0,0,0);
+
+	crear_tabla_de_paginas(3,2);
+	escribir_posicion_memoria(49,4,"abue");
+	escribir_posicion_memoria(55,1,"y");
+	escribir_posicion_memoria(57,4,"yami");
+	escribir_marco_en_TP(3,0,3);
+	dump_cont_gen();
+	return 0;
+}
+/*
 int main(int cantidadArgumentos, char* argumentos[]) {
 
  abrirConfiguracion();
@@ -89,7 +108,7 @@ int main(int cantidadArgumentos, char* argumentos[]) {
 
  cerrar_todo();
  return 0;
- }
+ }*/
 
 void inicializar_estructuras(){
 	int i;
@@ -111,6 +130,7 @@ void inicializar_estructuras(){
 
 	 //memoria
 	 memoria = (char *) malloc(marcos * marco_size * sizeof(char));
+	 memset(memoria,' ',marcos * marco_size * sizeof(char));
 
 	 //TLB
 	 tlb = (TLB*) malloc(entradas_tlb * sizeof(TLB));
@@ -396,7 +416,8 @@ void dump_est_proceso(int idp, const char * nombreArchivo) { //generar reporte e
 				tabla_procesos[idp][pag].presencia,
 				tabla_procesos[idp][pag].bit_uso,
 				tabla_procesos[idp][pag].modificado);
-		fprintf(archivo,
+		if(archivo)
+				fprintf(archivo,
 				"Pagina: %d, Marco: %d, Presencia: %d, Bit_uso: %d, Modificado: %d\n",
 				pag, tabla_procesos[idp][pag].marco,
 				tabla_procesos[idp][pag].presencia,
@@ -437,16 +458,65 @@ void dump_est_gen() { //generar un reporte en pantalla y un archivo con las tabl
 	}
 }
 
-void dump_cont_proceso(int idp) {
+void dump_cont_proceso(int idp, const char* nombreArchivo) { //testeado
 //generar un reporte en pantalla y un archivo sobre los datos almacenados en memoria
 //de ese proceso
-	printf("llegue a dump_cont_proceso");
+	int paginas_proceso=cant_paginas_procesos[idp];
+	FILE *archivo;
+		if (strcmp(nombreArchivo, "contenido_en_memoria.txt"))
+			archivo = fopen(nombreArchivo, "a");
+		else
+			archivo = fopen("contenido_en_memoria.txt", "a");
+		if (!archivo) {
+			printf("Error al abrir/crear el archivo! :(\n");
+
+		} else
+			fprintf(archivo,"Contenido en Memoria Principal del proceso: %d\n",idp);
+		printf("Contenido en Memoria Principal del proceso: %d\n",idp);
+
+int i;
+char* contenido;
+for(i=0;i<paginas_proceso;i++){
+	if(tabla_procesos[idp][i].presencia==1){
+		contenido=leer_posicion_memoria(tabla_procesos[idp][i].marco*marco_size,marco_size);
+		printf("Pagina: %d, contenido en memoria: %s\n",i,contenido);
+		if(archivo)
+			fprintf(archivo,"Pagina: %d, contenido en memoria: %s\n",i,contenido);
+	}
+}
+printf("\n");
+if (archivo) {
+		fprintf(archivo, "\n");
+		fclose(archivo);
+	}
 }
 
-void dump_cont_gen() {
+void dump_cont_gen() { //falta testear
 //generar un reporte en pantalla y un archivo sobre los datos almacenados en memoria
 //de todos los procesos
-	printf("llegue a dump_cont_gen");
+	FILE *archivo = fopen("contenido_en_memoria_de_todos_los_procesos.txt", "a");
+		if (!archivo) {
+			printf("Error al abrir/crear el archivo! :(\n");
+		} else {
+			fprintf(archivo, "Contenido en Memoria de todos los procesos:\n\n");
+			fclose(archivo);
+		}
+	printf("Contenido en Memoria de todos los procesos:\n\n");
+	int proceso, proceso_existente;
+		for (proceso = 0; proceso < 50; proceso++) {
+			proceso_existente = procesos_ocupados[proceso];
+			if (proceso_existente) {
+				dump_cont_proceso(proceso, "contenido_en_memoria_de_todos_los_procesos.txt");
+}
+		}
+	fopen("contenido_en_memoria_de_todos_los_procesos.txt", "a");
+		if (!archivo) {
+				printf("Error al escribir finalizacion de archivo! :(\n");
+			} else {
+				fprintf(archivo,
+						"------------------------------------------------------------------------------\n");
+				fclose(archivo);
+			}
 }
 
 void flush_tlb() { //limpia completamente la tlb
@@ -484,11 +554,11 @@ void reconocer_comando(char *comando, char* param) {
 	} else if (!strcmp(comando, "dump_est") && !strcmp(param, "gen")) {
 		dump_est_gen();
 	} else if (!strcmp(comando, "dump_est") && strcmp(param, "gen")) {
-		dump_est_proceso(atoi(param), "tabla_paginas_proceso");
+		dump_est_proceso(atoi(param), "tabla_paginas_proceso.txt");
 	} else if (!strcmp(comando, "dump_cont") && !strcmp(param, "gen")) {
 		dump_cont_gen();
 	} else if (!strcmp(comando, "dump_cont") && strcmp(param, "gen")) {
-		dump_cont_proceso(atoi(param));
+		dump_cont_proceso(atoi(param),"contenido_en_memoria.txt");
 	} else if (!strcmp(comando, "flush") && !strcmp(param, "tlb")) {
 		flush_tlb();
 	} else if (!strcmp(comando, "flush_memory")) {

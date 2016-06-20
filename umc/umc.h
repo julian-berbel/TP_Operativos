@@ -100,9 +100,9 @@ int buscar_indice_menos_accedido_tlb();
 void flush (int idp);
 //operaciones de consola
 void modificar_retardo(int ret);
-void dump_est_proceso(int idp, const char*);
+void dump_est_proceso(int idp, const char* nombreArchivo);
 void dump_est_gen();
-void dump_cont_proceso(int idp);
+void dump_cont_proceso(int idp, const char* nombreArchivo);
 void dump_cont_gen();
 void flush_tlb();
 void flush_memory(int idp/*,int cantidad_paginas*/);
