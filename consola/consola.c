@@ -52,7 +52,7 @@ char* leerArchivo(char* ruta){
 	long largo;
 	FILE* f = fopen (ruta, "rb");
 
-	if (archivoExiste(f)){
+	if (archivoExiste(ruta)){
 		fseek (f, 0, SEEK_END);
 		largo = ftell (f);
 		fseek (f, 0, SEEK_SET);

@@ -57,7 +57,7 @@ void deserializarCancelar(void* parametrosSerializados, void* consola){
 	cancelar(consola);
 }
 
-void deserializarImprimir(void* parametrosSerializados, void* dataAdicional){
+void deserializarImprimir(void* parametrosSerializados, void* cpu){
 	int pid = *((int*) parametrosSerializados);
 	parametrosSerializados += sizeof(int);
 	char* mensaje = parametrosSerializados;
@@ -65,13 +65,46 @@ void deserializarImprimir(void* parametrosSerializados, void* dataAdicional){
 	imprimir(pid, mensaje);
 }
 
-void deserializarQuantumTerminado(void* parametrosSerializados, void* dataAdicional){
+void deserializarQuantumTerminado(void* parametrosSerializados, void* cpu){
 	t_PCB* pcb = deserializarPCB(parametrosSerializados);
 
 	quantumTerminado(pcb);
 }
 
-void (*deserializadores[3])(void*, void*) = {deserializarImprimir, deserializarQuantumTerminado, deserializarCancelar};
+void deserializarObtenerValor(void* parametrosSerializados, void* cpu){
+	char* identificador = parametrosSerializados;
+
+	obtener_valor(identificador, cpu);
+}
+
+void deserializarGrabarValor(void* parametrosSerializados, void* cpu){
+	int valorAGrabar = *((int*)parametrosSerializados);
+	parametrosSerializados += sizeof(int);
+	char* identificador = parametrosSerializados;
+
+	grabar_valor(identificador, valorAGrabar);
+}
+
+void deserializarWait(void* parametrosSerializados, void* cpu){
+	char* identificador = parametrosSerializados;
+	esperar(identificador, cpu);
+}
+
+void deserializarSignal(void* parametrosSerializados, void* cpu){
+	char* identificador = parametrosSerializados;
+	avisar(identificador);
+}
+
+void deserializarEntradaSalida(void* parametrosSerializados, void* cpu){
+	int operaciones = *((int*)parametrosSerializados);
+	parametrosSerializados += sizeof(int);
+	char* identificador = parametrosSerializados;
+
+	entradaSalida(identificador, operaciones, cpu);
+}
+
+void (*deserializadores[8])(void*, void*) = {	deserializarImprimir, deserializarQuantumTerminado, deserializarCancelar, deserializarObtenerValor,
+												deserializarGrabarValor, deserializarWait, deserializarSignal, deserializarEntradaSalida};
 
 void procesarMensaje(void* mensaje, void* dataAdicional){
 	interfazPropia tipo = *((interfazPropia*) mensaje);

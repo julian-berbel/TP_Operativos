@@ -35,7 +35,7 @@ void quantumTerminado(t_PCB* pcbActualizado){// cambiar para recibir como termin
 void nuevoPrograma(int socket_consola){
 	char* programa = recibir_string_generico(socket_consola);
 	static int pid = 0;
-	int paginasRequeridas = ceil((double) string_length(programa) / (double) tamanioDePagina);
+	int paginasRequeridas = ceil((double) string_length(programa) / (double) tamanioDePagina) + stack_size;
 
 	void* mensaje;
 	int tamanio = serializarInicializar(pid, paginasRequeridas, programa, &mensaje);
@@ -206,7 +206,7 @@ int main(){
 
 	abrirConfiguracion();
 
-	sem_init(&semTerminar, 0, 0);
+	/*sem_init(&semTerminar, 0, 0);
 
 	signal(SIGINT, terminar);
 
@@ -226,7 +226,11 @@ int main(){
 
 	sem_wait(&semTerminar);
 
-	cerrar_todo();
+	cerrar_todo();*/
+
+//	int a = indiceEnArray(io_id, "Impresora");
+
+	printf("%s\n", io_id[2]);
 
 	return 0;
 }
@@ -243,6 +247,7 @@ void abrirConfiguracion(){
 	sem_id = config_get_array_value(configuracionNucleo, "SEM_ID");
 	sem_init1 = config_get_array_value(configuracionNucleo, "SEM_INIT");
 	shared_vars = config_get_array_value(configuracionNucleo, "SHARED_VARS");
+	stack_size = config_get_int_value(configuracionNucleo, "STACK_SIZE");
 	logger = log_create(RUTA_LOG, "Nucleo", false, LOG_LEVEL_INFO);
 	logger_pantalla = log_create(RUTA_LOG, "Nucleo", true, LOG_LEVEL_INFO);
 	puertoUMC = config_get_string_value(configuracionNucleo, "PUERTO_UMC");
@@ -307,4 +312,31 @@ void cerrar_todo(){
 	log_destroy(logger);
 	log_destroy(logger_pantalla);
 	config_destroy(configuracionNucleo);
+}
+
+int indiceEnArray(char** array, char* elemento){ // si el elemento no esta en el array me tira segmentation fault. Como obtengo la cantidad de elementos de antemano??
+	int i = 0;
+	while(strcmp(array[i], elemento)) i++;
+
+	return array[i] ? i:-1;
+}
+
+void obtener_valor(char* identificador, void* cpu){
+
+}
+
+void grabar_valor(char* identificador, int valorAGrabar){
+
+}
+
+void esperar(char* identificador, void* cpu){
+
+}
+
+void avisar(char* identificador){
+
+}
+
+void entradaSalida(char* identificador, int operaciones, void* cpu){
+
 }

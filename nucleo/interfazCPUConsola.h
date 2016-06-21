@@ -11,11 +11,12 @@
 #include <stdlib.h>
 #include "pcb.h"
 
-typedef enum {CARGAR_PCB, TERMINAR /*, CANCELAR*/} interfazCPU;
+typedef enum {CARGAR_PCB/*, TERMINAR, CANCELAR*/} interfazCPU;
 
-typedef enum{IMPRIMIR /*, TERMINAR*/ } interfazConsola;
+typedef enum{/*IMPRIMIR, */ TERMINAR} interfazConsola;
 
-typedef enum {/*IMPRIMIR, */ QUANTUM_TERMINADO = 1, CANCELAR = 2} interfazPropia;
+typedef enum {	IMPRIMIR, QUANTUM_TERMINADO, CANCELAR, OBTENER_VALOR, GRABAR_VALOR,
+				WAIT, SIGNAL, ENTRADA_SALIDA} interfazPropia;
 
 int serializarCargarPCB(t_PCB* pcb, int quantum, void** serializacion);
 
@@ -37,7 +38,17 @@ extern void quantumTerminado(t_PCB* pcbActualizado);
 
 extern void cancelar(void* consola);
 
-void (*deserializadores[3])(void*, void*);
+extern void obtener_valor(char* identificador, void* cpu);
+
+extern void grabar_valor(char* identificador, int valorAGrabar);
+
+extern void esperar(char* identificador, void* cpu);
+
+extern void avisar(char* identificador);
+
+extern void entradaSalida(char* identificador, int operaciones, void* cpu);
+
+void (*deserializadores[8])(void*, void*);
 
 void procesarMensaje(void* mensaje, void* dataAdicional);
 

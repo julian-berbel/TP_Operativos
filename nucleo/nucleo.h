@@ -36,6 +36,7 @@ char** io_sleep;
 char** sem_id;
 char** sem_init1;
 char** shared_vars;
+int stack_size;
 t_log* logger;
 t_log* logger_pantalla;
 t_queue* colaPCBNew;
@@ -74,5 +75,17 @@ void cancelar(void* consola);
 void imprimir(int pid, char* mensaje);
 
 void quantumTerminado(t_PCB* pcbActualizado);
+
+int indiceEnArray(char** array, char* elemento);
+
+void obtener_valor(char* identificador, void* cpu);
+
+void grabar_valor(char* identificador, int valorAGrabar);
+
+void esperar(char* identificador, void* cpu);
+
+void avisar(char* identificador);
+
+void entradaSalida(char* identificador, int operaciones, void* cpu);
 
 #endif
