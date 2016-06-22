@@ -198,7 +198,6 @@ t_PCB* crearPCB(const char* programa, int pid){
 	pcb->pid = pid;
 
 	pcb->programCounter = 0;
-//	pcb->cantidadPaginas = string_length(programa)*sizeof(char) / tamanioDePagina; // tamanioDePagina lo tiene que pasar la umc por socket
 	pcb->cantidadInstrucciones = metadata->instrucciones_size;
 	pcb->indiceCodigo = crearIndiceCodigo(metadata->instrucciones_size);
 	cargarIndiceCodigo(pcb->indiceCodigo, metadata);

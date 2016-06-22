@@ -23,13 +23,29 @@ void imprimir(int pid, char* mensaje){
 	free(mensajeSerializado);
 }
 
-void quantumTerminado(t_PCB* pcbActualizado){// cambiar para recibir como termino la ejecucion -> bloqueado/finalizado/quantum terminado
-	_Bool compararPid(t_PCB* pcb){
-		return pcb->pid == pcbActualizado->pid;
+t_elemento_cola* actualizarPCB(t_list* lista, t_PCB* pcbActualizado){
+	_Bool compararPid(t_elemento_cola* elemento){
+			return elemento->pcb->pid == pcbActualizado->pid;
 	}
-	list_remove_and_destroy_by_condition(colaPCBExec->elements, (void*) compararPid,(void*) pcb_destroy);
 
-	queue_push(colaPCBReady, pcbActualizado);
+	t_elemento_cola* elemento = list_find(lista, (void*) compararPid);
+	pcb_destroy(elemento->pcb);
+	elemento->pcb = pcbActualizado;
+	return elemento;
+}
+
+void quantumTerminado(t_PCB* pcbActualizado, void* cpu){
+	t_elemento_cola* elemento = actualizarPCB(colaPCBExec->elements, pcbActualizado);
+	pthread_mutex_lock(&mutexColaReady);
+	if(!hayCPUsLibres() && colaPCBReady->elements->elements_count){
+		pthread_mutex_unlock(&mutexColaReady);
+		elemento->estado = READY;
+		sem_post(&moverPCBs);
+		((t_cpu*)cpu)->elemento = NULL;
+	}else{
+		pthread_mutex_unlock(&mutexColaReady);
+		//decirle a la cpu que siga ejecutando
+	}
 }
 
 void nuevoPrograma(int socket_consola){
@@ -44,15 +60,25 @@ void nuevoPrograma(int socket_consola){
 	// Manejo de error: No hay espacio para el programa
 
 	t_consola* consola = malloc(sizeof(t_consola));
+
+	pthread_mutex_lock(&mutexPID);
 	consola->pid = pid;
+	pid++;
+	pthread_mutex_unlock(&mutexPID);
+
 	consola->socketConsola = socket_consola;
 	list_add(consolas, consola);
 
-	t_PCB* pcb = crearPCB(programa, pid);
+	t_PCB* pcb = crearPCB(programa, consola->pid);
+	pcb->cantidadPaginas = paginasRequeridas;
+	t_elemento_cola* elemento = malloc(sizeof(t_elemento_cola));
+	elemento->estado = EXEC;
+	elemento->pcb = pcb;
 
+	pthread_mutex_lock(&mutexColaReady);
 	queue_push(colaPCBReady, pcb);
-
-	pid++;
+	pthread_mutex_unlock(&mutexColaReady);
+	sem_post(&moverPCBs);
 }
 
 int mayorSocket(int mayor){
@@ -156,6 +182,10 @@ void threadEscuchaCPU(t_cpu* cpu){
 		procesarMensaje(mensaje, cpu);
 	}
 
+	if(!flagTerminar && !mensaje){ //CPU desconectado a la fuerza
+		cpu->elemento->estado = EXIT;
+	}
+
 	close(socket);
 }
 
@@ -165,6 +195,7 @@ void crearThreadDeCPU(int conexionRecibida){
 	t_cpu* cpu = malloc(sizeof(t_cpu));
 	cpu->socketCPU = conexionRecibida;
 	cpu->hiloCPU = hiloEscuchaCPU;
+	cpu->elemento = NULL;
 
 	list_add(cpus, (void*) cpu);
 
@@ -206,7 +237,35 @@ int main(){
 
 	abrirConfiguracion();
 
-	/*sem_init(&semTerminar, 0, 0);
+	colaPCBExec = queue_create();
+	colaPCBReady = queue_create();
+	listaPCBBlock = list_create();
+	listaPCBExit = list_create();
+
+	int i;
+	dispositivos = malloc(sizeof(t_dispositivo) * tamanioArray(io_id));
+	for(i = 0; i < tamanioArray(io_id); i++){
+		pthread_t hiloDispositivo;
+		dispositivos[i].hiloDispositivo = hiloDispositivo;
+		dispositivos[i].cola_dispositivo = queue_create();
+		sem_t semaforoDispositivo;
+		sem_init(&semaforoDispositivo, 0, 0);
+		dispositivos[i].semaforoDispositivo = semaforoDispositivo;
+		dispositivos[i].retardo = atoi(io_sleep[i]);
+		pthread_create(&hiloDispositivo, NULL,(void*) threadDispositivo,(void*) &dispositivos[i]);
+	}
+
+	semaforosGlobales = malloc(sizeof(t_semaforo) * tamanioArray(sem_id));
+	for(i = 0; i < tamanioArray(sem_id); i++){
+		semaforosGlobales[i].valor = atoi(sem_inits[i]);
+		semaforosGlobales[i].cola_bloqueados = queue_create();
+	}
+
+	variablesGlobales = malloc(sizeof(int) * tamanioArray(shared_vars));
+	for(i = 0; i < tamanioArray(shared_vars); i++) shared_vars[i] = 0;
+
+	sem_init(&moverPCBs, 0, 0);
+	sem_init(&semTerminar, 0, 0);
 
 	signal(SIGINT, terminar);
 
@@ -224,13 +283,11 @@ int main(){
 
 	pthread_create(&hiloReceptorCPUs, NULL,(void*) threadReceptorCPUs, &socket_cpus);
 
+	pthread_create(&hiloPlanificador, NULL,(void*) threadPlanificador, NULL);
+
 	sem_wait(&semTerminar);
 
-	cerrar_todo();*/
-
-//	int a = indiceEnArray(io_id, "Impresora");
-
-	printf("%s\n", io_id[2]);
+	cerrar_todo();
 
 	return 0;
 }
@@ -245,7 +302,7 @@ void abrirConfiguracion(){
 	io_id = config_get_array_value(configuracionNucleo, "IO_ID");
 	io_sleep = config_get_array_value(configuracionNucleo, "IO_SLEEP");
 	sem_id = config_get_array_value(configuracionNucleo, "SEM_ID");
-	sem_init1 = config_get_array_value(configuracionNucleo, "SEM_INIT");
+	sem_inits = config_get_array_value(configuracionNucleo, "SEM_INIT");
 	shared_vars = config_get_array_value(configuracionNucleo, "SHARED_VARS");
 	stack_size = config_get_int_value(configuracionNucleo, "STACK_SIZE");
 	logger = log_create(RUTA_LOG, "Nucleo", false, LOG_LEVEL_INFO);
@@ -283,30 +340,35 @@ void cerrar_todo(){
 	close(socket_umc);
 
 	int i;
+	int largo_array = tamanioArray(io_id);
+	for(i = 0; i < largo_array; i++){
+		pthread_join(dispositivos[i].hiloDispositivo, NULL);
+		sem_destroy(&dispositivos[i].semaforoDispositivo);
+		queue_destroy_and_destroy_elements(dispositivos[i].cola_dispositivo,free);
 
-	int largo_array = sizeof(io_id);
-	for(i=0; i<largo_array; ++i)
 		free(io_id[i]);
+		free(io_sleep[i]);
+	}
+	free(dispositivos);
+
 	free(io_id);
 
-	largo_array = sizeof(io_sleep);
-	for(i=0; i<largo_array; ++i)
-		free(io_sleep[i]);
 	free(io_sleep);
 
-	largo_array = sizeof(sem_id);
-	for(i=0; i<largo_array; ++i)
+	largo_array = tamanioArray(sem_id);
+	for(i = 0; i < largo_array; i++){
+		queue_destroy(semaforosGlobales[i].cola_bloqueados);
 		free(sem_id[i]);
+		free(sem_inits[i]);
+	}
+	free(semaforosGlobales);
+
 	free(sem_id);
 
-	largo_array = sizeof(sem_init1);
-	for(i=0; i<largo_array; ++i)
-		free(sem_init1[i]);
-	free(sem_init1);
+	free(sem_inits);
 
-	largo_array = sizeof(shared_vars);
-	for(i=0; i<largo_array; ++i)
-		free(shared_vars[i]);
+	largo_array = tamanioArray(shared_vars);
+	for(i = 0; i < largo_array; i++) free(shared_vars[i]);
 	free(shared_vars);
 
 	log_destroy(logger);
@@ -314,29 +376,185 @@ void cerrar_todo(){
 	config_destroy(configuracionNucleo);
 }
 
-int indiceEnArray(char** array, char* elemento){ // si el elemento no esta en el array me tira segmentation fault. Como obtengo la cantidad de elementos de antemano??
+int indiceEnArray(char** array, char* elemento){
 	int i = 0;
-	while(strcmp(array[i], elemento)) i++;
+	while(array[i] && strcmp(array[i], elemento)) i++;
 
 	return array[i] ? i:-1;
 }
 
-void obtener_valor(char* identificador, void* cpu){
+int tamanioArray(char** array){
+	int i = 0;
+	while(array[i]) i++;
+	return i;
+}
 
+void obtener_valor(char* identificador, void* cpu){
+	int indice = indiceEnArray(shared_vars, identificador);
+	int valor;
+	pthread_mutex_lock(&mutexVariablesGlobales);
+	valor = variablesGlobales[indice];
+	pthread_mutex_unlock(&mutexVariablesGlobales);
+	enviar(((t_cpu*) cpu)->socketCPU, &valor, sizeof(int));
 }
 
 void grabar_valor(char* identificador, int valorAGrabar){
-
+	int indice = indiceEnArray(shared_vars, identificador);
+	pthread_mutex_lock(&mutexVariablesGlobales);
+	variablesGlobales[indice] = valorAGrabar;
+	pthread_mutex_unlock(&mutexVariablesGlobales);
 }
 
 void esperar(char* identificador, void* cpu){
-
+	int indice = indiceEnArray(sem_id, identificador);
+	if(semaforosGlobales[indice].valor){
+		semaforosGlobales[indice].valor--;
+		// decirle al cpu que siga ejecutando
+	}else{
+		// decirle al cpu que pare y que me pase el pcb
+	}
 }
 
 void avisar(char* identificador){
-
+	int indice = indiceEnArray(sem_id, identificador);
+	if(queue_peek(semaforosGlobales[indice].cola_bloqueados)){
+		t_elemento_cola* elemento = queue_pop(semaforosGlobales[indice].cola_bloqueados);
+		elemento->estado = READY;
+		sem_post(&moverPCBs);
+	}else{
+		semaforosGlobales[indice].valor++;
+	}
 }
 
 void entradaSalida(char* identificador, int operaciones, void* cpu){
+    t_pedido* pedido = malloc(sizeof(t_pedido));
+    pedido->cantidadDeOperaciones = operaciones;
+    // actualizar pcb
+    pedido->elemento = ((t_cpu*)cpu)->elemento;
+    pedido->elemento->estado = BLOCK;
+    int indice = indiceEnArray(io_id, identificador);
+    queue_push(dispositivos[indice].cola_dispositivo, (void*)pedido);
+    sem_post(&dispositivos[indice].semaforoDispositivo);
+    sem_post(&moverPCBs);
+}
 
+void threadDispositivo(t_dispositivo* dispositivo){
+    while(!flagTerminar){
+        sem_wait(&dispositivo->semaforoDispositivo);
+        if(flagTerminar) break;
+        t_pedido* pedido = queue_pop(dispositivo->cola_dispositivo);
+        usleep(dispositivo->retardo * pedido->cantidadDeOperaciones);
+        pedido->elemento->estado = READY;
+        sem_post(&moverPCBs);
+    }
+}
+
+void threadPlanificador(){
+	int pidABuscar;
+	_Bool compararPid(t_elemento_cola* elemento){
+			return elemento->pcb->pid == pidABuscar;
+	}
+
+	int i;
+
+	t_elemento_cola* elemento;
+
+	t_cpu* cpu;
+
+	while(!flagTerminar){
+		sem_wait(&moverPCBs);
+		//cola exec
+		for(i = 0; i < colaPCBExec->elements->elements_count; i++){
+			elemento = list_get(colaPCBExec->elements, i);
+			if(elemento->estado == BLOCK){
+				pidABuscar = elemento->pcb->pid;
+				list_remove_by_condition(colaPCBExec->elements, (void*)compararPid);
+				list_add(listaPCBBlock, elemento);
+				i--;
+			}else if(elemento->estado == READY){
+				pidABuscar = elemento->pcb->pid;
+				list_remove_by_condition(colaPCBExec->elements, (void*)compararPid);
+				pthread_mutex_lock(&mutexColaReady);
+				queue_push(colaPCBReady, elemento);
+				pthread_mutex_unlock(&mutexColaReady);
+				elemento->estado = EXEC;
+				i--;
+			}else if(elemento->estado == EXIT){
+				pidABuscar = elemento->pcb->pid;
+				list_remove_by_condition(colaPCBExec->elements, (void*)compararPid);
+				list_add(listaPCBExit, elemento);
+				i--;
+			}
+		}
+
+		//lista block
+		for(i = 0; i < listaPCBBlock->elements_count; i++){
+			elemento = list_get(colaPCBExec->elements, i);
+			if(elemento->estado == READY){
+				pidABuscar = elemento->pcb->pid;
+				list_remove_by_condition(listaPCBBlock, (void*)compararPid);
+				pthread_mutex_lock(&mutexColaReady);
+				queue_push(colaPCBReady, elemento);
+				pthread_mutex_unlock(&mutexColaReady);
+				elemento->estado = EXEC;
+				i--;
+			}else if(elemento->estado == EXIT){
+				pidABuscar = elemento->pcb->pid;
+				list_remove_by_condition(listaPCBBlock, (void*)compararPid);
+				list_add(listaPCBExit, elemento);
+				i--;
+			}
+		}
+
+		//cola ready
+		pthread_mutex_lock(&mutexColaReady);
+		for(i = 0; colaPCBReady->elements->elements_count && hayCPUsLibres(); i++){
+			if(elemento->estado == EXEC){
+				elemento = queue_pop(colaPCBReady);
+				queue_push(colaPCBExec, elemento);
+				cpu = cpuLibre();
+				cpu->elemento = elemento;
+				void* mensaje;
+				int tamanioSerializacion = serializarCargarPCB(elemento->pcb, quantum, &mensaje);
+				enviar(cpu->socketCPU, mensaje, tamanioSerializacion);
+				free(mensaje);
+			}else if(elemento->estado == EXIT){
+				pidABuscar = elemento->pcb->pid;
+				list_remove_by_condition(colaPCBExec->elements, (void*)compararPid);
+				list_add(listaPCBExit, elemento);
+				i--;
+			}
+		}
+		pthread_mutex_unlock(&mutexColaReady);
+
+		//cola exit
+		list_clean_and_destroy_elements(listaPCBExit, (void*)matarProceso);
+	}
+}
+
+void matarProceso(t_elemento_cola* elemento){
+	void* mensaje;
+	int tamanioSerializacion = serializarFinalizar(elemento->pcb->pid, &mensaje);
+	enviar(socket_umc, mensaje, tamanioSerializacion);
+	tamanioSerializacion = serializarTerminar(&mensaje);
+	enviar(buscarSocketConsola(elemento->pcb->pid), mensaje, tamanioSerializacion);
+	free(mensaje);
+	pcb_destroy(elemento->pcb);
+	free(elemento);
+}
+
+t_cpu* cpuLibre(){
+	_Bool estaLibre(t_cpu* cpu){
+		return !cpu->elemento;
+	}
+
+	return list_find(cpus, (void*)estaLibre);
+}
+
+_Bool hayCPUsLibres(){
+	_Bool estaLibre(t_cpu* cpu){
+		return !cpu->elemento;
+	}
+
+	return list_any_satisfy(cpus, (void*)estaLibre);
 }

@@ -68,7 +68,7 @@ void deserializarImprimir(void* parametrosSerializados, void* cpu){
 void deserializarQuantumTerminado(void* parametrosSerializados, void* cpu){
 	t_PCB* pcb = deserializarPCB(parametrosSerializados);
 
-	quantumTerminado(pcb);
+	quantumTerminado(pcb, cpu);
 }
 
 void deserializarObtenerValor(void* parametrosSerializados, void* cpu){
