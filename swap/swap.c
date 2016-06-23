@@ -199,11 +199,12 @@ Bool estaUtilizado() {
 
 void compactar() {
 	// TODO
+	//tambien teiene que modificar el archivo, no olvidarse
 	//ver si el bit de uso del primer elemento esta libre (1), si está guardo esa pagina/marco
 	//cuando recorri toda la lista, al marco libre lo ocupo por el mas proximo ocupado y al ocupado
 	//lo lleno de ceros...
 
-	sleep(retardo_compactacion / 1000);
+	usleep(retardo_compactacion * 1000);
 }
 
 void agregarProcesoALista(int id_programa, int paginas_requeridas) {
@@ -255,9 +256,28 @@ int cant_pags_disponibles() {
 }
 
 void leer_pagina(int id_programa, int num_pagina) {
+	archivo = fopen(nombre_data,"r");
+	char* buffer = malloc(pagina_size);
+	int i;
+	int tamanioListaProcesos = list_size(listaDeProcesos);
+	for (i = 0; i < tamanioListaProcesos; i++){
+	t_proceso* proceso = list_get(listaDeProcesos,i);
+	if(proceso->pid == id_programa && proceso->pagina == num_pagina){
+		fseek(archivo, num_pagina, SEEK_SET);
+		fread(buffer, pagina_size, 1, archivo);
+		fclose(archivo);
+		usleep(retardo_acceso * 1000);
+		// todo enviar(socket, buffer, pagina_size);
 
+	}else{
+		log_info(logger, "No existe la pagina solicitada en la Swap");
+	}
+
+	}
+
+	free(buffer);
 }
-
+//FALTA EL RETARDO SWAP EN ESCRIBIR PAGINA
 void escribir_pagina(int id_programa, int num_pagina, char* buffer) {
 	//TODO recv de la umc
 	int i;

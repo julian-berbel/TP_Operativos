@@ -46,7 +46,7 @@ char* tamanioArchivo(int pagina_tamanio, int cantidad_pags) {
 void escribirArchivoBinario(char* programa){
 
 	archivo = fopen(rutaArchivoSwap(),"w");
-
+	//creo que falta el fseek asi posicionas donde lo queres escribir
 	fputs(programa,archivo);
 
 	fclose(archivo);
@@ -55,7 +55,7 @@ void escribirArchivoBinario(char* programa){
 
 void escribirArchivoBinarioEnPag(int numPagina, char* buffer){
 
-	archivo = fopen(rutaArchivoSwap(), "wb");
+	archivo = fopen(rutaArchivoSwap(), "wb"); //va la ruta o el nombre_data?
 
 	fseek(archivo,paginaEnBytes(numPagina),SEEK_SET);
 

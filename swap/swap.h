@@ -6,7 +6,6 @@
 #include<commons/bitarray.h>
 #include<commons/log.h>
 #include<commons/config.h>
-//#include<stdbool.h>
 #include"servidor.h"
 #include"binFile.h"
 #include "interfazUMC.h"
