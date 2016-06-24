@@ -8,11 +8,12 @@
 #include<commons/config.h>
 #include"servidor.h"
 #include"cliente.h"
-#include "interfazNucleoCPU.h"
-#include "interfazSwap.h"
 #include <string.h>
 #include <semaphore.h>
 #include <commons/collections/list.h>
+#include "interfazNucleoCPU.h"
+#include "interfazSwap.h"
+
 
 #define RUTA_LOG "/home/utnso/umc.log"
 #define RUTA_CONFIG "/home/utnso/tp-2016-1c-Hellfish-Group/umc/config/umc.config"
@@ -32,6 +33,8 @@ char* alg_reemplazo;
 t_log* logger;
 t_log* logger_pantalla;
 int socket_swap;
+
+pthread_mutex_t lock;
 
 pthread_t hiloReceptor;
 pthread_t hiloInterpreteConsola;

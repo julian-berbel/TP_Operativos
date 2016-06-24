@@ -48,45 +48,33 @@ void threadInterpreteConsola() {
 	char* mensaje = NULL;
 	size_t a = 0;
 	int leido;
+	char * comandoAEjecutar,*parametro;
 
 	while (!flagTerminar) {
 		getline(&mensaje, &a, stdin);
 		leido = string_length(mensaje);
 		*(mensaje + leido - 1) = '\0';
 
-//		 comandoAEjecutar = strtok(comando," ");
-//		 parametro = strtok(0," ");
-//		 reconocer_comando(comandoAEjecutar,parametro);
+		 comandoAEjecutar = strtok(mensaje," ");
+		 parametro = strtok(0," ");
+		 reconocer_comando(comandoAEjecutar,parametro);
 	}
 
 	free(mensaje);
 }
 
-int main(){
-	abrirConfiguracion();
-	inicializar_estructuras();
-
-	crear_tabla_de_paginas(0,2);
-	escribir_posicion_memoria(0,4,"abue");
-	escribir_posicion_memoria(6,1,"y");
-	escribir_posicion_memoria(8,4,"yami");
-	escribir_marco_en_TP(0,0,0);
-
-	crear_tabla_de_paginas(3,2);
-	escribir_posicion_memoria(49,4,"abue");
-	escribir_posicion_memoria(55,1,"y");
-	escribir_posicion_memoria(57,4,"yami");
-	escribir_marco_en_TP(3,0,3);
-	dump_cont_gen();
-	return 0;
-}
-/*
 int main(int cantidadArgumentos, char* argumentos[]) {
 
  abrirConfiguracion();
  log_info(logger, "Inicia proceso UMC");
 
  inicializar_estructuras();
+
+ if (pthread_mutex_init(&lock, NULL) != 0)
+ {
+     printf("\n mutex init failed\n");
+     //return 1;
+ }
 
  sem_init(&semTerminar, 0, 0);
 
@@ -108,7 +96,8 @@ int main(int cantidadArgumentos, char* argumentos[]) {
 
  cerrar_todo();
  return 0;
- }*/
+ }
+
 
 void inicializar_estructuras(){
 	int i;
@@ -201,6 +190,7 @@ void finalizar(int id_programa) {
 }
 
 void leer_pagina(int num_pagina, int offset, size_t t, void* cpu) {
+	pthread_mutex_lock(&lock);
 	int idp=((t_cliente*)cpu)->proceso_activo;
 	//obtener el proceso activo
 	int marco = obtener_marco(idp, num_pagina);
@@ -217,9 +207,11 @@ void leer_pagina(int num_pagina, int offset, size_t t, void* cpu) {
 		char* cont=recibir_string_generico(socket_swap);
 		enviar_string(((t_cliente*)cpu)->socket,cont);
 	}
+	pthread_mutex_unlock(&lock);
 }
 
 void escribir_pagina(int num_pagina, int offset, size_t t, char *buffer,void* cpu) { //testeado
+	pthread_mutex_lock(&lock);
 	int idp=((t_cliente*)cpu)->proceso_activo;
 	if (cant_paginas_asignadas(idp) < marco_x_proc) {
 		int marco_libre = buscar_marco_libre();
@@ -240,7 +232,7 @@ void escribir_pagina(int num_pagina, int offset, size_t t, char *buffer,void* cp
 				buffer);
 		escribir_marco_en_TP(idp, num_pagina, marco_destino);
 	}
-
+	pthread_mutex_unlock(&lock);
 }
 
 void crear_tabla_de_paginas(int idp, int paginas_requeridas) { //testeado
@@ -549,6 +541,7 @@ int buscar_marco_libre() {
 	return -1;
 }
 void reconocer_comando(char *comando, char* param) {
+	pthread_mutex_lock(&lock);
 	if (!strcmp(comando, "retardo")) {
 		modificar_retardo(atoi(param));
 	} else if (!strcmp(comando, "dump_est") && !strcmp(param, "gen")) {
@@ -566,6 +559,7 @@ void reconocer_comando(char *comando, char* param) {
 	} else {
 		printf("No existe el comando");
 	}
+	pthread_mutex_unlock(&lock);
 }
 int cant_paginas_asignadas(int idp) { //falta testear
 	int i;
@@ -653,3 +647,6 @@ int buscar_pagina_victima(int idp) {
 	}
 	return -1;
 }
+
+
+
