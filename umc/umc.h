@@ -114,6 +114,7 @@ void reconocer_comando(char *comando, char* param);
 int buscar_marco_libre();
 int cant_paginas_asignadas(int idp);
 int reemplazar_MP(int idp,int num_pagina);
+void sacar_pagina_de_tlb(int idp,int pagina);
 int  buscar_pagina_victima(int idp);
 
 #endif

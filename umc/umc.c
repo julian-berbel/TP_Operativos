@@ -192,20 +192,38 @@ void finalizar(int id_programa) {
 void leer_pagina(int num_pagina, int offset, size_t t, void* cpu) {
 	pthread_mutex_lock(&lock);
 	int idp=((t_cliente*)cpu)->proceso_activo;
-	//obtener el proceso activo
 	int marco = obtener_marco(idp, num_pagina);
-	if (marco >= 0) { //si esta en MP
+	if (marco !=-1) { //si esta en MP
 		char* contenido = leer_posicion_memoria(marco * marco_size + offset, t);
-		//enviar a la cpu el contenido
 		enviar_string(((t_cliente*)cpu)->socket,contenido);
 
 	} else { //si no esta en MP envio la solicitud a SWAP
-		//serializar y enviar a swap
 		void* mensaje;
 		int tamanioMensaje = serializarLeerPagina(idp, num_pagina, &mensaje);
 		enviar(socket_swap, mensaje, tamanioMensaje);
 		char* cont=recibir_string_generico(socket_swap);
-		enviar_string(((t_cliente*)cpu)->socket,cont);
+		//copiar en memoria la pagina
+		if (cant_paginas_asignadas(idp) < marco_x_proc) {
+							int marco_libre = buscar_marco_libre();
+								if (marco_libre != -1) {
+								escribir_posicion_memoria(marco_libre * marco_size, marco_size,	cont);
+								escribir_marco_en_TP(idp, num_pagina, marco_libre);
+								marco_ocupado(marco_libre);
+								}else {//memoria ocupada
+							//reemplazo local
+							int marco = reemplazar_MP(idp, num_pagina);
+							escribir_posicion_memoria(marco * marco_size, marco_size,cont);
+							escribir_marco_en_TP(idp, num_pagina, marco);
+								}
+						}else {
+							int marco_destino = reemplazar_MP(idp, num_pagina);
+
+							escribir_posicion_memoria(marco_destino * marco_size, marco_size,cont);
+							escribir_marco_en_TP(idp, num_pagina, marco_destino);
+						}
+		//leer lo pedido
+		char* contenido = leer_posicion_memoria(marco * marco_size + offset, t);
+		enviar_string(((t_cliente*)cpu)->socket,contenido);
 	}
 	pthread_mutex_unlock(&lock);
 }
@@ -213,27 +231,43 @@ void leer_pagina(int num_pagina, int offset, size_t t, void* cpu) {
 void escribir_pagina(int num_pagina, int offset, size_t t, char *buffer,void* cpu) { //testeado
 	pthread_mutex_lock(&lock);
 	int idp=((t_cliente*)cpu)->proceso_activo;
-	if (cant_paginas_asignadas(idp) < marco_x_proc) {
-		int marco_libre = buscar_marco_libre();
-		if (marco_libre != -1) {
-			escribir_posicion_memoria(marco_libre * marco_size + offset, t,
-					buffer);
-			escribir_marco_en_TP(idp, num_pagina, marco_libre);
-			marco_ocupado(marco_libre);
-		} else {//memoria ocupada
-		}
-	} else {
-		int marco_destino = reemplazar_MP(idp, num_pagina);
+	int marco=obtener_marco(idp,num_pagina);
+	if(marco!=-1){//esta en memoria
+		escribir_posicion_memoria(marco* marco_size + offset, t, buffer);
+	}else{//no esta en memoria
+		//pido a la swap
 		void* mensaje;
-				int tamanioMensaje = serializarEscribirPagina(idp, num_pagina,buffer,&mensaje);
+				int tamanioMensaje = serializarLeerPagina(idp, num_pagina, &mensaje);
 				enviar(socket_swap, mensaje, tamanioMensaje);
+				char* contenido_pagina=recibir_string_generico(socket_swap);
+		//copiar pagina en memoria
+				if (cant_paginas_asignadas(idp) < marco_x_proc) {
+					int marco_libre = buscar_marco_libre();
+						if (marco_libre != -1) {
+						escribir_posicion_memoria(marco_libre * marco_size, marco_size,	contenido_pagina);
+						escribir_marco_en_TP(idp, num_pagina, marco_libre);
+						marco_ocupado(marco_libre);
+						}else {//memoria ocupada
+					//reemplazo local
+					int marco = reemplazar_MP(idp, num_pagina);
+					escribir_posicion_memoria(marco * marco_size, marco_size,contenido_pagina);
+					escribir_marco_en_TP(idp, num_pagina, marco);
+						}
+				}else {
+					int marco_destino = reemplazar_MP(idp, num_pagina);
 
-		escribir_posicion_memoria(marco_destino * marco_size + offset, t,
-				buffer);
-		escribir_marco_en_TP(idp, num_pagina, marco_destino);
-	}
+					escribir_posicion_memoria(marco_destino * marco_size, marco_size,contenido_pagina);
+					escribir_marco_en_TP(idp, num_pagina, marco_destino);
+				}
+				//escribir_posicion_memoria
+				escribir_posicion_memoria(tabla_procesos[idp][num_pagina].marco* marco_size + offset, t, buffer);
+			}
+
 	pthread_mutex_unlock(&lock);
-}
+	}
+
+
+
 
 void crear_tabla_de_paginas(int idp, int paginas_requeridas) { //testeado
 	tabla_paginas tabla_paginas;
@@ -574,13 +608,27 @@ int cant_paginas_asignadas(int idp) { //falta testear
 
 int reemplazar_MP(int idp, int num_pagina) { //testeado
 	int pagina_victima = buscar_pagina_victima(idp);
-	if (tabla_procesos[idp][pagina_victima].modificado) {
-		//enviar a swap que escriba la pagina victima (en swap quedo desactualizada)
-	}
+
 	tabla_procesos[idp][pagina_victima].presencia = 0;
+	sacar_pagina_de_tlb(idp,pagina_victima);
 	int marco_destino = tabla_procesos[idp][pagina_victima].marco;
+	if (tabla_procesos[idp][pagina_victima].modificado) {
+			//enviar a swap que escriba la pagina victima (en swap quedo desactualizada)
+			void* mensaje;
+			char* pagina=leer_posicion_memoria(marco_destino*marco_size,marco_size);
+							int tamanioMensaje = serializarEscribirPagina(idp, pagina_victima,pagina,&mensaje);
+							enviar(socket_swap, mensaje, tamanioMensaje);
+		}
 	return marco_destino;
 
+}
+void sacar_pagina_de_tlb(int idp,int pagina){
+	int i;
+	for(i=0;i<entradas_tlb;i++){
+		if(tlb[i].idp==idp && tlb[i].pagina==pagina){
+			tlb[i].idp=-1;
+		}
+	}
 }
 
 int buscar_pagina_victima(int idp) {
