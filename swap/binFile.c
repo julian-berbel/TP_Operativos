@@ -7,7 +7,7 @@
 #include"swap.h"
 #include"binFile.h"
 
-char* rutaArchivoSwap(){
+char* rutaArchivoSwap() {
 	char *ruta_archivo = string_new();
 	string_append(&ruta_archivo, RUTA_BINFILE);
 	string_append(&ruta_archivo, nombre_data);
@@ -15,7 +15,7 @@ char* rutaArchivoSwap(){
 	return ruta_archivo;
 }
 
-long int paginaEnBytes(int numPagina){
+long int paginaEnBytes(int numPagina) {
 	return numPagina * pagina_size;
 }
 
@@ -43,23 +43,39 @@ char* tamanioArchivo(int pagina_tamanio, int cantidad_pags) {
 	return tamanioTotalString;
 }
 
-void escribirArchivoBinario(char* programa){
+void escribirArchivoBinario(char* programa) {
 
-	archivo = fopen(rutaArchivoSwap(),"w");
+	usleep(retardo_acceso * 1000);
+
+	archivo = fopen(rutaArchivoSwap(), "w");
 	//creo que falta el fseek asi posicionas donde lo queres escribir
-	fputs(programa,archivo);
+	fputs(programa, archivo);
 
 	fclose(archivo);
 }
 
+void escribirArchivoBinarioEnPag(int numPagina, char* buffer) {
 
-void escribirArchivoBinarioEnPag(int numPagina, char* buffer){
+	usleep(retardo_acceso * 1000);
 
 	archivo = fopen(rutaArchivoSwap(), "wb"); //va la ruta o el nombre_data?
 
-	fseek(archivo,paginaEnBytes(numPagina),SEEK_SET);
+	fseek(archivo, paginaEnBytes(numPagina), SEEK_SET);
 
-	fputs(buffer,archivo);
+	fputs(buffer, archivo);
 
 	fclose(archivo);
+}
+
+char* leerArchivoBinarioEnPagina(int numPagina) {
+
+	usleep(retardo_acceso * 1000);
+	archivo = fopen(nombre_data, "rb");
+	char* buffer = malloc(pagina_size);
+	fseek(archivo, paginaEnBytes(numPagina), SEEK_SET);
+	fread(buffer, pagina_size, 1, archivo);
+	fclose(archivo);
+
+	return buffer;
+
 }

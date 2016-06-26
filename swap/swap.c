@@ -98,12 +98,6 @@ void inicializar(int id_programa, int paginas_requeridas, char* programa) {
 	}
 }
 
-/*int hayEspacio(int paginas_requeridas) {
- if (cant_pags_disponibles() >= paginas_requeridas) {
- return 1;
- } else
- return 0;
- }*/
 
 Bool noEstaUtilizado(t_swap* swap) {
 
@@ -142,9 +136,9 @@ int estanPaginasContinuas(t_list* espaciosLibres, int paginas_requeridas) {
 		}
 	}
 	if (contadorDeEspaciosContiguos >= paginas_requeridas) {
-		return 0;
-	} else {
 		return 1;
+	} else {
+		return 0;
 	}
 }
 
@@ -198,13 +192,43 @@ Bool estaUtilizado() {
 }
 
 void compactar() {
-	// TODO
-	//tambien teiene que modificar el archivo, no olvidarse
-	//ver si el bit de uso del primer elemento esta libre (1), si está guardo esa pagina/marco
-	//cuando recorri toda la lista, al marco libre lo ocupo por el mas proximo ocupado y al ocupado
-	//lo lleno de ceros...
+	int cantidadEspaciosLibres = list_size(espaciosLibres());
+	while(! (estanPaginasContinuas(espaciosLibres(),cantidadEspaciosLibres))){
+		recorrerYModificarArchivoYListas();
+	}
 
 	usleep(retardo_compactacion * 1000);
+}
+
+void recorrerYModificarArchivoYListas(){
+
+	char* paginaAMoverEnUso/*, paginaAMoverSinUso*/;
+	int tamTotal = list_size(espacioTotal);
+	int i;
+	for(i=0 ; i < tamTotal ; i ++){ //Recorre la lista de espacioTotal para correr los espacios libres al final del archivo y de la lista
+		t_swap* swap = list_get(espacioTotal,i);
+		t_swap* swapSig = list_get(espacioTotal,i+1);
+		if(swap->bit_uso == 0 && swapSig->bit_uso == 1){
+			int j;
+			int tamProcesos = list_size(listaDeProcesos);
+			for(j = 0; j < tamProcesos; j++){ //Recorre lista de procesos para asignarle la nueva pagina
+				t_proceso* proceso = list_get(listaDeProcesos, j);
+				if(proceso->pagina == swapSig->pagina){
+					proceso->pagina = swap->pagina;
+					list_replace(listaDeProcesos, j, proceso);
+					j = tamProcesos; //para que salga del for y no recorra toda la lista
+				}
+			}
+			paginaAMoverEnUso = leerArchivoBinarioEnPagina(swapSig->pagina);
+			//paginaAMoverSinUso = leerArchivoBinarioEnPagina()
+			escribirArchivoBinarioEnPag(swap->pagina, paginaAMoverEnUso);
+			swap->bit_uso = 1;
+			swapSig->bit_uso = 0;
+			list_replace(espacioTotal,i,swap);
+			list_replace(espacioTotal, i+1, swapSig);
+
+		}
+	}
 }
 
 void agregarProcesoALista(int id_programa, int paginas_requeridas) {
@@ -256,30 +280,35 @@ int cant_pags_disponibles() {
 }
 
 void leer_pagina(int id_programa, int num_pagina) {
-	archivo = fopen(nombre_data,"r");
-	char* buffer = malloc(pagina_size);
+	//recibir(socket_umc);
 	int i;
+	t_list* paginasDelProceso = list_create();
 	int tamanioListaProcesos = list_size(listaDeProcesos);
 	for (i = 0; i < tamanioListaProcesos; i++){
 	t_proceso* proceso = list_get(listaDeProcesos,i);
-	if(proceso->pid == id_programa && proceso->pagina == num_pagina){
-		fseek(archivo, num_pagina, SEEK_SET);
-		fread(buffer, pagina_size, 1, archivo);
-		fclose(archivo);
-		usleep(retardo_acceso * 1000);
-		// todo enviar(socket, buffer, pagina_size);
+		if(proceso->pid == id_programa){
+			list_add(paginasDelProceso, proceso);
+		}
+	}
+	if (list_get(paginasDelProceso, 0) == NULL){
+					log_info(logger, "No existe la pagina solicitada en la Swap");
+	}
+		for (i = 0; i <= list_size(paginasDelProceso); i++) {
+				if (i == num_pagina) {
+					t_proceso* proceso = list_get(paginasDelProceso, i);
+					char* paginaLeida = leerArchivoBinarioEnPagina(proceso->pagina);
+					//enviar(socket_umc, paginaLeida, pagina_size);
 
-	}else{
-		log_info(logger, "No existe la pagina solicitada en la Swap");
+				}else{
+					log_info(logger, "No existe la pagina solicitada en la Swap");
+				}
+
 	}
 
-	}
-
-	free(buffer);
 }
-//FALTA EL RETARDO SWAP EN ESCRIBIR PAGINA
+//NO HABRIA QUE MANDARLE A LA UMC QUE ESTA TODO BIEN??
 void escribir_pagina(int id_programa, int num_pagina, char* buffer) {
-	//TODO recv de la umc
+	//recibir(socke_umc);
 	int i;
 	t_list* paginasDelProceso = list_create();
 	int paginaAEscribir = -1;
