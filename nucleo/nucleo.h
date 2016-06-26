@@ -72,7 +72,7 @@ typedef struct{
 
 typedef struct{
 	int socketConsola;
-	int pid;
+	t_elemento_cola* elemento;
 }t_consola;
 
 typedef struct{
@@ -105,9 +105,9 @@ void cerrar_todo();
 
 void cancelar(void* consola);
 
-void imprimir(int pid, char* mensaje);
+void imprimir(char* mensaje, void* cpu);
 
-void quantumTerminado(t_PCB* pcbActualizado, void* cpu);
+void quantumTerminado(void* cpu);
 
 int indiceEnArray(char** array, char* elemento);
 

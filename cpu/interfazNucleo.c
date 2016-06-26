@@ -9,7 +9,7 @@
 
 int serializarImprimir(char* mensaje, void** serializacion){
 	int tamanioMensaje = sizeof(char) * (string_length(mensaje) + 1);
-	int tamanio = sizeof(interfazNucleo) + sizeof(int) + tamanioMensaje;
+	int tamanio = sizeof(interfazNucleo) + tamanioMensaje;
 	*serializacion = malloc(tamanio);
 	void* aux = *serializacion;
 
@@ -18,23 +18,16 @@ int serializarImprimir(char* mensaje, void** serializacion){
 	*((interfazNucleo*) aux) = IMPRIMIR;
 	aux += sizeof(interfazNucleo);
 
-	*((int*) aux) = pcb_actual->pid;
-	aux += sizeof(int);
-
 	memcpy(aux, mensaje, tamanioMensaje);
 
 	return tamanio;
 }
 
-int serializarQuantumTerminado(t_PCB* pcbActualizado, void** serializacion){
-	int tamanio = sizeof(interfazNucleo) + calcularTamanioPCB(pcbActualizado);
+int serializarQuantumTerminado(void** serializacion){
+	int tamanio = sizeof(interfazNucleo);
 	*serializacion = malloc(tamanio);
-	void* aux = *serializacion;
 
-	*(interfazNucleo*)aux = QUANTUM_TERMINADO;
-	aux += sizeof(interfazNucleo);
-
-	serializarPCB(pcbActualizado, aux);
+	*(interfazNucleo*)serializacion = QUANTUM_TERMINADO;
 
 	return tamanio;
 }
@@ -133,7 +126,13 @@ void deserializarCargarPCB(void* parametrosSerializados, void* dataAdicional){
 	cargarPCB(pcb, quantum);
 }
 
-void (*deserializadores[3])(void*, void*) = {deserializarCargarPCB, terminar, cancelar};
+void deserializarContinuarEjecucion(void* parametrosSerializados, void* dataAdicional){
+	int quantum = *((int*) parametrosSerializados);
+
+	continuarEjecucion(quantum);
+}
+
+void (*deserializadores[4])(void*, void*) = {deserializarCargarPCB, terminar, deserializarContinuarEjecucion, desalojar};
 
 void procesarMensaje(void* mensaje, void* dataAdicional){
 	interfazPropia tipo = *((interfazPropia*) mensaje);

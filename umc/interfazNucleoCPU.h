@@ -5,8 +5,8 @@
  *      Author: utnso
  */
 
-#ifndef INTERFAZSWAP_H_
-#define INTERFAZSWAP_H_
+#ifndef INTERFAZNUCLEOCPU_H_
+#define INTERFAZNUCLEOCPU_H_
 
 #include <stdlib.h>
 
@@ -34,4 +34,4 @@ extern void leer_pagina(int num_pagina, int offset,size_t t, void* cliente);
 extern void escribir_pagina(int num_pagina, int offset, size_t t, char *buffer,void* cliente);
 extern void cambiar_proceso_activo(int pid, void* dataAdicional);
 
-#endif /* INTERFAZSWAP_H_ */
+#endif /* INTERFAZNUCLEOCPU_H_ */

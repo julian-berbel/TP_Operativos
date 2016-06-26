@@ -66,6 +66,7 @@ int tamanio_pagina;
 t_PCB *pcb_actual;
 const int CONTENIDO_VARIABLE = 20; //Borrar cuando esten todas las primitivas
 const int POSICION_MEMORIA = 0x10; //Borrar cuando esten todas las primitivas
+int socket_nucleo;
 
 void abrirConfiguracion();
 void cerrar_todo();
@@ -77,8 +78,10 @@ void cargarPCB(t_PCB* pcb, int quantum);
 
 void ejecutarInstruccion();
 
-void cancelar();
-
 void terminar();
+
+void continuarEjecucion();
+
+void desalojar();
 
 #endif

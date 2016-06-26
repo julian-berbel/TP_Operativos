@@ -254,7 +254,7 @@ void signal(t_nombre_semaforo identificador_semaforo){
 int main(){
 	abrirConfiguracion();
 	log_info(logger, "Inicia proceso CPU");
-	int socket_nucleo = crear_socket_cliente(ipNucleo, puertoNucleo);
+	socket_nucleo = crear_socket_cliente(ipNucleo, puertoNucleo);
 	log_info(logger_pantalla, "CPU y Nucleo conectados");
 	socket_umc = crear_socket_cliente(ipUMC, puertoUMC);
 	log_info(logger_pantalla, "CPU y UMC conectados");
@@ -354,10 +354,18 @@ void ejecutarInstruccion(){
 	analizadorLinea(instruccion, &functions, &kernel_functions);
 }
 
-void cancelar(){
-	pcb_destroy(pcb_actual);
-}
-
 void terminar(){
 	// terminar lo recibe cuando se cierra el nucleo.
+}
+
+void continuarEjecucion(){
+
+}
+
+void desalojar(){
+	void* mensaje;
+	int tamanioMensaje = serializarPCB(pcb_actual, &mensaje);
+	enviar(socket_nucleo, mensaje, tamanioMensaje);
+	free(mensaje);
+	pcb_destroy(pcb_actual);
 }

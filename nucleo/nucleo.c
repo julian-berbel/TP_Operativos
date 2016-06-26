@@ -1,20 +1,21 @@
 #include "nucleo.h"
 
 void cancelar(void* consola){
-
+	((t_consola*) consola)->elemento->estado = EXIT;
+	sem_post(&moverPCBs);
 }
 
 int buscarSocketConsola(int pid){
 	_Bool compararPid(t_consola* consola){
-		return consola->pid == pid;
+		return consola->elemento->pcb->pid == pid;
 	}
 
 	t_consola* consola = list_find(consolas, (void*)compararPid);
 	return consola->socketConsola;
 }
 
-void imprimir(int pid, char* mensaje){
-	int socket_consola = buscarSocketConsola(pid);
+void imprimir(char* mensaje, void* cpu){
+	int socket_consola = buscarSocketConsola(((t_cpu*)cpu)->elemento->pcb->pid);
 
 	void* mensajeSerializado;
 	int tamanio = serializarImprimir(mensaje, &mensajeSerializado);
@@ -34,17 +35,38 @@ t_elemento_cola* actualizarPCB(t_list* lista, t_PCB* pcbActualizado){
 	return elemento;
 }
 
-void quantumTerminado(t_PCB* pcbActualizado, void* cpu){
+t_elemento_cola* desalojar(t_cpu* cpu){
+	void* mensaje;
+	int tamanioMensaje;
+
+	tamanioMensaje = serializarDesalojar(&mensaje);
+	enviar(cpu->socketCPU, mensaje, tamanioMensaje);
+	free(mensaje);
+
+	t_PCB* pcbActualizado = recibir(cpu->socketCPU);
 	t_elemento_cola* elemento = actualizarPCB(colaPCBExec->elements, pcbActualizado);
+
+
+	cpu->elemento = NULL;
+	return elemento;
+}
+
+void quantumTerminado(void* cpu){
+	void* mensaje;
+	int tamanioMensaje;
 	pthread_mutex_lock(&mutexColaReady);
 	if(!hayCPUsLibres() && colaPCBReady->elements->elements_count){
 		pthread_mutex_unlock(&mutexColaReady);
+
+		t_elemento_cola* elemento = desalojar(cpu);
+
 		elemento->estado = READY;
 		sem_post(&moverPCBs);
-		((t_cpu*)cpu)->elemento = NULL;
 	}else{
 		pthread_mutex_unlock(&mutexColaReady);
-		//decirle a la cpu que siga ejecutando
+		tamanioMensaje = serializarContinuarEjecucion(&mensaje);
+		enviar(((t_cpu*)cpu)->socketCPU, mensaje, tamanioMensaje);
+		free(mensaje);
 	}
 }
 
@@ -56,29 +78,34 @@ void nuevoPrograma(int socket_consola){
 	void* mensaje;
 	int tamanio = serializarInicializar(pid, paginasRequeridas, programa, &mensaje);
 	enviar(socket_umc, mensaje, tamanio);
+	char* respuesta = recibir_string_generico(socket_umc);
 
-	// Manejo de error: No hay espacio para el programa
+	if(!strcmp(respuesta, "ok")){
 
-	t_consola* consola = malloc(sizeof(t_consola));
+		t_consola* consola = malloc(sizeof(t_consola));
+		consola->elemento = malloc(sizeof(t_elemento_cola));
 
-	pthread_mutex_lock(&mutexPID);
-	consola->pid = pid;
-	pid++;
-	pthread_mutex_unlock(&mutexPID);
+		int aux;
+		pthread_mutex_lock(&mutexPID);
+		aux = pid;
+		pid++;
+		pthread_mutex_unlock(&mutexPID);
 
-	consola->socketConsola = socket_consola;
-	list_add(consolas, consola);
+		consola->socketConsola = socket_consola;
+		list_add(consolas, consola);
 
-	t_PCB* pcb = crearPCB(programa, consola->pid);
-	pcb->cantidadPaginas = paginasRequeridas;
-	t_elemento_cola* elemento = malloc(sizeof(t_elemento_cola));
-	elemento->estado = EXEC;
-	elemento->pcb = pcb;
+		consola->elemento->pcb = crearPCB(programa, aux);
+		consola->elemento->pcb->cantidadPaginas = paginasRequeridas;
 
-	pthread_mutex_lock(&mutexColaReady);
-	queue_push(colaPCBReady, pcb);
-	pthread_mutex_unlock(&mutexColaReady);
-	sem_post(&moverPCBs);
+		consola->elemento->estado = EXEC;
+
+		pthread_mutex_lock(&mutexColaReady);
+		queue_push(colaPCBReady, consola->elemento);
+		pthread_mutex_unlock(&mutexColaReady);
+		sem_post(&moverPCBs);
+	}else{
+
+	}
 }
 
 int mayorSocket(int mayor){
@@ -409,9 +436,12 @@ void esperar(char* identificador, void* cpu){
 	int indice = indiceEnArray(sem_id, identificador);
 	if(semaforosGlobales[indice].valor){
 		semaforosGlobales[indice].valor--;
-		// decirle al cpu que siga ejecutando
+		enviar_string(((t_cpu*)cpu)->socketCPU, "dale para adelante!");
 	}else{
-		// decirle al cpu que pare y que me pase el pcb
+		t_elemento_cola* elemento = desalojar(cpu);
+
+		elemento->estado = BLOCK;
+		sem_post(&moverPCBs);
 	}
 }
 
@@ -429,9 +459,12 @@ void avisar(char* identificador){
 void entradaSalida(char* identificador, int operaciones, void* cpu){
     t_pedido* pedido = malloc(sizeof(t_pedido));
     pedido->cantidadDeOperaciones = operaciones;
-    // actualizar pcb
-    pedido->elemento = ((t_cpu*)cpu)->elemento;
-    pedido->elemento->estado = BLOCK;
+
+    t_elemento_cola* elemento = desalojar(cpu);
+
+    pedido->elemento = elemento;
+    elemento->estado = BLOCK;
+
     int indice = indiceEnArray(io_id, identificador);
     queue_push(dispositivos[indice].cola_dispositivo, (void*)pedido);
     sem_post(&dispositivos[indice].semaforoDispositivo);
@@ -515,7 +548,7 @@ void threadPlanificador(){
 				cpu = cpuLibre();
 				cpu->elemento = elemento;
 				void* mensaje;
-				int tamanioSerializacion = serializarCargarPCB(elemento->pcb, quantum, &mensaje);
+				int tamanioSerializacion = serializarCargarPCB(elemento->pcb, &mensaje);
 				enviar(cpu->socketCPU, mensaje, tamanioSerializacion);
 				free(mensaje);
 			}else if(elemento->estado == EXIT){

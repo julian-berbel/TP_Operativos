@@ -22,12 +22,3 @@ void procesarMensaje(void* mensaje, void* dataAdicional){
 	(*deserializadores[tipo])(aux, dataAdicional);
 	free(mensaje);
 }
-
-int serializarCancelar(void** serializacion) {
-	*serializacion = malloc(sizeof(interfazPropia));
-	void* aux = *serializacion;
-
-	*(interfazPropia*)aux = CANCELAR;
-
-	return sizeof(interfazPropia);
-}

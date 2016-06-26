@@ -73,12 +73,6 @@ void imprimir(char* mensaje){
 
 void senialTerminar(int n){
 	if(n == SIGINT){
-		void* mensaje;
-		int tamanio;
-		tamanio = serializarCancelar(&mensaje);
-
-		enviar(socket_nucleo, mensaje, tamanio);
-		free(mensaje);
 		terminar();
 	}
 }

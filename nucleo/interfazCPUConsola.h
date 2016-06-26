@@ -11,14 +11,14 @@
 #include <stdlib.h>
 #include "pcb.h"
 
-typedef enum {CARGAR_PCB/*, TERMINAR, CANCELAR*/} interfazCPU;
+typedef enum {CARGAR_PCB/*, TERMINAR*/, CONTINUAR_EJECUCION, DESALOJAR} interfazCPU;
 
 typedef enum{/*IMPRIMIR, */ TERMINAR} interfazConsola;
 
-typedef enum {	IMPRIMIR, QUANTUM_TERMINADO, CANCELAR, OBTENER_VALOR, GRABAR_VALOR,
+typedef enum {	IMPRIMIR, QUANTUM_TERMINADO, OBTENER_VALOR, GRABAR_VALOR,
 				WAIT, SIGNAL, ENTRADA_SALIDA} interfazPropia;
 
-int serializarCargarPCB(t_PCB* pcb, int quantum, void** serializacion);
+int serializarCargarPCB(t_PCB* pcb, void** serializacion);
 
 int serializarCancelar(void** serializacion);
 
@@ -26,15 +26,21 @@ int serializarTerminar(void** serializacion);
 
 int serializarImprimir(char* mensaje, void** serializacion); //para consola
 
+int serializarContinuarEjecucion(void** serializacion);
+
+int serializarDesalojar(void** serializacion);
+
 void deserializarImprimir(void* parametrosSerializados, void* dataAdicional);
 
 void deserializarQuantumTerminado(void* parametrosSerializados, void* dataAdicional);
 
 void deserializarCancelar(void* parametrosSerializados, void* dataAdicional);
 
-extern void imprimir(int pid, char* mensaje);
+extern int quantum;
 
-extern void quantumTerminado(t_PCB* pcbActualizado, void* cpu);
+extern void imprimir(char* mensaje, void* cpu);
+
+extern void quantumTerminado(void* cpu);
 
 extern void cancelar(void* consola);
 
@@ -48,7 +54,7 @@ extern void avisar(char* identificador);
 
 extern void entradaSalida(char* identificador, int operaciones, void* cpu);
 
-void (*deserializadores[8])(void*, void*);
+void (*deserializadores[7])(void*, void*);
 
 void procesarMensaje(void* mensaje, void* dataAdicional);
 

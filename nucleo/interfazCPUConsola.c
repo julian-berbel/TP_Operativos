@@ -7,7 +7,7 @@
 
 #include "interfazCPUConsola.h"
 
-int serializarCargarPCB(t_PCB* pcb, int quantum, void** serializacion){
+int serializarCargarPCB(t_PCB* pcb, void** serializacion){
 	int tamanio = sizeof(interfazCPU) + calcularTamanioPCB(pcb) + sizeof(int);
 	*serializacion = malloc(tamanio);
 	void* aux = *serializacion;
@@ -21,13 +21,6 @@ int serializarCargarPCB(t_PCB* pcb, int quantum, void** serializacion){
 	serializarPCB(pcb, aux);
 
 	return tamanio;
-}
-
-int serializarCancelar(void** serializacion) {
-	*serializacion = malloc(sizeof(interfazCPU));
-	*(interfazCPU*)*serializacion = CANCELAR;
-
-	return sizeof(interfazCPU);
 }
 
 int serializarTerminar(void** serializacion) {
@@ -53,22 +46,40 @@ int serializarImprimir(char* mensaje, void** serializacion){
 	return tamanio;
 }
 
+int serializarContinuarEjecucion(void** serializacion){
+	int tamanio = sizeof(interfazCPU) + sizeof(int);
+	*serializacion = malloc(tamanio);
+	void* aux = *serializacion;
+
+	*((interfazCPU*) aux) = CONTINUAR_EJECUCION;
+	aux += sizeof(interfazCPU);
+
+	*((int*) aux) = quantum;
+
+	return tamanio;
+}
+
+int serializarDesalojar(void** serializacion){
+	int tamanio = sizeof(interfazCPU);
+	*serializacion = malloc(tamanio);
+
+	*((interfazCPU*) serializacion) = DESALOJAR;
+
+	return tamanio;
+}
+
 void deserializarCancelar(void* parametrosSerializados, void* consola){
 	cancelar(consola);
 }
 
 void deserializarImprimir(void* parametrosSerializados, void* cpu){
-	int pid = *((int*) parametrosSerializados);
-	parametrosSerializados += sizeof(int);
 	char* mensaje = parametrosSerializados;
 
-	imprimir(pid, mensaje);
+	imprimir(mensaje, cpu);
 }
 
 void deserializarQuantumTerminado(void* parametrosSerializados, void* cpu){
-	t_PCB* pcb = deserializarPCB(parametrosSerializados);
-
-	quantumTerminado(pcb, cpu);
+	quantumTerminado(cpu);
 }
 
 void deserializarObtenerValor(void* parametrosSerializados, void* cpu){
@@ -103,7 +114,7 @@ void deserializarEntradaSalida(void* parametrosSerializados, void* cpu){
 	entradaSalida(identificador, operaciones, cpu);
 }
 
-void (*deserializadores[8])(void*, void*) = {	deserializarImprimir, deserializarQuantumTerminado, deserializarCancelar, deserializarObtenerValor,
+void (*deserializadores[7])(void*, void*) = {	deserializarImprimir, deserializarQuantumTerminado, deserializarObtenerValor,
 												deserializarGrabarValor, deserializarWait, deserializarSignal, deserializarEntradaSalida};
 
 void procesarMensaje(void* mensaje, void* dataAdicional){

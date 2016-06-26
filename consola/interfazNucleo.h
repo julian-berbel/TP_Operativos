@@ -14,10 +14,6 @@ extern int pid;
 
 typedef enum {IMPRIMIR, TERMINAR} interfazPropia;
 
-typedef enum {CANCELAR = 2} interfazNucleo;
-
-int serializarCancelar(void** serializacion);
-
 void deserializarImprimir(void* parametrosSerializados, void* dataAdicional);
 
 void (*deserializadores[2])(void*, void*);
