@@ -1,6 +1,7 @@
 #include "interfazSwap.h"
 
 int serializarTerminar(void** serializacion) {
+	log_info(logger, "Serializando: Terminar");
 	*serializacion = malloc(sizeof(interfazSwap));
 	*(interfazSwap*)*serializacion = TERMINAR;
 
@@ -8,6 +9,7 @@ int serializarTerminar(void** serializacion) {
 }
 
 int serializarInicializar(int id_programa, int paginas_requeridas, char* programa, void** serializacion){
+	log_info(logger, "Serializando: Inicializar: id_programa: %d, paginas_requeridas: %d", id_programa, paginas_requeridas);
 	int tamanioSerializacion = sizeof(interfazSwap) + sizeof(int) * 2 + sizeof(char) * (string_length(programa) + 1);
 	*serializacion = malloc(tamanioSerializacion);
 	void* aux = *serializacion;
@@ -26,6 +28,7 @@ int serializarInicializar(int id_programa, int paginas_requeridas, char* program
 }
 
 int serializarLeerPagina(int id_programa, int num_pagina, void** serializacion){
+	log_info(logger, "Serializando: Leer Pagina: id_programa: %d, num_pagina: %d", id_programa, num_pagina);
 	int tamanioSerializacion = sizeof(interfazSwap) + sizeof(int) * 2;
 	*serializacion = malloc(tamanioSerializacion);
 	void* aux = *serializacion;
@@ -40,6 +43,7 @@ int serializarLeerPagina(int id_programa, int num_pagina, void** serializacion){
 }
 
 int serializarEscribirPagina(int id_programa, int num_pagina, char* buffer, void** serializacion){
+	log_info(logger, "Serializando: Escribir Pagina: id_programa: %d, num_pagina: %d, buffer: %s", id_programa, num_pagina, buffer);
 	int tamanioSerializacion = sizeof(interfazSwap) + sizeof(int) * 2 + sizeof(char) * (string_length(buffer) + 1);
 	*serializacion = malloc(tamanioSerializacion);
 	void* aux = *serializacion;
@@ -58,6 +62,7 @@ int serializarEscribirPagina(int id_programa, int num_pagina, char* buffer, void
 }
 
 int serializarFinalizar(int id_programa, void** serializacion){
+	log_info(logger, "Serializando: Finalizar: id_programa: %d", id_programa);
 	int tamanioSerializacion = sizeof(interfazSwap) + sizeof(int);
 	*serializacion = malloc(tamanioSerializacion);
 	void* aux = *serializacion;

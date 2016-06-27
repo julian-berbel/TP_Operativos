@@ -9,6 +9,7 @@
 #define INTERFAZNUCLEO_H_
 
 #include <stdlib.h>
+#include <commons/log.h>
 
 extern int pid;
 
@@ -23,5 +24,7 @@ void procesarMensaje(void* mensaje, void* dataAdicional);
 extern void imprimir(char* mensaje);
 
 extern void terminar();
+
+extern t_log* logger;
 
 #endif /* INTERFAZNUCLEO_H_ */

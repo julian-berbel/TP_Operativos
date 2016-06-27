@@ -12,6 +12,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <commons/string.h>
+#include <commons/log.h>
 
 typedef enum { INICIALIZAR, TERMINAR, LEER_PAGINA, ESCRIBIR_PAGINA, FINALIZAR} interfazSwap;
 
@@ -24,5 +25,7 @@ int serializarLeerPagina(int id_programa, int num_pagina, void** serializacion);
 int serializarEscribirPagina(int id_programa, int num_pagina, char* buffer, void** serializacion);
 
 int serializarFinalizar(int id_programa, void** serializacion);
+
+extern t_log* logger;
 
 #endif /* INTERFAZSWAP_H_ */

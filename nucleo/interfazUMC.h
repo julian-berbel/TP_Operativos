@@ -12,6 +12,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <commons/string.h>
+#include <commons/log.h>
 
 typedef enum {INICIALIZAR, /*TERMINAR,*/ FINALIZAR = 4} interfazUMC;
 
@@ -20,5 +21,7 @@ typedef enum {INICIALIZAR, /*TERMINAR,*/ FINALIZAR = 4} interfazUMC;
 int serializarInicializar(int id_programa, int paginas_requeridas, char* programa, void** serializacion);
 
 int serializarFinalizar(int id_programa, void** serializacion);
+
+extern t_log* logger;
 
 #endif /* INTERFAZUMC_H_ */

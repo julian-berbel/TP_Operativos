@@ -10,8 +10,9 @@
 
 #include <stdlib.h>
 #include "pcb.h"
+#include <commons/log.h>
 
-typedef enum {IMPRIMIR, QUANTUM_TERMINADO, OBTENER_VALOR, GRABAR_VALOR, WAIT, SIGNAL, ENTRADA_SALIDA} interfazNucleo;
+typedef enum {IMPRIMIR, QUANTUM_TERMINADO, OBTENER_VALOR, GRABAR_VALOR, WAIT, SIGNAL, ENTRADA_SALIDA, CERRAR_CPU} interfazNucleo;
 
 typedef enum {CARGAR_PCB, TERMINAR} interfazPropia;
 
@@ -29,6 +30,8 @@ int serializarSignal(char* identificador, void** serializacion);
 
 int serializarEntradaSalida(char* identificador, int operaciones, void** serializacion);
 
+int serializarCerrarCPU(void** serializacion);
+
 void deserializarCargarPCB(void* parametrosSerializados, void* dataAdicional);
 
 void (*deserializadores[4])(void*, void*);
@@ -44,5 +47,7 @@ extern void continuarEjecucion();
 extern void desalojar();
 
 extern t_PCB* pcb_actual;
+
+extern t_log* logger;
 
 #endif /* INTERFAZNUCLEO_H_ */

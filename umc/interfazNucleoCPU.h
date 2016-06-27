@@ -9,6 +9,7 @@
 #define INTERFAZNUCLEOCPU_H_
 
 #include <stdlib.h>
+#include <commons/log.h>
 
 typedef enum {/*INICIALIZAR, TERMINAR,*/ SOLICITAR = 2, ALMACENAR = 3/*, FINALIZAR*/, CAMBIAR_PROCESO_ACTIVO} interfazPropia;
 
@@ -33,5 +34,7 @@ extern void finalizar(int num_programa);
 extern void leer_pagina(int num_pagina, int offset,size_t t, void* cliente);
 extern void escribir_pagina(int num_pagina, int offset, size_t t, char *buffer,void* cliente);
 extern void cambiar_proceso_activo(int pid, void* dataAdicional);
+
+extern t_log* logger;
 
 #endif /* INTERFAZNUCLEOCPU_H_ */

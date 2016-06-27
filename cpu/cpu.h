@@ -10,6 +10,7 @@
 #include "interfazUMC.h"
 #include "interfazNucleo.h"
 #include "pcb.h"
+#include <signal.h>
 
 #define RUTA_LOG "/home/utnso/cpu.log"
 #define RUTA_CONFIG "/home/utnso/tp-2016-1c-Hellfish-Group/cpu/config/cpu.config"
@@ -31,7 +32,7 @@ void imprimir(t_valor_variable valor);
 void imprimirTexto(char* texto);
 void entradaSalida(t_nombre_dispositivo dispositivo, int tiempo);
 void wait(t_nombre_semaforo identificador_semaforo);
-void signal(t_nombre_semaforo identificador_semaforo);
+void signal_primitiva(t_nombre_semaforo identificador_semaforo);
 
 AnSISOP_funciones functions = {
 		.AnSISOP_definirVariable		= definirVariable,
@@ -51,7 +52,7 @@ AnSISOP_funciones functions = {
 };
 AnSISOP_kernel kernel_functions = {
 		.AnSISOP_wait                   = wait,
-		.AnSISOP_signal                 = signal,
+		.AnSISOP_signal                 = signal_primitiva,
 };
 
 t_config* configuracionCPU;
@@ -67,6 +68,7 @@ t_PCB *pcb_actual;
 const int CONTENIDO_VARIABLE = 20; //Borrar cuando esten todas las primitivas
 const int POSICION_MEMORIA = 0x10; //Borrar cuando esten todas las primitivas
 int socket_nucleo;
+sig_atomic_t flagTerminar;
 
 void abrirConfiguracion();
 void cerrar_todo();

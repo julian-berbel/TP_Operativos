@@ -8,6 +8,7 @@
 #include "pcb.h"
 
 int** crearIndiceCodigo(t_size cantidadInstrucciones){
+	log_info(logger, "Creando Indice de Codigo");
 	int** indiceCodigo = malloc(sizeof(int*) * cantidadInstrucciones);
 
 	int i;
@@ -17,6 +18,7 @@ int** crearIndiceCodigo(t_size cantidadInstrucciones){
 }
 
 int calcularTamanioPCB(t_PCB* pcb){
+	log_info(logger, "Calculando tamanio de PCB: pid: %d", pcb->pid);
 	int tamanioPCB = sizeof(int) * 6 + pcb->cantidadInstrucciones * 2 * sizeof(int) + pcb->tamanioIndiceEtiquetas * sizeof(char);
 	nodo_stack* elemento;
 
@@ -30,6 +32,7 @@ int calcularTamanioPCB(t_PCB* pcb){
 }
 
 int serializarPCB(t_PCB* pcb, void** pcbSerializado){
+	log_info(logger, "Serializando PCB: pid: %d", pcb->pid);
 	int tamanioSerializado = calcularTamanioPCB(pcb);
 
 	*pcbSerializado = malloc(tamanioSerializado);
@@ -179,6 +182,7 @@ t_PCB* deserializarPCB(void* pcb_serializado){
 		list_add(pcb->indiceStack, (void*) elemento);
 	}
 
+	log_info(logger, "Deserializado PCB: pid: %d", pcb->pid);
 	return pcb;
 }
 
@@ -225,6 +229,7 @@ void imprimirPCB(t_PCB* pcb){ // lo dejo por si alguna vez hace falta
 }
 
 void pcb_destroy(t_PCB* unPCB){
+	log_info(logger, "Destruyendo PCB: pid: %d", unPCB->pid);
 	int i, f;
 	for(i = 0; i < unPCB->cantidadInstrucciones; i++){
 		free(unPCB->indiceCodigo[i]);

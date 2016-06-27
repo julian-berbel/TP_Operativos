@@ -11,6 +11,7 @@
 #include <stdio.h>
 #include <parser/parser.h>
 #include <commons/collections/list.h>
+#include <commons/log.h>
 
 typedef struct{
 	int pagina;
@@ -52,5 +53,7 @@ t_PCB* deserializarPCB(void* pcb_serializado);
 void imprimirPCB(t_PCB* pcb);
 
 void pcb_destroy(t_PCB* unPCB);
+
+extern t_log* logger;
 
 #endif /* PCB_H_ */

@@ -8,6 +8,7 @@
 #include "interfazCPUConsola.h"
 
 int serializarCargarPCB(t_PCB* pcb, void** serializacion){
+	log_info(logger, "Serializando: Cargar PCB, pid: %d", pcb->pid);
 	int tamanio = sizeof(interfazCPU) + calcularTamanioPCB(pcb) + sizeof(int);
 	*serializacion = malloc(tamanio);
 	void* aux = *serializacion;
@@ -23,7 +24,8 @@ int serializarCargarPCB(t_PCB* pcb, void** serializacion){
 	return tamanio;
 }
 
-int serializarTerminar(void** serializacion) {
+int serializarTerminar(void** serializacion){
+	log_info(logger, "Serializando: Terminar");
 	*serializacion = malloc(sizeof(interfazCPU));
 	*(interfazCPU*)*serializacion = TERMINAR;
 
@@ -31,6 +33,7 @@ int serializarTerminar(void** serializacion) {
 }
 
 int serializarImprimir(char* mensaje, void** serializacion){
+	log_info(logger, "Serializando: Imprimir: mensaje: %s", mensaje);
 	int tamanioMensaje = sizeof(char) * (string_length(mensaje) + 1);
 	int tamanio = sizeof(interfazConsola) + tamanioMensaje;
 	*serializacion = malloc(tamanio);
@@ -47,6 +50,7 @@ int serializarImprimir(char* mensaje, void** serializacion){
 }
 
 int serializarContinuarEjecucion(void** serializacion){
+	log_info(logger, "Serializando: Continuar ejecucion");
 	int tamanio = sizeof(interfazCPU) + sizeof(int);
 	*serializacion = malloc(tamanio);
 	void* aux = *serializacion;
@@ -60,6 +64,7 @@ int serializarContinuarEjecucion(void** serializacion){
 }
 
 int serializarDesalojar(void** serializacion){
+	log_info(logger, "Serializando: Desalojar");
 	int tamanio = sizeof(interfazCPU);
 	*serializacion = malloc(tamanio);
 
@@ -68,23 +73,22 @@ int serializarDesalojar(void** serializacion){
 	return tamanio;
 }
 
-void deserializarCancelar(void* parametrosSerializados, void* consola){
-	cancelar(consola);
-}
-
 void deserializarImprimir(void* parametrosSerializados, void* cpu){
 	char* mensaje = parametrosSerializados;
 
+	log_info(logger, "Deserializado: Imprimir: mensaje: %s", mensaje);
 	imprimir(mensaje, cpu);
 }
 
 void deserializarQuantumTerminado(void* parametrosSerializados, void* cpu){
+	log_info(logger, "Deserializado: Quantum Terminado");
 	quantumTerminado(cpu);
 }
 
 void deserializarObtenerValor(void* parametrosSerializados, void* cpu){
 	char* identificador = parametrosSerializados;
 
+	log_info(logger, "Deserializado: Obtener Valor: id: %s", identificador);
 	obtener_valor(identificador, cpu);
 }
 
@@ -93,16 +97,21 @@ void deserializarGrabarValor(void* parametrosSerializados, void* cpu){
 	parametrosSerializados += sizeof(int);
 	char* identificador = parametrosSerializados;
 
+	log_info(logger, "Deserializado: Grabar Valor: id: %s, valor: %d", identificador, valorAGrabar);
 	grabar_valor(identificador, valorAGrabar);
 }
 
 void deserializarWait(void* parametrosSerializados, void* cpu){
 	char* identificador = parametrosSerializados;
+
+	log_info(logger, "Deserializado: Wait: id: %s", identificador);
 	esperar(identificador, cpu);
 }
 
 void deserializarSignal(void* parametrosSerializados, void* cpu){
 	char* identificador = parametrosSerializados;
+
+	log_info(logger, "Deserializado: Signal: id: %s", identificador);
 	avisar(identificador);
 }
 
@@ -111,13 +120,20 @@ void deserializarEntradaSalida(void* parametrosSerializados, void* cpu){
 	parametrosSerializados += sizeof(int);
 	char* identificador = parametrosSerializados;
 
+	log_info(logger, "Deserializado: Entrada/Salida: id: %s, operaciones: %d", identificador, operaciones);
 	entradaSalida(identificador, operaciones, cpu);
 }
 
-void (*deserializadores[7])(void*, void*) = {	deserializarImprimir, deserializarQuantumTerminado, deserializarObtenerValor,
-												deserializarGrabarValor, deserializarWait, deserializarSignal, deserializarEntradaSalida};
+void deserializarCerrarCPU(void* parametrosSerializados, void* cpu){
+	log_info(logger, "Deserializado: Cerrar CPU");
+	cerrarCPU(cpu);
+}
+
+void (*deserializadores[8])(void*, void*) = {	deserializarImprimir, deserializarQuantumTerminado, deserializarObtenerValor, deserializarGrabarValor,
+												deserializarWait, deserializarSignal, deserializarEntradaSalida, deserializarCerrarCPU};
 
 void procesarMensaje(void* mensaje, void* dataAdicional){
+	log_info(logger, "Procesando mensaje");
 	interfazPropia tipo = *((interfazPropia*) mensaje);
 	void* aux = mensaje + sizeof(interfazPropia);
 

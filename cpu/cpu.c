@@ -247,31 +247,40 @@ void wait(t_nombre_semaforo identificador_semaforo){
 
 }
 
-void signal(t_nombre_semaforo identificador_semaforo){
+void signal_primitiva(t_nombre_semaforo identificador_semaforo){
 
+}
+
+void cerrarCPU(int n){
+	if(n == SIGUSR1){
+		void* mensaje;
+		int tamanioMensaje = serializarCerrarCPU(&mensaje);
+		enviar(socket_nucleo, mensaje, tamanioMensaje);
+		free(mensaje);
+	}
 }
 
 int main(){
 	abrirConfiguracion();
+	signal(SIGUSR1, cerrarCPU);
 	log_info(logger, "Inicia proceso CPU");
 	socket_nucleo = crear_socket_cliente(ipNucleo, puertoNucleo);
 	log_info(logger_pantalla, "CPU y Nucleo conectados");
 	socket_umc = crear_socket_cliente(ipUMC, puertoUMC);
 	log_info(logger_pantalla, "CPU y UMC conectados");
-	//Hay que pedirle el tamaño de pagina a la UMC para definirlo
-	tamanio_pagina = 10;//Definir correctamente cuando lo sepa
-	char * mensaje;
-	while(string_is_empty(mensaje = recibir_string_generico(socket_nucleo)));
-	char * mensaje_logger = string_new();
-	string_append(&mensaje_logger, "Pase por la CPU - ");
-	string_append(&mensaje_logger, mensaje);
-	log_info(logger_pantalla, mensaje_logger);
-	free(mensaje_logger);
+	void* respuesta = recibir(socket_umc);
+	tamanio_pagina = *(int*)respuesta;
+	free(respuesta);
+	void* mensaje;
 
-	enviar_string(socket_umc, mensaje);
+	while(!flagTerminar){
+		mensaje = recibir(socket_umc);
+		if(!mensaje)break;
+		procesarMensaje(mensaje, NULL);
+	}
 
 	close(socket_nucleo);
-	free(mensaje);
+
 	cerrar_todo();
 
 	return 0;
@@ -356,6 +365,7 @@ void ejecutarInstruccion(){
 
 void terminar(){
 	// terminar lo recibe cuando se cierra el nucleo.
+	flagTerminar = 1;
 }
 
 void continuarEjecucion(){

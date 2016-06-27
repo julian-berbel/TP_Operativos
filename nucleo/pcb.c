@@ -8,6 +8,7 @@
 #include "pcb.h"
 
 int** crearIndiceCodigo(t_size cantidadInstrucciones){
+	log_info(logger, "Creando Indice de Codigo");
 	int** indiceCodigo = malloc(sizeof(int*) * cantidadInstrucciones);
 
 	int i;
@@ -17,6 +18,7 @@ int** crearIndiceCodigo(t_size cantidadInstrucciones){
 }
 
 void cargarIndiceCodigo(int** indiceCodigo, t_metadata_program* metadata){
+	log_info(logger, "Cargando Indice de Codigo");
 	int i;
 	for(i = 0; i < metadata->instrucciones_size; i++){
 		indiceCodigo[i][0] = (metadata->instrucciones_serializado + i)->start;
@@ -25,6 +27,7 @@ void cargarIndiceCodigo(int** indiceCodigo, t_metadata_program* metadata){
 }
 
 int calcularTamanioPCB(t_PCB* pcb){
+	log_info(logger, "Calculando tamanio de PCB: pid: %d", pcb->pid);
 	int tamanioPCB = sizeof(int) * 6 + pcb->cantidadInstrucciones * 2 * sizeof(int) + pcb->tamanioIndiceEtiquetas * sizeof(char);
 	nodo_stack* elemento;
 
@@ -38,6 +41,7 @@ int calcularTamanioPCB(t_PCB* pcb){
 }
 
 int serializarPCB(t_PCB* pcb, void** pcbSerializado){
+	log_info(logger, "Serializando PCB: pid: %d", pcb->pid);
 	int tamanioSerializado = calcularTamanioPCB(pcb);
 
 	*pcbSerializado = malloc(tamanioSerializado);
@@ -187,11 +191,12 @@ t_PCB* deserializarPCB(void* pcb_serializado){
 		list_add(pcb->indiceStack, (void*) elemento);
 	}
 
+	log_info(logger, "Deserializado PCB: pid: %d", pcb->pid);
 	return pcb;
 }
 
 t_PCB* crearPCB(const char* programa, int pid){
-
+	log_info(logger, "Creando PCB: pid: %d", pid);
 	t_PCB* pcb = malloc(sizeof(t_PCB));
 	t_metadata_program* metadata = metadata_desde_literal(programa);
 
@@ -253,6 +258,7 @@ void imprimirPCB(t_PCB* pcb){ // lo dejo por si alguna vez hace falta
 }
 
 void pcb_destroy(t_PCB* unPCB){
+	log_info(logger, "Destruyendo PCB, pid: %d", unPCB->pid);
 	int i, f;
 	for(i = 0; i < unPCB->cantidadInstrucciones; i++){
 		free(unPCB->indiceCodigo[i]);

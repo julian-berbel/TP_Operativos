@@ -2,7 +2,7 @@
 
 void (*deserializadores[6])(void*, void*) = {deserializarInicializar, terminar, deserializarSolicitar, deserializarAlmacenar, deserializarFinalizar, deserializarCambiarProcesoActivo};
 
-void deserializarInicializar(void* parametrosSerializados, void* dataAdicional){
+void deserializarInicializar(void* parametrosSerializados, void* cliente){
 	int id_programa, paginas_requeridas;
 	char* programa;
 
@@ -14,10 +14,11 @@ void deserializarInicializar(void* parametrosSerializados, void* dataAdicional){
 
 	programa = parametrosSerializados;
 
-	inicializar(id_programa, paginas_requeridas, programa, dataAdicional);
+	log_info(logger, "Deserializado: inicializar: id_programa: %d, paginas_requeridas: %d", id_programa, paginas_requeridas);
+	inicializar(id_programa, paginas_requeridas, programa, cliente);
 }
 
-void deserializarSolicitar(void* parametrosSerializados, void* dataAdicional){
+void deserializarSolicitar(void* parametrosSerializados, void* cliente){
 	int num_pagina, offset;
 	size_t t;
 
@@ -29,10 +30,11 @@ void deserializarSolicitar(void* parametrosSerializados, void* dataAdicional){
 
 	t = *((int*) parametrosSerializados);
 
-	leer_pagina(num_pagina, offset, t, dataAdicional);
+	log_info(logger, "Deserializado: Leer Pagina: num_pagina: %d, offset: %d, t: %d", num_pagina, offset, t);
+	leer_pagina(num_pagina, offset, t, cliente);
 }
 
-void deserializarAlmacenar(void* parametrosSerializados, void* dataAdicional){
+void deserializarAlmacenar(void* parametrosSerializados, void* cliente){
 	int num_pagina, offset;
 	size_t t;
 	char* buffer;
@@ -48,25 +50,30 @@ void deserializarAlmacenar(void* parametrosSerializados, void* dataAdicional){
 
 	buffer = parametrosSerializados;
 
-	escribir_pagina(num_pagina, offset, t, buffer, dataAdicional);
+	log_info(logger, "Deserializado: Escribir Pagina: num_pagina: %d, offset: %d, t: %d, buffer: %s", num_pagina, offset, t, buffer);
+	escribir_pagina(num_pagina, offset, t, buffer, cliente);
 }
 
-void deserializarFinalizar(void* parametrosSerializados, void* dataAdicional){
+void deserializarFinalizar(void* parametrosSerializados, void* cliente){
 	int id_programa;
 	id_programa = *((int*) parametrosSerializados);
 
+	log_info(logger, "Deserializado: Finalizar: id_programa: %d", id_programa);
 	finalizar(id_programa);
 }
 
-void deserializarCambiarProcesoActivo(void* parametrosSerializados, void* dataAdicional){
+void deserializarCambiarProcesoActivo(void* parametrosSerializados, void* cliente){
 	int pid = *(int*) parametrosSerializados;
-	cambiar_proceso_activo(pid, dataAdicional);
+
+	log_info(logger, "Deserializado: Cambiar Proceso Activo: pid: %d", pid);
+	cambiar_proceso_activo(pid, cliente);
 }
 
-void procesarMensaje(void* mensaje, void* dataAdicional){
+void procesarMensaje(void* mensaje, void* cliente){
+	log_info(logger, "Procesando Mensaje");
 	interfazPropia tipo = *((interfazPropia*) mensaje);
 	void* aux = mensaje + sizeof(interfazPropia);
 
-	(*deserializadores[tipo])(aux, dataAdicional);
+	(*deserializadores[tipo])(aux, cliente);
 	free(mensaje);
 }

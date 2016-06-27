@@ -1,11 +1,7 @@
 #include "nucleo.h"
 
-void cancelar(void* consola){
-	((t_consola*) consola)->elemento->estado = EXIT;
-	sem_post(&moverPCBs);
-}
-
 int buscarSocketConsola(int pid){
+	log_info(logger, "Buscar Socket de Consola: pid: %d", pid);
 	_Bool compararPid(t_consola* consola){
 		return consola->elemento->pcb->pid == pid;
 	}
@@ -15,6 +11,7 @@ int buscarSocketConsola(int pid){
 }
 
 void imprimir(char* mensaje, void* cpu){
+	log_info(logger, "Imprimir: mensaje: %s", mensaje);
 	int socket_consola = buscarSocketConsola(((t_cpu*)cpu)->elemento->pcb->pid);
 
 	void* mensajeSerializado;
@@ -25,8 +22,9 @@ void imprimir(char* mensaje, void* cpu){
 }
 
 t_elemento_cola* actualizarPCB(t_list* lista, t_PCB* pcbActualizado){
+	log_info(logger, "Actualizar PCB: pid: %d", pcbActualizado->pid);
 	_Bool compararPid(t_elemento_cola* elemento){
-			return elemento->pcb->pid == pcbActualizado->pid;
+		return elemento->pcb->pid == pcbActualizado->pid;
 	}
 
 	t_elemento_cola* elemento = list_find(lista, (void*) compararPid);
@@ -36,6 +34,7 @@ t_elemento_cola* actualizarPCB(t_list* lista, t_PCB* pcbActualizado){
 }
 
 t_elemento_cola* desalojar(t_cpu* cpu){
+	log_info(logger, "Desalojar CPU: pid: %d", cpu->elemento->pcb->pid);
 	void* mensaje;
 	int tamanioMensaje;
 
@@ -46,12 +45,12 @@ t_elemento_cola* desalojar(t_cpu* cpu){
 	t_PCB* pcbActualizado = recibir(cpu->socketCPU);
 	t_elemento_cola* elemento = actualizarPCB(colaPCBExec->elements, pcbActualizado);
 
-
 	cpu->elemento = NULL;
 	return elemento;
 }
 
 void quantumTerminado(void* cpu){
+	log_info(logger, "Quantum Terminado: pid: %d", ((t_cpu*)cpu)->elemento->pcb->pid);
 	void* mensaje;
 	int tamanioMensaje;
 	pthread_mutex_lock(&mutexColaReady);
@@ -71,6 +70,7 @@ void quantumTerminado(void* cpu){
 }
 
 void nuevoPrograma(int socket_consola){
+	log_info(logger, "Procesando nuevo programa: socket consola: %d", socket_consola);
 	char* programa = recibir_string_generico(socket_consola);
 	static int pid = 0;
 	int paginasRequeridas = ceil((double) string_length(programa) / (double) tamanioDePagina) + stack_size;
@@ -109,6 +109,7 @@ void nuevoPrograma(int socket_consola){
 }
 
 int mayorSocket(int mayor){
+	log_info(logger, "Buscando mayor socket");
 	int i;
 	t_consola* consola;
 
@@ -121,6 +122,7 @@ int mayorSocket(int mayor){
 }
 
 void leerCambios(){
+	log_info(logger, "Leyendo cambios en archivo de config");
 	t_config* configAux = config_create(RUTA_CONFIG);
 	quantum = config_get_int_value(configAux, "QUANTUM");
 	quantum_sleep = config_get_int_value(configAux, "QUANTUM_SLEEP");
@@ -129,11 +131,15 @@ void leerCambios(){
 }
 
 void destruirConsola(t_consola* consola){
+	log_info(logger, "Destruyendo consola: socket consola: %d", consola->socketConsola);
 	close(consola->socketConsola);
+	consola->elemento->estado = EXIT;
+	sem_post(&moverPCBs);
 	free(consola);
 }
 
 void threadReceptorYEscuchaConsolas(){
+	log_info(logger, "Iniciado Thread Receptor y Escucha Consolas");
 	fd_set* bagDeSockets = malloc(sizeof(fd_set));
 	socket_consolas = crear_socket_servidor(ipNucleo, puertoNucleo);
 
@@ -196,7 +202,21 @@ void threadReceptorYEscuchaConsolas(){
 	close(socket_consolas);
 }
 
+void cerrarCPU(void* cpu){
+	t_elemento_cola* elemento = desalojar(cpu);
+
+	shutdown(((t_cpu*)cpu)->socketCPU, 0);
+
+	elemento->estado = READY;
+	sem_post(&moverPCBs);
+}
+
 void threadEscuchaCPU(t_cpu* cpu){
+	_Bool buscarCPU(void* elementoDeLaLista){
+		return elementoDeLaLista == cpu;
+	}
+
+	log_info(logger, "Iniciado thread de CPU: thread: %d", cpu->hiloCPU);
 	int socket = cpu->socketCPU;
 
 	void* mensaje;
@@ -209,14 +229,20 @@ void threadEscuchaCPU(t_cpu* cpu){
 		procesarMensaje(mensaje, cpu);
 	}
 
-	if(!flagTerminar && !mensaje){ //CPU desconectado a la fuerza
-		cpu->elemento->estado = EXIT;
+	if(!flagTerminar && !mensaje){ //CPU desconectado
+		list_remove_by_condition(cpus, (void*) buscarCPU(cpu));
+		log_info(logger, "Destruyendo CPU: thread: %d", ((t_cpu*)cpu)->hiloCPU);
+		if(cpu->elemento->estado == EXEC) cpu->elemento->estado = EXIT; //CPU desconectado a la fuerza
+
+		free(((t_cpu*)cpu)->hiloCPU);
+		free(cpu);
 	}
 
 	close(socket);
 }
 
 void crearThreadDeCPU(int conexionRecibida){
+	log_info(logger, "Creando Thread de CPU");
 	pthread_t* hiloEscuchaCPU = malloc(sizeof(pthread_t));
 
 	t_cpu* cpu = malloc(sizeof(t_cpu));
@@ -230,6 +256,7 @@ void crearThreadDeCPU(int conexionRecibida){
 }
 
 void threadReceptorCPUs(void* param){
+	log_info(logger, "Iniciado Receptor de CPUs");
 	int socketServer = *((int*)param);
 
 	int conexionRecibida = recibirConexion(socketServer);
@@ -244,16 +271,19 @@ void threadReceptorCPUs(void* param){
 
 void terminar(int n){
 	if(n == SIGINT){
+		log_info(logger, "Recibida senial SIGINT");
 		flagTerminar = 1;
 		sem_post(&semTerminar);
 	}
 }
 
 void bloquearConsola(t_consola* consola){
+	log_info(logger, "Bloqueando consola");
 	shutdown(consola->socketConsola, 0);
 }
 
 void destruirCPU(t_cpu* cpu){
+	log_info(logger, "Destruyendo CPU: thread: %d", cpu->hiloCPU);
 	shutdown(cpu->socketCPU, 0);
 	pthread_join(*cpu->hiloCPU, NULL);
 	free(cpu->hiloCPU);
@@ -263,6 +293,8 @@ void destruirCPU(t_cpu* cpu){
 int main(){
 
 	abrirConfiguracion();
+
+	log_info(logger, "Inicia proceso Núcleo");
 
 	colaPCBExec = queue_create();
 	colaPCBReady = queue_create();
@@ -299,10 +331,10 @@ int main(){
 	consolas = list_create();
 	cpus = list_create();
 
-	log_info(logger, "Inicia proceso Núcleo");
-
 	socket_umc = crear_socket_cliente(ipUMC, puertoUMC);
 	log_info(logger_pantalla, "Nucleo y UMC conectados");
+	void* respuesta = recibir(socket_umc);
+	tamanioDePagina = *(int*)respuesta;
 
 	pthread_create(&hiloConsolas, NULL,(void*) threadReceptorYEscuchaConsolas, NULL);
 
@@ -349,6 +381,7 @@ void abrirConfiguracion(){
 }
 
 void cerrar_todo(){
+	log_info(logger, "Comenzando cierre");
 	shutdown(socket_consolas, 0);
 	shutdown(socket_cpus, 0);
 	shutdown(socket_umc, 0);
@@ -404,6 +437,7 @@ void cerrar_todo(){
 }
 
 int indiceEnArray(char** array, char* elemento){
+	log_info(logger, "Buscando indice");
 	int i = 0;
 	while(array[i] && strcmp(array[i], elemento)) i++;
 
@@ -411,12 +445,14 @@ int indiceEnArray(char** array, char* elemento){
 }
 
 int tamanioArray(char** array){
+	log_info(logger, "Calculando tamanio de array");
 	int i = 0;
 	while(array[i]) i++;
 	return i;
 }
 
 void obtener_valor(char* identificador, void* cpu){
+	log_info(logger, "Obtener Valor: id: %s", identificador);
 	int indice = indiceEnArray(shared_vars, identificador);
 	int valor;
 	pthread_mutex_lock(&mutexVariablesGlobales);
@@ -426,6 +462,7 @@ void obtener_valor(char* identificador, void* cpu){
 }
 
 void grabar_valor(char* identificador, int valorAGrabar){
+	log_info(logger, "Obtener Valor: id: %s, valor: &d", identificador, valorAGrabar);
 	int indice = indiceEnArray(shared_vars, identificador);
 	pthread_mutex_lock(&mutexVariablesGlobales);
 	variablesGlobales[indice] = valorAGrabar;
@@ -433,6 +470,7 @@ void grabar_valor(char* identificador, int valorAGrabar){
 }
 
 void esperar(char* identificador, void* cpu){
+	log_info(logger, "Esperar: id: %s", identificador);
 	int indice = indiceEnArray(sem_id, identificador);
 	if(semaforosGlobales[indice].valor){
 		semaforosGlobales[indice].valor--;
@@ -446,6 +484,7 @@ void esperar(char* identificador, void* cpu){
 }
 
 void avisar(char* identificador){
+	log_info(logger, "Avisar: id: %s", identificador);
 	int indice = indiceEnArray(sem_id, identificador);
 	if(queue_peek(semaforosGlobales[indice].cola_bloqueados)){
 		t_elemento_cola* elemento = queue_pop(semaforosGlobales[indice].cola_bloqueados);
@@ -457,6 +496,7 @@ void avisar(char* identificador){
 }
 
 void entradaSalida(char* identificador, int operaciones, void* cpu){
+	log_info(logger, "Entrada/Salida: id: %s, operaciones: &d", identificador, operaciones);
     t_pedido* pedido = malloc(sizeof(t_pedido));
     pedido->cantidadDeOperaciones = operaciones;
 
@@ -472,17 +512,19 @@ void entradaSalida(char* identificador, int operaciones, void* cpu){
 }
 
 void threadDispositivo(t_dispositivo* dispositivo){
+	log_info(logger, "Iniciado Thread de dispositivo: thread: %d", dispositivo->hiloDispositivo);
     while(!flagTerminar){
         sem_wait(&dispositivo->semaforoDispositivo);
         if(flagTerminar) break;
         t_pedido* pedido = queue_pop(dispositivo->cola_dispositivo);
-        usleep(dispositivo->retardo * pedido->cantidadDeOperaciones);
+        usleep(dispositivo->retardo * 1000 * pedido->cantidadDeOperaciones);
         pedido->elemento->estado = READY;
         sem_post(&moverPCBs);
     }
 }
 
 void threadPlanificador(){
+	log_info(logger, "Iniciado thread Planificador");
 	int pidABuscar;
 	_Bool compararPid(t_elemento_cola* elemento){
 			return elemento->pcb->pid == pidABuscar;
@@ -566,6 +608,7 @@ void threadPlanificador(){
 }
 
 void matarProceso(t_elemento_cola* elemento){
+	log_info(logger, "Destruyendo proceso: pid: %d", elemento->pcb->pid);
 	void* mensaje;
 	int tamanioSerializacion = serializarFinalizar(elemento->pcb->pid, &mensaje);
 	enviar(socket_umc, mensaje, tamanioSerializacion);
@@ -576,18 +619,16 @@ void matarProceso(t_elemento_cola* elemento){
 	free(elemento);
 }
 
-t_cpu* cpuLibre(){
-	_Bool estaLibre(t_cpu* cpu){
+_Bool estaLibre(t_cpu* cpu){
 		return !cpu->elemento;
-	}
+}
 
+t_cpu* cpuLibre(){
+	log_info(logger, "Buscando CPU libre");
 	return list_find(cpus, (void*)estaLibre);
 }
 
 _Bool hayCPUsLibres(){
-	_Bool estaLibre(t_cpu* cpu){
-		return !cpu->elemento;
-	}
-
+	log_info(logger, "Chequeando si hay CPUs libres");
 	return list_any_satisfy(cpus, (void*)estaLibre);
 }

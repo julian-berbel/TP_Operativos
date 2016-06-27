@@ -4,7 +4,6 @@
 #include "servidor.h"
 #include "cliente.h"
 #include <commons/config.h>
-#include <commons/log.h>
 #include <stdio.h>
 #include <commons/collections/queue.h>
 #include "pcb.h"
@@ -14,11 +13,8 @@
 #include <pthread.h>
 #include <semaphore.h>
 #include "interfazCPUConsola.h"
-#include <sys/epoll.h>
 #include <math.h>
 #include <sys/inotify.h>
-#include <termios.h>
-#include <unistd.h>
 
 #define RUTA_LOG "/home/utnso/nucleo.log"
 #define RUTA_CONFIG "/home/utnso/tp-2016-1c-Hellfish-Group/nucleo/config/nucleo.config"
@@ -132,5 +128,7 @@ _Bool hayCPUsLibres();
 t_cpu* cpuLibre();
 
 void matarProceso(t_elemento_cola* elemento);
+
+void cerrarCPU(void* cpu);
 
 #endif

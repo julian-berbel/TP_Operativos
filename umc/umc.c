@@ -1,6 +1,9 @@
 #include "umc.h"
 
 void threadEscucha(t_cliente* cliente) {
+	_Bool buscarCliente(void* elementoDeLaLista){
+		return elementoDeLaLista == cliente;
+	}
 	int socket = cliente->socket;
 
 	void* mensaje;
@@ -9,7 +12,10 @@ void threadEscucha(t_cliente* cliente) {
 		mensaje = recibir(socket);
 		if (!mensaje) {
 			printf("Cliente desconectado!\n");
-			// remover de la lista clientes
+			list_remove_by_condition(clientes, (void*) buscarCliente(cliente));
+			shutdown(cliente->socket, 0);
+			free(cliente->hiloCliente);
+			free(cliente);
 			break;
 		}
 		procesarMensaje(mensaje, cliente);

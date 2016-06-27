@@ -9,6 +9,7 @@
 #define INTERFAZSWAP_H_
 
 #include <stdlib.h>
+#include <commons/log.h>
 
 typedef enum { INICIALIZAR, TERMINAR, LEER_PAGINA, ESCRIBIR_PAGINA, FINALIZAR} interfazPropia;
 
@@ -30,5 +31,7 @@ extern void inicializar(int id_programa,int paginas_requeridas, char* programa);
 extern void finalizar(int num_programa);
 extern void leer_pagina(int id_programa, int num_pagina);
 extern void escribir_pagina(int id_programa, int num_pagina, char* buffer);
+
+extern t_log* logger;
 
 #endif /* INTERFAZSWAP_H_ */
