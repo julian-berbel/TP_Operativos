@@ -72,7 +72,7 @@ int main(int cantidadArgumentos, char* argumentos[]) {
 
  if (pthread_mutex_init(&lock, NULL) != 0)
  {
-     printf("\n mutex init failed\n");
+     printf("fallo inicializacion del mutex\n");
      //return 1;
  }
 
@@ -174,98 +174,107 @@ void inicializar(int id_programa, int paginas_requeridas, char* programa, void* 
 
 	void* mensaje;
 	int tamanioMensaje = serializarInicializar(id_programa, paginas_requeridas, programa, &mensaje);
+	pthread_mutex_lock(&lock);
 	enviar(socket_swap, mensaje, tamanioMensaje);
 	char* respuesta=recibir_string_generico(socket_swap);
 	respuesta = (strcmp(respuesta, "OK")) ? "NO OK": "OK";
 	enviar_string(((t_cliente*)cliente)->socket, respuesta);
+	pthread_mutex_unlock(&lock);
 }
 
 void finalizar(int id_programa) {
 	memset(tabla_procesos[id_programa], '0', sizeof(tabla_paginas) * 20);
 	procesos_ocupados[id_programa] = 0;
 	//avisar al swap para que libere memoria
+
 	void* mensaje;
 		int tamanioMensaje = serializarFinalizar(id_programa, &mensaje);
+		pthread_mutex_lock(&lock);
 		enviar(socket_swap, mensaje, tamanioMensaje);
+		pthread_mutex_unlock(&lock);
 }
 
 void leer_pagina(int num_pagina, int offset, size_t t, void* cpu) {
-	pthread_mutex_lock(&lock);
+	controlar_segmentation_fault(offset,t); //control de error
 	int idp=((t_cliente*)cpu)->proceso_activo;
+	pthread_mutex_lock(&lock);
 	int marco = obtener_marco(idp, num_pagina);
 	if (marco !=-1) { //si esta en MP
 		char* contenido = leer_posicion_memoria(marco * marco_size + offset, t);
 		enviar_string(((t_cliente*)cpu)->socket,contenido);
 
-	} else { //si no esta en MP envio la solicitud a SWAP
+	} else { //no esta en MP
+		if(num_pagina>=cant_paginas_procesos[idp]){
+			printf("pedido invalido\n");
+			//control de error, no se puede seguir
+		}else{//el pedido es valido
+		//pido pagina a SWAP
 		void* mensaje;
 		int tamanioMensaje = serializarLeerPagina(idp, num_pagina, &mensaje);
 		enviar(socket_swap, mensaje, tamanioMensaje);
-		char* cont=recibir_string_generico(socket_swap);
+		char* contenido_pagina=recibir_string_generico(socket_swap);
 		//copiar en memoria la pagina
-		if (cant_paginas_asignadas(idp) < marco_x_proc) {
-							int marco_libre = buscar_marco_libre();
-								if (marco_libre != -1) {
-								escribir_posicion_memoria(marco_libre * marco_size, marco_size,	cont);
-								escribir_marco_en_TP(idp, num_pagina, marco_libre);
-								marco_ocupado(marco_libre);
-								}else {//memoria ocupada
-							//reemplazo local
-							int marco = reemplazar_MP(idp, num_pagina);
-							escribir_posicion_memoria(marco * marco_size, marco_size,cont);
-							escribir_marco_en_TP(idp, num_pagina, marco);
-								}
-						}else {
-							int marco_destino = reemplazar_MP(idp, num_pagina);
-
-							escribir_posicion_memoria(marco_destino * marco_size, marco_size,cont);
-							escribir_marco_en_TP(idp, num_pagina, marco_destino);
-						}
-		//leer lo pedido
+		copiar_pagina_en_memoria(idp,num_pagina,contenido_pagina);
+		//retomo el pedido de lectura
 		char* contenido = leer_posicion_memoria(marco * marco_size + offset, t);
 		enviar_string(((t_cliente*)cpu)->socket,contenido);
+		}
 	}
 	pthread_mutex_unlock(&lock);
 }
 
 void escribir_pagina(int num_pagina, int offset, size_t t, char *buffer,void* cpu) { //testeado
-	pthread_mutex_lock(&lock);
+	controlar_segmentation_fault(offset,t); //control de error
 	int idp=((t_cliente*)cpu)->proceso_activo;
+	pthread_mutex_lock(&lock);
 	int marco=obtener_marco(idp,num_pagina);
 	if(marco!=-1){//esta en memoria
 		escribir_posicion_memoria(marco* marco_size + offset, t, buffer);
-	}else{//no esta en memoria
-		//pido a la swap
+	}else{//no esta en memoria -> page fault
+		if(num_pagina>=cant_paginas_procesos[idp]){
+			printf("pedido invalido\n");
+			//control de error, no se puede seguir
+		}else{ //el pedido es valido
+		//pido la pagina a swap
 		void* mensaje;
 				int tamanioMensaje = serializarLeerPagina(idp, num_pagina, &mensaje);
 				enviar(socket_swap, mensaje, tamanioMensaje);
 				char* contenido_pagina=recibir_string_generico(socket_swap);
 		//copiar pagina en memoria
-				if (cant_paginas_asignadas(idp) < marco_x_proc) {
-					int marco_libre = buscar_marco_libre();
-						if (marco_libre != -1) {
-						escribir_posicion_memoria(marco_libre * marco_size, marco_size,	contenido_pagina);
-						escribir_marco_en_TP(idp, num_pagina, marco_libre);
-						marco_ocupado(marco_libre);
-						}else {//memoria ocupada
-					//reemplazo local
-					int marco = reemplazar_MP(idp, num_pagina);
-					escribir_posicion_memoria(marco * marco_size, marco_size,contenido_pagina);
-					escribir_marco_en_TP(idp, num_pagina, marco);
-						}
-				}else {
-					int marco_destino = reemplazar_MP(idp, num_pagina);
-
-					escribir_posicion_memoria(marco_destino * marco_size, marco_size,contenido_pagina);
-					escribir_marco_en_TP(idp, num_pagina, marco_destino);
-				}
-				//escribir_posicion_memoria
-				escribir_posicion_memoria(tabla_procesos[idp][num_pagina].marco* marco_size + offset, t, buffer);
+		copiar_pagina_en_memoria(idp,num_pagina,contenido_pagina);
+		//retomo el pedido de escritura
+		escribir_posicion_memoria(tabla_procesos[idp][num_pagina].marco* marco_size + offset, t, buffer);
 			}
-
+	}
 	pthread_mutex_unlock(&lock);
 	}
 
+void controlar_segmentation_fault(int offset,size_t tamanio){
+	if(offset+tamanio>marco_size){
+		printf("segmentation fault");
+		//control de error
+	}
+}
+void copiar_pagina_en_memoria(int idp,int num_pagina,char* contenido_pagina){
+	if (cant_paginas_asignadas(idp) < marco_x_proc) {
+						int marco_libre = buscar_marco_libre();
+							if (marco_libre != -1) {//hay un marco libre en memoria
+							escribir_posicion_memoria(marco_libre * marco_size, marco_size,	contenido_pagina);
+							escribir_marco_en_TP(idp, num_pagina, marco_libre);
+							marco_ocupado(marco_libre);
+							}else {//memoria ocupada
+						//reemplazo local
+						int marco = reemplazar_MP(idp, num_pagina);
+						escribir_posicion_memoria(marco * marco_size, marco_size,contenido_pagina);
+						escribir_marco_en_TP(idp, num_pagina, marco);
+							}
+					}else {//ya tiene todos los marcos asignados
+						int marco_destino = reemplazar_MP(idp, num_pagina);
+
+						escribir_posicion_memoria(marco_destino * marco_size, marco_size,contenido_pagina);
+						escribir_marco_en_TP(idp, num_pagina, marco_destino);
+					}
+}
 
 
 
@@ -616,8 +625,8 @@ int reemplazar_MP(int idp, int num_pagina) { //testeado
 			//enviar a swap que escriba la pagina victima (en swap quedo desactualizada)
 			void* mensaje;
 			char* pagina=leer_posicion_memoria(marco_destino*marco_size,marco_size);
-							int tamanioMensaje = serializarEscribirPagina(idp, pagina_victima,pagina,&mensaje);
-							enviar(socket_swap, mensaje, tamanioMensaje);
+			int tamanioMensaje = serializarEscribirPagina(idp, pagina_victima,pagina,&mensaje);
+			enviar(socket_swap, mensaje, tamanioMensaje);
 		}
 	return marco_destino;
 
