@@ -476,6 +476,7 @@ void esperar(char* identificador, void* cpu){
 		semaforosGlobales[indice].valor--;
 		enviar_string(((t_cpu*)cpu)->socketCPU, "dale para adelante!");
 	}else{
+		enviar_string(((t_cpu*)cpu)->socketCPU, "bloqueate!");
 		t_elemento_cola* elemento = desalojar(cpu);
 
 		elemento->estado = BLOCK;

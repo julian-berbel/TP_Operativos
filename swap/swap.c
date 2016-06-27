@@ -1,4 +1,4 @@
-#include"swap.h"
+#include "swap.h"
 
 int main() {
 	abrirConfiguracion();
@@ -7,15 +7,9 @@ int main() {
 	log_info(logger, "Inicia proceso Swap");
 
 	int socket_servidor = crear_socket_servidor(ipSwap, puertoSwap);
-	//int socket_umc = recibirConexion(socket_servidor);
+	socket_umc = recibirConexion(socket_servidor);
 
 	log_info(logger_pantalla, "Swap y UMC conectados");
-
-	char* mensaje;
-
-	//while (string_is_empty(mensaje = recibir_string_generico(socket_umc)))
-	//	;
-	mensaje = "inicializar";
 
 	//inicializo las lista de utilizados en vacio porque no hay nada todavia? o como esta ahora???
 	espacioTotal = list_create();
@@ -24,41 +18,22 @@ int main() {
 	for (iterator = 0; iterator < cant_paginas; iterator++) {
 		t_swap* swap = malloc(sizeof(t_swap));
 		swap->bit_uso = 0;
-		//swap->offset = 0;
 		swap->pagina = iterator;
-		//swap pos = 0;
 		list_add(espacioTotal, (void*) swap);
-		free(swap); //liberar swap
 	}
 
 	listaDeProcesos = list_create();
 
-	if (strcmp(mensaje, "inicializar") == 0) { //meter el programa en el archivo swap
-		inicializar(1, 1, "asdf");
-		mensaje = "escribir_pagina";
-	} else if (strcmp(mensaje, "leer_pagina") == 0) {
-		//TODO completar
-	} else if (strcmp(mensaje, "escribir_pagina") == 0) {
-		escribir_pagina(1,0,"hola");
-	} else if (strcmp(mensaje, "finalizar_programa") == 0) {
-		//TODO completar
-	}
+	void* mensaje;
 
-	/*while(!flagTerminar){
-	 mensaje = recibir(socket_umc);      // se usa asi
+	while(!flagTerminar){
+	 mensaje = recibir(socket_umc);
+	 if(!mensaje) break;
 	 procesarMensaje(mensaje, NULL);
-	 }*/
-	//enviar(socket_umc, mensaje, tamanio);   ---> devolver pagina a la umc
-	/*char * mensaje_logger = string_new();
-	 string_append(&mensaje_logger, "Pase por la Swap - "); //->checkpoint 1
-	 string_append(&mensaje_logger, mensaje);
-	 log_info(logger_pantalla, mensaje_logger);
-	 free(mensaje_logger);
-	 printf("%s",mensaje);*/
+	 }
 
-	free(mensaje);
 	close(socket_servidor);
-	//close(socket_umc);
+	close(socket_umc);
 	cerrar_todo();
 
 	return 0;
@@ -71,8 +46,7 @@ void abrirConfiguracion() {
 	nombre_data = config_get_string_value(configuracion_swap, "NOMBRE_SWAP");
 	cant_paginas = config_get_int_value(configuracion_swap, "CANTIDAD_PAGINAS");
 	pagina_size = config_get_int_value(configuracion_swap, "TAMAÑO_PAGINA");
-	retardo_compactacion = config_get_int_value(configuracion_swap,
-			"RETARDO_COMPACTACION");
+	retardo_compactacion = config_get_int_value(configuracion_swap, "RETARDO_COMPACTACION");
 	retardo_acceso = config_get_int_value(configuracion_swap, "RETARDO_ACCESO");
 	logger = log_create(RUTA_LOG, "Swap", false, LOG_LEVEL_INFO);
 	logger_pantalla = log_create(RUTA_LOG, "Swap", true, LOG_LEVEL_INFO);
@@ -297,7 +271,7 @@ void leer_pagina(int id_programa, int num_pagina) {
 				if (i == num_pagina) {
 					t_proceso* proceso = list_get(paginasDelProceso, i);
 					char* paginaLeida = leerArchivoBinarioEnPagina(proceso->pagina);
-					//enviar(socket_umc, paginaLeida, pagina_size);
+					enviar(socket_umc, paginaLeida, pagina_size);
 
 				}else{
 					log_info(logger, "No existe la pagina solicitada en la Swap");

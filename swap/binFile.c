@@ -4,7 +4,7 @@
  *  Created on: 18/5/2016
  *      Author: utnso
  */
-#include"swap.h"
+
 #include"binFile.h"
 
 char* rutaArchivoSwap() {
