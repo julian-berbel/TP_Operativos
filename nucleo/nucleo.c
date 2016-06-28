@@ -240,6 +240,7 @@ void cerrarCPU(void* cpu, void* ultimoMensaje){
 
 void programaTerminado(void* cpu){
 	((t_cpu*)cpu)->elemento->estado = EXIT;
+	((t_cpu*)cpu)->elemento = NULL;
 	sem_post(&moverPCBs);
 }
 

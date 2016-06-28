@@ -64,6 +64,7 @@ int socket_umc;
 t_log* logger;
 t_log* logger_pantalla;
 int tamanio_pagina;
+int tamanio_stack;
 t_PCB *pcb_actual;
 const int CONTENIDO_VARIABLE = 20; //Borrar cuando esten todas las primitivas
 const int POSICION_MEMORIA = 0x10; //Borrar cuando esten todas las primitivas
@@ -90,5 +91,7 @@ void terminar();
 void continuarEjecucion(int quantum);
 
 void desalojar();
+
+void stackOverflow();
 
 #endif

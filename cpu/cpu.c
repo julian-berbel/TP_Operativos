@@ -40,21 +40,33 @@ t_puntero definirVariable(t_nombre_variable variable) {
 				nueva_posicion_memoria->pagina = (posicion_memoria->pagina + 1);
 				nueva_posicion_memoria->offset = 0;
 				nueva_posicion_memoria->size = 4;
-				list_add(nodo->args, nueva_posicion_memoria);
+				if(nueva_posicion_memoria >= (pcb_actual->cantidadPaginas + tamanio_stack)){
+					stackOverflow();
+				} else {
+					list_add(nodo->args, nueva_posicion_memoria);
+				}
 			} else {
 				nueva_posicion_memoria->pagina = posicion_memoria->pagina;
 				nueva_posicion_memoria->offset = (posicion_memoria->offset + posicion_memoria->size);
 				nueva_posicion_memoria->size = 4;
-				list_add(nodo->args, nueva_posicion_memoria);
+				if(nueva_posicion_memoria >= (pcb_actual->cantidadPaginas + tamanio_stack)){
+					stackOverflow();
+				} else {
+					list_add(nodo->args, nueva_posicion_memoria);
+				}
 			}
 		} else {
 			if(tamanio_pagina < 4){
 				printf("Tamaño de pagina menor a 4 bytes\n");
 			} else {
-				nueva_posicion_memoria->pagina = (pcb_actual->cantidadPaginas + 1);
+				nueva_posicion_memoria->pagina = pcb_actual->cantidadPaginas;
 				nueva_posicion_memoria->offset = 0;
 				nueva_posicion_memoria->size = 4;
-				list_add(nodo->args, nueva_posicion_memoria);
+				if(nueva_posicion_memoria >= (pcb_actual->cantidadPaginas + tamanio_stack)){
+					stackOverflow();
+				} else {
+					list_add(nodo->args, nueva_posicion_memoria);
+				}
 			}
 		}
 	} else {
@@ -68,25 +80,37 @@ t_puntero definirVariable(t_nombre_variable variable) {
 				nueva_posicion_memoria->size = 4;
 				nueva_variable->nombre_var = variable;
 				nueva_variable->dir_var = nueva_posicion_memoria;
-				list_add(nodo->vars, nueva_variable);
+				if(nueva_posicion_memoria >= (pcb_actual->cantidadPaginas + tamanio_stack)){
+					stackOverflow();
+				} else {
+					list_add(nodo->vars, nueva_variable);
+				}
 			} else {
 				nueva_posicion_memoria->pagina = posicion_memoria->pagina;
 				nueva_posicion_memoria->offset = (posicion_memoria->offset + posicion_memoria->size);
 				nueva_posicion_memoria->size = 4;
 				nueva_variable->nombre_var = variable;
 				nueva_variable->dir_var = nueva_posicion_memoria;
-				list_add(nodo->vars, nueva_variable);
+				if(nueva_posicion_memoria >= (pcb_actual->cantidadPaginas + tamanio_stack)){
+					stackOverflow();
+				} else {
+					list_add(nodo->vars, nueva_variable);
+				}
 			}
 		} else {
 			if(tamanio_pagina < 4){
 				printf("Tamaño de pagina menor a 4 bytes\n");
 			} else {
-				nueva_posicion_memoria->pagina = (pcb_actual->cantidadPaginas + 1);
+				nueva_posicion_memoria->pagina = pcb_actual->cantidadPaginas;
 				nueva_posicion_memoria->offset = 0;
 				nueva_posicion_memoria->size = 4;
 				nueva_variable->nombre_var = variable;
 				nueva_variable->dir_var = nueva_posicion_memoria;
-				list_add(nodo->vars, nueva_variable);
+				if(nueva_posicion_memoria >= (pcb_actual->cantidadPaginas + tamanio_stack)){
+					stackOverflow();
+				} else {
+					list_add(nodo->vars, nueva_variable);
+				}
 			}
 		}
 	}
@@ -415,7 +439,6 @@ void ciclosDeQuantum(){
 		int tamanioMensaje = serializarQuantumTerminado(&serializacionQuantum);
 		enviar(socket_nucleo, serializacionQuantum, tamanioMensaje);
 		free(serializacionQuantum);
-
 	}
 }
 
@@ -442,4 +465,12 @@ void desalojar(){
 	enviar(socket_nucleo, mensaje, tamanioMensaje);
 	free(mensaje);
 	pcb_destroy(pcb_actual);
+}
+
+void stackOverflow(){
+	char *mensaje = string_new();
+	string_append(&mensaje, "Stack Overflow");
+	imprimirTexto(mensaje);
+	free(mensaje);
+	finalizar();
 }
