@@ -29,7 +29,9 @@ int main() {
 
 	//CASOS DE PRUEBA
 
-	inicializar(1,1,"hola");
+	inicializar(1,3,"hola como estassss tengo mucha hambre");
+	int k;
+	for(k=0; k < list_size(listaDeProcesos); k++){
 	t_proceso* procesoPrueba = list_get(listaDeProcesos,0);
 	int pagina;
 	int pid;
@@ -39,6 +41,7 @@ int main() {
 
 	printf("la pagina es %d\n",pagina);
 	printf("el pid es %d\n", pid);
+	}
 
 	//FIN CASOS DE PRUEBA
 
@@ -133,21 +136,48 @@ int estanPaginasContinuas(t_list* espaciosLibres, int paginas_requeridas) {
 	}
 }
 
+
+//todo
+t_list* sacarRepetidos2(t_list* lista){
+	t_list* sinRepetidos2;
+	sinRepetidos2 = list_filter(lista, (void*) noSonIguales);
+	return sinRepetidos2;
+}
+
+
+Bool noSonIguales(t_swap* swap, t_swap* swapSig) {
+
+	if (swap->bit_uso == swapSig->bit_uso && swap->pagina == swapSig->bit_uso) {
+		return true;
+	} else {
+		return false;
+	}
+}
+
+
+
+
 t_list* sacarRepetidos(t_list* lista) {
-	int i, j, tamanioLista;
-	tamanioLista = list_size(lista);
-	for (i = 0; i < tamanioLista; i++) {
+	int i, j;
+	for (i = 0; i < list_size(lista); i++) {
 		t_swap* primerElemento = list_get(lista, i);
-		for (j = i + 1; j <= tamanioLista - 1; j++) {
+		for (j = i + 1; j <= list_size(lista) - 1; j++) {
 			t_swap* siguienteElemento = list_get(lista, j);
 			if (primerElemento->pagina == siguienteElemento->pagina) {
-				list_remove(lista, j + 1);
+
+				t_swap* var;
+				var = list_remove(lista, j);
+				destruirElemento(var);
 				j = j - 1;
 			}
 		}
 
 	}
 	return lista;
+}
+
+void destruirElemento(t_swap* var){
+	free(var);
 }
 
 t_list* paginasAReemplazar(t_list* espaciosLibres, int paginas_requeridas) {
@@ -163,7 +193,7 @@ t_list* paginasAReemplazar(t_list* espaciosLibres, int paginas_requeridas) {
 		}
 
 	}
-	t_list* pagsContSinRepetidos = sacarRepetidos(paginasContiguas);
+	t_list* pagsContSinRepetidos = sacarRepetidos2(paginasContiguas);
 	return pagsContSinRepetidos;
 
 }

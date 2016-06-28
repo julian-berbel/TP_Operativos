@@ -58,7 +58,11 @@ int hayQueCompactar(int paginas_requeridas);
 int estanPaginasContinuas(t_list* espaciosLibres, int paginas_requeridas);
 Bool estaUtilizado();
 Bool noEstaUtilizado();
+Bool noSonIguales();
 void compactar();
+void destruirElemento(t_swap*);
+t_list* sacarRepetidos(t_list* lista);
+t_list* sacarRepetidos2(t_list* lista);
 
 void terminar();
 void leer_pagina(int id_programa, int num_pagina);
