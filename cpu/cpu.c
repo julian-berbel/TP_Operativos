@@ -40,7 +40,7 @@ t_puntero definirVariable(t_nombre_variable variable) {
 				nueva_posicion_memoria->pagina = (posicion_memoria->pagina + 1);
 				nueva_posicion_memoria->offset = 0;
 				nueva_posicion_memoria->size = 4;
-				if(nueva_posicion_memoria >= (pcb_actual->cantidadPaginas + tamanio_stack)){
+				if(nueva_posicion_memoria >= pcb_actual->cantidadPaginas){
 					stackOverflow();
 				} else {
 					list_add(nodo->args, nueva_posicion_memoria);
@@ -49,7 +49,7 @@ t_puntero definirVariable(t_nombre_variable variable) {
 				nueva_posicion_memoria->pagina = posicion_memoria->pagina;
 				nueva_posicion_memoria->offset = (posicion_memoria->offset + posicion_memoria->size);
 				nueva_posicion_memoria->size = 4;
-				if(nueva_posicion_memoria >= (pcb_actual->cantidadPaginas + tamanio_stack)){
+				if(nueva_posicion_memoria >= pcb_actual->cantidadPaginas){
 					stackOverflow();
 				} else {
 					list_add(nodo->args, nueva_posicion_memoria);
@@ -59,10 +59,10 @@ t_puntero definirVariable(t_nombre_variable variable) {
 			if(tamanio_pagina < 4){
 				printf("Tamaño de pagina menor a 4 bytes\n");
 			} else {
-				nueva_posicion_memoria->pagina = pcb_actual->cantidadPaginas;
+				nueva_posicion_memoria->pagina = (pcb_actual->cantidadPaginas - tamanio_stack);
 				nueva_posicion_memoria->offset = 0;
 				nueva_posicion_memoria->size = 4;
-				if(nueva_posicion_memoria >= (pcb_actual->cantidadPaginas + tamanio_stack)){
+				if(nueva_posicion_memoria >= pcb_actual->cantidadPaginas){
 					stackOverflow();
 				} else {
 					list_add(nodo->args, nueva_posicion_memoria);
@@ -80,7 +80,7 @@ t_puntero definirVariable(t_nombre_variable variable) {
 				nueva_posicion_memoria->size = 4;
 				nueva_variable->nombre_var = variable;
 				nueva_variable->dir_var = nueva_posicion_memoria;
-				if(nueva_posicion_memoria >= (pcb_actual->cantidadPaginas + tamanio_stack)){
+				if(nueva_posicion_memoria >= pcb_actual->cantidadPaginas){
 					stackOverflow();
 				} else {
 					list_add(nodo->vars, nueva_variable);
@@ -91,7 +91,7 @@ t_puntero definirVariable(t_nombre_variable variable) {
 				nueva_posicion_memoria->size = 4;
 				nueva_variable->nombre_var = variable;
 				nueva_variable->dir_var = nueva_posicion_memoria;
-				if(nueva_posicion_memoria >= (pcb_actual->cantidadPaginas + tamanio_stack)){
+				if(nueva_posicion_memoria >= pcb_actual->cantidadPaginas){
 					stackOverflow();
 				} else {
 					list_add(nodo->vars, nueva_variable);
@@ -101,12 +101,12 @@ t_puntero definirVariable(t_nombre_variable variable) {
 			if(tamanio_pagina < 4){
 				printf("Tamaño de pagina menor a 4 bytes\n");
 			} else {
-				nueva_posicion_memoria->pagina = pcb_actual->cantidadPaginas;
+				nueva_posicion_memoria->pagina = (pcb_actual->cantidadPaginas - tamanio_stack);
 				nueva_posicion_memoria->offset = 0;
 				nueva_posicion_memoria->size = 4;
 				nueva_variable->nombre_var = variable;
 				nueva_variable->dir_var = nueva_posicion_memoria;
-				if(nueva_posicion_memoria >= (pcb_actual->cantidadPaginas + tamanio_stack)){
+				if(nueva_posicion_memoria >= pcb_actual->cantidadPaginas){
 					stackOverflow();
 				} else {
 					list_add(nodo->vars, nueva_variable);
