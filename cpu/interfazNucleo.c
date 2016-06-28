@@ -135,6 +135,16 @@ int serializarCerrarCPU(void** serializacion){
 	return tamanio;
 }
 
+int serializarProgramaTerminado(void** serializacion){
+	log_info(logger, "Serializando: Programa Terminado");
+	int tamanio = sizeof(interfazNucleo);
+	*serializacion = malloc(tamanio);
+
+	*(interfazNucleo*)*serializacion = PROGRAMA_TERMINADO;
+
+	return tamanio;
+}
+
 void deserializarCargarPCB(void* parametrosSerializados, void* dataAdicional){
 	int quantum = *((int*) parametrosSerializados);
 	parametrosSerializados += sizeof(int);

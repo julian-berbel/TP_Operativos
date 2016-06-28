@@ -129,6 +129,8 @@ t_cpu* cpuLibre();
 
 void matarProceso(t_elemento_cola* elemento);
 
-void cerrarCPU(void* cpu);
+void cerrarCPU(void* cpu, void* ultimoMensaje);
+
+void programaTerminado(void* cpu);
 
 #endif

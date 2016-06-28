@@ -16,7 +16,7 @@ typedef enum {CARGAR_PCB/*, TERMINAR*/, CONTINUAR_EJECUCION, DESALOJAR} interfaz
 typedef enum{/*IMPRIMIR, */ TERMINAR} interfazConsola;
 
 typedef enum {	IMPRIMIR, QUANTUM_TERMINADO, OBTENER_VALOR, GRABAR_VALOR,
-				WAIT, SIGNAL, ENTRADA_SALIDA, CERRAR_CPU} interfazPropia;
+				WAIT, SIGNAL, ENTRADA_SALIDA, CERRAR_CPU, PROGRAMA_TERMINADO} interfazPropia;
 
 int serializarCargarPCB(t_PCB* pcb, void** serializacion);
 
@@ -46,6 +46,8 @@ void deserializarEntradaSalida(void* parametrosSerializados, void* cpu);
 
 void deserializarCerrarCPU(void* parametrosSerializados, void* cpu);
 
+void deserializarProgramaTerminado(void* parametrosSerializados, void* cpu);
+
 extern int quantum;
 
 extern void imprimir(char* mensaje, void* cpu);
@@ -62,9 +64,11 @@ extern void avisar(char* identificador);
 
 extern void entradaSalida(char* identificador, int operaciones, void* cpu);
 
-extern void cerrarCPU(void* cpu);
+extern void cerrarCPU(void* cpu, void* ultimoMensaje);
 
-void (*deserializadores[8])(void*, void*);
+extern void programaTerminado(void* cpu);
+
+void (*deserializadores[9])(void*, void*);
 
 void procesarMensaje(void* mensaje, void* dataAdicional);
 

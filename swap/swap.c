@@ -68,7 +68,7 @@ void inicializar(int id_programa, int paginas_requeridas, char* programa) {
 		escribirArchivoBinario(programa);
 	} else {
 		log_info(logger, "No hay espacio en la swap");
-		// TODO decirle a la umc que no se pudo iniciar porque no hay espacio
+		enviar_string(socket_umc, "NO OK");
 	}
 }
 

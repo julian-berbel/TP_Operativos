@@ -5,6 +5,7 @@ void threadEscucha(t_cliente* cliente) {
 		return elementoDeLaLista == cliente;
 	}
 	int socket = cliente->socket;
+	enviar(socket, &marco_size, sizeof(int));
 
 	void* mensaje;
 
@@ -182,8 +183,7 @@ void inicializar(int id_programa, int paginas_requeridas, char* programa, void* 
 	int tamanioMensaje = serializarInicializar(id_programa, paginas_requeridas, programa, &mensaje);
 	pthread_mutex_lock(&lock);
 	enviar(socket_swap, mensaje, tamanioMensaje);
-	char* respuesta=recibir_string_generico(socket_swap);
-	respuesta = (strcmp(respuesta, "OK")) ? "NO OK": "OK";
+	char* respuesta = recibir_string_generico(socket_swap);
 	enviar_string(((t_cliente*)cliente)->socket, respuesta);
 	pthread_mutex_unlock(&lock);
 }

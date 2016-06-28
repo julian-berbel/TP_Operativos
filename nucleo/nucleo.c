@@ -78,9 +78,10 @@ void nuevoPrograma(int socket_consola){
 	void* mensaje;
 	int tamanio = serializarInicializar(pid, paginasRequeridas, programa, &mensaje);
 	enviar(socket_umc, mensaje, tamanio);
+	free(mensaje);
 	char* respuesta = recibir_string_generico(socket_umc);
 
-	if(!strcmp(respuesta, "ok")){
+	if(!strcmp(respuesta, "OK")){
 
 		t_consola* consola = malloc(sizeof(t_consola));
 		consola->elemento = malloc(sizeof(t_elemento_cola));
@@ -104,7 +105,13 @@ void nuevoPrograma(int socket_consola){
 		pthread_mutex_unlock(&mutexColaReady);
 		sem_post(&moverPCBs);
 	}else{
+		tamanio = serializarImprimir("Espacio insuficiente!", &mensaje);
+		enviar(socket_consola, mensaje, tamanio);
+		free(mensaje);
 
+		tamanio = serializarTerminar(&mensaje);
+		enviar(socket_consola, mensaje, tamanio);
+		free(mensaje);
 	}
 }
 
@@ -202,12 +209,37 @@ void threadReceptorYEscuchaConsolas(){
 	close(socket_consolas);
 }
 
-void cerrarCPU(void* cpu){
-	t_elemento_cola* elemento = desalojar(cpu);
+void cerrarCPU(void* cpu, void* ultimoMensaje){
+	_Bool buscarCPU(void* elementoDeLaLista){
+			return elementoDeLaLista == cpu;
+	}
 
-	shutdown(((t_cpu*)cpu)->socketCPU, 0);
+	list_remove_by_condition(cpus, (void*) buscarCPU(cpu));
 
-	elemento->estado = READY;
+	log_info(logger, "Destruyendo CPU: thread: %d", ((t_cpu*)cpu)->hiloCPU);
+
+	if(ultimoMensaje){
+		t_elemento_cola* elemento = desalojar(cpu);
+
+		void* mensaje;
+		int tamanioMensaje = serializarTerminar(&mensaje);
+		enviar(((t_cpu*)cpu)->socketCPU, mensaje, tamanioMensaje);
+		free(mensaje);
+
+		shutdown(((t_cpu*)cpu)->socketCPU, 0);
+
+		elemento->estado = READY;
+	}else{
+		// imprimir mensaje de error en la consola?
+		((t_cpu*)cpu)->elemento->estado = EXIT;
+	}
+	sem_post(&moverPCBs);
+	free(((t_cpu*)cpu)->hiloCPU);
+	free(cpu);
+}
+
+void programaTerminado(void* cpu){
+	((t_cpu*)cpu)->elemento->estado = EXIT;
 	sem_post(&moverPCBs);
 }
 
@@ -229,14 +261,7 @@ void threadEscuchaCPU(t_cpu* cpu){
 		procesarMensaje(mensaje, cpu);
 	}
 
-	if(!flagTerminar && !mensaje){ //CPU desconectado
-		list_remove_by_condition(cpus, (void*) buscarCPU(cpu));
-		log_info(logger, "Destruyendo CPU: thread: %d", ((t_cpu*)cpu)->hiloCPU);
-		if(cpu->elemento->estado == EXEC) cpu->elemento->estado = EXIT; //CPU desconectado a la fuerza
-
-		free(((t_cpu*)cpu)->hiloCPU);
-		free(cpu);
-	}
+	if(!flagTerminar && !mensaje) cerrarCPU(cpu, mensaje);//CPU desconectado a la fuerza
 
 	close(socket);
 }
@@ -445,7 +470,6 @@ int indiceEnArray(char** array, char* elemento){
 }
 
 int tamanioArray(char** array){
-	log_info(logger, "Calculando tamanio de array");
 	int i = 0;
 	while(array[i]) i++;
 	return i;

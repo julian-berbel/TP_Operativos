@@ -205,6 +205,10 @@ void llamarConRetorno(t_nombre_etiqueta etiqueta, t_puntero donde_retornar){
 
 void finalizar(){
 	pcb_finalizar = 1;
+	void* programa_terminado_serializado;
+	int tamanioMensaje = serializarProgramaTerminado(&programa_terminado_serializado);
+	enviar(socket_nucleo, programa_terminado_serializado, tamanioMensaje);
+	free(programa_terminado_serializado);
 }
 
 void retornar(t_valor_variable retorno){

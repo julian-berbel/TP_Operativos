@@ -126,11 +126,16 @@ void deserializarEntradaSalida(void* parametrosSerializados, void* cpu){
 
 void deserializarCerrarCPU(void* parametrosSerializados, void* cpu){
 	log_info(logger, "Deserializado: Cerrar CPU");
-	cerrarCPU(cpu);
+	cerrarCPU(cpu, parametrosSerializados);
 }
 
-void (*deserializadores[8])(void*, void*) = {	deserializarImprimir, deserializarQuantumTerminado, deserializarObtenerValor, deserializarGrabarValor,
-												deserializarWait, deserializarSignal, deserializarEntradaSalida, deserializarCerrarCPU};
+void deserializarProgramaTerminado(void* parametrosSerializados, void* cpu){
+	log_info(logger, "Deserializado: Programa Terminado");
+	programaTerminado(cpu);
+}
+
+void (*deserializadores[9])(void*, void*) = {	deserializarImprimir, deserializarQuantumTerminado, deserializarObtenerValor, deserializarGrabarValor,
+												deserializarWait, deserializarSignal, deserializarEntradaSalida, deserializarCerrarCPU, deserializarProgramaTerminado};
 
 void procesarMensaje(void* mensaje, void* dataAdicional){
 	log_info(logger, "Procesando mensaje");
