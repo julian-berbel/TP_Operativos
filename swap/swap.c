@@ -7,9 +7,11 @@ int main() {
 	log_info(logger, "Inicia proceso Swap");
 
 	int socket_servidor = crear_socket_servidor(ipSwap, puertoSwap);
-	socket_umc = recibirConexion(socket_servidor);
+	//socket_umc = recibirConexion(socket_servidor);
 
 	log_info(logger_pantalla, "Swap y UMC conectados");
+
+
 
 	//inicializo las lista de utilizados en vacio porque no hay nada todavia? o como esta ahora???
 	espacioTotal = list_create();
@@ -24,6 +26,23 @@ int main() {
 
 	listaDeProcesos = list_create();
 
+
+	//CASOS DE PRUEBA
+
+	inicializar(1,1,"hola");
+	t_proceso* procesoPrueba = list_get(listaDeProcesos,0);
+	int pagina;
+	int pid;
+
+	pagina = procesoPrueba->pagina;
+	pid = procesoPrueba->pid;
+
+	printf("la pagina es %d\n",pagina);
+	printf("el pid es %d\n", pid);
+
+	//FIN CASOS DE PRUEBA
+
+
 	void* mensaje;
 
 	while(!flagTerminar){
@@ -33,7 +52,7 @@ int main() {
 	 }
 
 	close(socket_servidor);
-	close(socket_umc);
+	//close(socket_umc);
 	cerrar_todo();
 
 	return 0;
@@ -88,9 +107,7 @@ t_list* espaciosLibres() {
 }
 
 int hayQueCompactar(int paginas_requeridas) {
-	//filtrar por no estautilizado entonces despues tenemos que ver si estan los numeros
-	//de las paginas en orden o continuos y despues tenemos que comparar con paginas requeridas
-	//para ver si hay una cantidad minima de paginas requeridas juntas
+
 
 	return !(estanPaginasContinuas(espaciosLibres(), paginas_requeridas));
 
@@ -213,6 +230,13 @@ void agregarProcesoALista(int id_programa, int paginas_requeridas) {
 		primerEspacioLibre->bit_uso = 1;
 		list_replace(espacioTotal, primerEspacioLibre->pagina,
 				primerEspacioLibre);
+
+		t_proceso* proceso = malloc(sizeof(t_proceso));
+					proceso->pagina = primerEspacioLibre->pagina;
+					proceso->pid = id_programa;
+					list_add(listaDeProcesos, (void*) proceso);
+					//free(proceso); //liberar proceso
+
 	} else {
 		t_list* pagsAReemplazar = paginasAReemplazar(listaLibres,
 				paginas_requeridas);
@@ -225,7 +249,7 @@ void agregarProcesoALista(int id_programa, int paginas_requeridas) {
 			proceso->pagina = swap->pagina;
 			proceso->pid = id_programa;
 			list_add(listaDeProcesos, (void*) proceso);
-			free(proceso); //liberar proceso
+			//free(proceso); //liberar proceso
 		}
 
 	}
