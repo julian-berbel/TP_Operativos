@@ -42,7 +42,7 @@ extern void cargarPCB(t_PCB* pcb, int quantum);
 
 extern void terminar();
 
-extern void continuarEjecucion();
+extern void continuarEjecucion(int quantum);
 
 extern void desalojar();
 

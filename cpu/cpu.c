@@ -150,11 +150,23 @@ void asignar(t_puntero puntero, t_valor_variable variable) {
 }
 
 t_valor_variable obtenerValorCompartida(t_nombre_compartida variable){
-	return CONTENIDO_VARIABLE;
+	void* variable_serializada;
+	int tamanioMensaje = serializarObtenerValor(variable, &variable_serializada);
+	enviar(socket_nucleo, variable_serializada, tamanioMensaje);
+	free(variable_serializada);
+	char *valor_variable_char = recibir_string_generico(socket_nucleo);
+	char *ptr;
+	int valor_variable = strtol(valor_variable_char, &ptr, 10);
+	free(valor_variable_char);
+	return valor_variable;
 }
 
 t_valor_variable asignarValorCompartida(t_nombre_compartida variable, t_valor_variable valor){
-	return CONTENIDO_VARIABLE;
+	void* variable_serializada;
+	int tamanioMensaje = serializarGrabarValor(variable, valor, &variable_serializada);
+	enviar(socket_nucleo, variable_serializada, tamanioMensaje);
+	free(variable_serializada);
+	return valor;
 }
 
 void irAlLabel(t_nombre_etiqueta etiqueta){
@@ -174,7 +186,7 @@ void llamarConRetorno(t_nombre_etiqueta etiqueta, t_puntero donde_retornar){
 	nodo_stack *nodo = malloc(sizeof(nodo_stack));
 	nodo->args = list_create();
 	nodo->vars = list_create();
-	nodo->dir_retorno = (pcb_actual->programCounter + 1);
+	nodo->dir_retorno = (pcb_actual->programCounter);//Puede ser programCounter + 1
 	int num_pagina = donde_retornar / tamanio_pagina;
 	int offset = donde_retornar - (num_pagina * tamanio_pagina);
 	pos_mem *retorno = malloc(sizeof(pos_mem));
@@ -192,7 +204,7 @@ void llamarConRetorno(t_nombre_etiqueta etiqueta, t_puntero donde_retornar){
 }
 
 void finalizar(){
-
+	pcb_finalizar = 1;
 }
 
 void retornar(t_valor_variable retorno){
@@ -206,7 +218,7 @@ void retornar(t_valor_variable retorno){
 	char *valor_variable = string_itoa(retorno);
 	enviar_bytes_umc(num_pagina, offset, 4, valor_variable);
 	free(valor_variable);
-	pcb_actual->programCounter = nodo->dir_retorno;
+	pcb_actual->programCounter = nodo->dir_retorno;// Puede ser la dir_retorno + 1
 
 	//Elimino el nodo de la lista
 	int cantidad_argumentos;
@@ -232,22 +244,45 @@ void retornar(t_valor_variable retorno){
 }
 
 void imprimir(t_valor_variable valor) {
-	printf("Imprimir %d\n", valor);
+	char *valor_variable = string_itoa(valor);
+	void* texto_serializado;
+	int tamanioMensaje = serializarImprimir(valor_variable, &texto_serializado);
+	enviar(socket_nucleo, texto_serializado, tamanioMensaje);
+	free(texto_serializado);
+	free(valor_variable);
 }
 
 void imprimirTexto(char* texto) {
-	printf("ImprimirTexto: %s", texto);
+	void* texto_serializado;
+	int tamanioMensaje = serializarImprimir(texto, &texto_serializado);
+	enviar(socket_nucleo, texto_serializado, tamanioMensaje);
+	free(texto_serializado);
 }
 
 void entradaSalida(t_nombre_dispositivo dispositivo, int tiempo){
-
+	void* entradaSalida_serializado;
+	int tamanioMensaje = serializarEntradaSalida(dispositivo, tiempo, &entradaSalida_serializado);
+	enviar(socket_nucleo, entradaSalida_serializado, tamanioMensaje);
+	free(entradaSalida_serializado);
+	pcb_bloqueado = 1;
 }
 
 void wait(t_nombre_semaforo identificador_semaforo){
-
+	void* wait_serializado;
+	int tamanioMensaje = serializarWait(identificador_semaforo, &wait_serializado);
+	enviar(socket_nucleo, wait_serializado, tamanioMensaje);
+	free(wait_serializado);
+	char* mensaje = recibir_string_generico(socket_nucleo);
+	if(strcmp(mensaje, "dale para adelante!") != 0){
+		pcb_bloqueado = 1;
+	}
 }
 
 void signal_primitiva(t_nombre_semaforo identificador_semaforo){
+	void* signal_serializado;
+	int tamanioMensaje = serializarSignal(identificador_semaforo, &signal_serializado);
+	enviar(socket_nucleo, signal_serializado, tamanioMensaje);
+	free(signal_serializado);
 
 }
 
@@ -274,7 +309,7 @@ int main(){
 	void* mensaje;
 
 	while(!flagTerminar){
-		mensaje = recibir(socket_umc);
+		mensaje = recibir(socket_nucleo);
 		if(!mensaje)break;
 		procesarMensaje(mensaje, NULL);
 	}
@@ -346,21 +381,45 @@ char* pedir_bytes_umc(int num_pagina, int offset, int tamanio){
 }
 
 void enviar_bytes_umc(int num_pagina, int offset, int tamanio, char* buffer){
-	//umc_almacena(num_pagina, offset, tamanio, buffer);
-	/*void* serializacion;
-	int tamanioSerializacion;
-	tamanioSerializacion = serializarAlmacenar(num_pagina, offset, tamanio, buffer, &serializacion);
-	enviar(socket_umc, serializacion, tamanioSerializacion);*/
+	void* envio_serializado;
+	int tamanioSerializacion = serializarAlmacenar(num_pagina, offset, tamanio, buffer, &envio_serializado);
+	enviar(socket_umc, envio_serializado, tamanioSerializacion);
+	free(envio_serializado);
 }
 
 void cargarPCB(t_PCB* pcb, int quantum){
 	pcb_destroy(pcb_actual);
 	pcb_actual = pcb;
+	quantum_definido = quantum;
+	pcb_bloqueado = 0;
+	pcb_finalizar = 0;
+	void* pid_serializado;
+	int tamanioMensaje = serializarCambioDeProcesoActivo(pcb_actual->pid, &pid_serializado);
+	enviar(socket_umc, pid_serializado, tamanioMensaje);
+	free(pid_serializado);
+	ciclosDeQuantum();
+}
+
+void ciclosDeQuantum(){
+	int i = 0;
+	while((i < quantum_definido) && (pcb_bloqueado == 0) && (pcb_finalizar == 0)){
+		ejecutarInstruccion();
+		i++;
+	}
+	if((i == quantum_definido) && (pcb_bloqueado == 0) && (pcb_finalizar == 0)){
+		void* serializacionQuantum;
+		int tamanioMensaje = serializarQuantumTerminado(&serializacionQuantum);
+		enviar(socket_nucleo, serializacionQuantum, tamanioMensaje);
+		free(serializacionQuantum);
+
+	}
 }
 
 void ejecutarInstruccion(){
 	char* instruccion = obtener_instruccion(pcb_actual);
 	analizadorLinea(instruccion, &functions, &kernel_functions);
+	free(instruccion);
+	pcb_actual->programCounter = pcb_actual->programCounter + 1;
 }
 
 void terminar(){
@@ -368,8 +427,9 @@ void terminar(){
 	flagTerminar = 1;
 }
 
-void continuarEjecucion(){
-
+void continuarEjecucion(int quantum){
+	quantum_definido = quantum;
+	ciclosDeQuantum();
 }
 
 void desalojar(){

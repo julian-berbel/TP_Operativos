@@ -69,6 +69,9 @@ const int CONTENIDO_VARIABLE = 20; //Borrar cuando esten todas las primitivas
 const int POSICION_MEMORIA = 0x10; //Borrar cuando esten todas las primitivas
 int socket_nucleo;
 sig_atomic_t flagTerminar;
+int quantum_definido;
+int pcb_bloqueado;
+int pcb_finalizar;
 
 void abrirConfiguracion();
 void cerrar_todo();
@@ -78,11 +81,13 @@ void enviar_bytes_umc(int num_pagina, int offset, int tamanio, char* buffer);
 
 void cargarPCB(t_PCB* pcb, int quantum);
 
+void ciclosDeQuantum();
+
 void ejecutarInstruccion();
 
 void terminar();
 
-void continuarEjecucion();
+void continuarEjecucion(int quantum);
 
 void desalojar();
 
