@@ -79,8 +79,7 @@ int main(int cantidadArgumentos, char* argumentos[]) {
 
  if (pthread_mutex_init(&lock, NULL) != 0)
  {
-     printf("fallo inicializacion del mutex\n");
-     //return 1;
+	 log_info(logger, "Fallo la inicializacion del mutex");
  }
 
  sem_init(&semTerminar, 0, 0);
@@ -174,17 +173,20 @@ void cerrar_todo() {
 	log_destroy(logger);
 	log_destroy(logger_pantalla);
 	config_destroy(configuracionUMC);
+	log_info(logger, "finalizacion del proceso UMC");
 }
 
 void inicializar(int id_programa, int paginas_requeridas, char* programa, void* cliente) {
-	crear_tabla_de_paginas(id_programa, paginas_requeridas); //testeado
-
+	log_info(logger, "Inicializar proceso %d, consultar a SWAP espacio disponible",id_programa);
 	void* mensaje;
 	int tamanioMensaje = serializarInicializar(id_programa, paginas_requeridas, programa, &mensaje);
 	pthread_mutex_lock(&lock);
 	enviar(socket_swap, mensaje, tamanioMensaje);
 	char* respuesta = recibir_string_generico(socket_swap);
 	enviar_string(((t_cliente*)cliente)->socket, respuesta);
+	if(!strcmp(respuesta,"OK")){
+	crear_tabla_de_paginas(id_programa, paginas_requeridas); //testeado
+	}
 	pthread_mutex_unlock(&lock);
 }
 
@@ -192,7 +194,6 @@ void finalizar(int id_programa) {
 	memset(tabla_procesos[id_programa], '0', sizeof(tabla_paginas) * 20);
 	procesos_ocupados[id_programa] = 0;
 	//avisar al swap para que libere memoria
-
 	void* mensaje;
 		int tamanioMensaje = serializarFinalizar(id_programa, &mensaje);
 		pthread_mutex_lock(&lock);
@@ -201,27 +202,32 @@ void finalizar(int id_programa) {
 }
 
 void leer_pagina(int num_pagina, int offset, size_t t, void* cpu) {
-	controlar_segmentation_fault(offset,t); //control de error
 	int idp=((t_cliente*)cpu)->proceso_activo;
 	pthread_mutex_lock(&lock);
 	int marco = obtener_marco(idp, num_pagina);
 	if (marco !=-1) { //si esta en MP
+		log_info(logger, "Pagina %d, encontrada en memoria en el marco %d",num_pagina,marco);
 		char* contenido = leer_posicion_memoria(marco * marco_size + offset, t);
 		enviar_string(((t_cliente*)cpu)->socket,contenido);
 
 	} else { //no esta en MP
+		log_info(logger, "Page Fault, no se encontró la pagina %d en memoria",num_pagina);
 		if(num_pagina>=cant_paginas_procesos[idp]){
-			printf("pedido invalido\n");
+			log_info(logger, "EL pedido de pagina %d del proceso %d es invalido",num_pagina,idp);
 			//control de error, no se puede seguir
 		}else{//el pedido es valido
+			log_info(logger, "Pedido de pagina valido");
 		//pido pagina a SWAP
+			log_info(logger, "Solicitud de pagina a SWAP");
 		void* mensaje;
 		int tamanioMensaje = serializarLeerPagina(idp, num_pagina, &mensaje);
 		enviar(socket_swap, mensaje, tamanioMensaje);
 		char* contenido_pagina=recibir_string_generico(socket_swap);
 		//copiar en memoria la pagina
+		log_info(logger, "Copia de la pagina %d en memoria",num_pagina);
 		copiar_pagina_en_memoria(idp,num_pagina,contenido_pagina);
 		//retomo el pedido de lectura
+		log_info(logger, "Lectura de la pagina %d",num_pagina);
 		char* contenido = leer_posicion_memoria(marco * marco_size + offset, t);
 		enviar_string(((t_cliente*)cpu)->socket,contenido);
 		}
@@ -230,23 +236,27 @@ void leer_pagina(int num_pagina, int offset, size_t t, void* cpu) {
 }
 
 void escribir_pagina(int num_pagina, int offset, size_t t, char *buffer,void* cpu) { //testeado
-	controlar_segmentation_fault(offset,t); //control de error
 	int idp=((t_cliente*)cpu)->proceso_activo;
 	pthread_mutex_lock(&lock);
 	int marco=obtener_marco(idp,num_pagina);
 	if(marco!=-1){//esta en memoria
+		log_info(logger, "Pagina %d, encontrada en memoria en el marco %d",num_pagina,marco);
 		escribir_posicion_memoria(marco* marco_size + offset, t, buffer);
 	}else{//no esta en memoria -> page fault
+		log_info(logger, "Page Fault, no se encontró la pagina %d del proceso %d en memoria",num_pagina,idp);
 		if(num_pagina>=cant_paginas_procesos[idp]){
-			printf("pedido invalido\n");
+			log_info(logger, "EL pedido de pagina %d del proceso %d es invalido",num_pagina,idp);
 			//control de error, no se puede seguir
 		}else{ //el pedido es valido
+			log_info(logger, "Pedido de pagina valido");
 		//pido la pagina a swap
+			log_info(logger, "Solicitud de pagina a SWAP");
 		void* mensaje;
 				int tamanioMensaje = serializarLeerPagina(idp, num_pagina, &mensaje);
 				enviar(socket_swap, mensaje, tamanioMensaje);
 				char* contenido_pagina=recibir_string_generico(socket_swap);
 		//copiar pagina en memoria
+			log_info(logger, "Copia de la pagina %d del proceso %d en memoria",num_pagina,idp);
 		copiar_pagina_en_memoria(idp,num_pagina,contenido_pagina);
 		//retomo el pedido de escritura
 		escribir_posicion_memoria(tabla_procesos[idp][num_pagina].marco* marco_size + offset, t, buffer);
@@ -255,36 +265,35 @@ void escribir_pagina(int num_pagina, int offset, size_t t, char *buffer,void* cp
 	pthread_mutex_unlock(&lock);
 	}
 
-void controlar_segmentation_fault(int offset,size_t tamanio){
-	if(offset+tamanio>marco_size){
-		printf("segmentation fault");
-		//control de error
-	}
-}
+
 void copiar_pagina_en_memoria(int idp,int num_pagina,char* contenido_pagina){
 	if (cant_paginas_asignadas(idp) < marco_x_proc) {
 						int marco_libre = buscar_marco_libre();
 							if (marco_libre != -1) {//hay un marco libre en memoria
+							log_info(logger, "Se encontro el marco %d libre",marco_libre);
 							escribir_posicion_memoria(marco_libre * marco_size, marco_size,	contenido_pagina);
 							escribir_marco_en_TP(idp, num_pagina, marco_libre);
 							marco_ocupado(marco_libre);
 							}else {//memoria ocupada
+							log_info(logger, "No se encontraron marcos libres en memoria, se reemplazara una pagina del proceso");
 						//reemplazo local
 						int marco = reemplazar_MP(idp, num_pagina);
 						escribir_posicion_memoria(marco * marco_size, marco_size,contenido_pagina);
 						escribir_marco_en_TP(idp, num_pagina, marco);
 							}
 					}else {//ya tiene todos los marcos asignados
+						log_info(logger, "El proceso tiene asignados todos los marcos, reemplazo local");
 						int marco_destino = reemplazar_MP(idp, num_pagina);
-
 						escribir_posicion_memoria(marco_destino * marco_size, marco_size,contenido_pagina);
 						escribir_marco_en_TP(idp, num_pagina, marco_destino);
+						log_info(logger, "Actualización de la tabla de paginasdel proceso %d",idp);
 					}
 }
 
 
 
 void crear_tabla_de_paginas(int idp, int paginas_requeridas) { //testeado
+	log_info(logger, "Crear la tabla de paginas para el proceso %d",idp);
 	tabla_paginas tabla_paginas;
 	//inicializo
 	int i;
@@ -302,15 +311,19 @@ void crear_tabla_de_paginas(int idp, int paginas_requeridas) { //testeado
 int obtener_marco(int idp, int num_pagina) { //testeado
 	int marco;
 	if (tlb_habilitada) {
+		log_info(logger, "TLB habilitada, buscar pagina");
 		marco = obtener_marco_tlb(idp, num_pagina);
 		if (marco == -1) { //si no esta en la tlb
+			log_info(logger, "No se encontro la pagina en la TLB, busco en la tabla de paginas");
 			marco = obtener_marco_tabla_paginas(idp, num_pagina);
 			if (marco != -1) { //no estaba en la tlb pero si en la tabla de paginas(en MP)
+				log_info(logger, "Se encontro la pagina en la tabla de paginas, actualizar TLB");
 				escribir_marco_en_tlb(idp, num_pagina, marco);
 			}
 		}
 		aumentar_uso_tlb(idp, num_pagina);
 	} else { //si no esta habilitada la tlb
+		log_info(logger, "TLB no habilitada, busco en la tabla de paginas");
 		marco = obtener_marco_tabla_paginas(idp, num_pagina);
 	}
 	return marco;
@@ -340,6 +353,7 @@ int obtener_marco_tlb(int idp, int num_pagina) { //testeado
 }
 
 void escribir_marco_en_TP(int idp, int pagina, int marco) { //al guardar en MP devuelve el marco en que se guardo y se guarda en la tabla de paginas del proceso
+	log_info(logger, "Actualizar tabla de paginas del proceso %d",idp);
 	tabla_procesos[idp][pagina].marco = marco; //testeado
 	tabla_procesos[idp][pagina].presencia = 1;
 	tabla_procesos[idp][pagina].bit_uso = 1;
@@ -347,13 +361,16 @@ void escribir_marco_en_TP(int idp, int pagina, int marco) { //al guardar en MP d
 }
 
 void escribir_marco_en_tlb(int idp, int num_pagina, int marco) {	//testeado
+	log_info(logger, "Nueva entrada en la TLB");
 	int indice_libre = buscar_indice_libre_tlb();
 	if (indice_libre != -1) { //si hay un indice libre
+		log_info(logger, "Se encontro el indice %d libre",indice_libre);
 		tlb[indice_libre].idp = idp;
 		tlb[indice_libre].pagina = num_pagina;
 		tlb[indice_libre].marco = marco;
 		tlb[indice_libre].uso = 0;
 	} else { //no hay indice libre ->reemplazo con LRU
+		log_info(logger, "TLB llena, reemplazo con LRU");
 		int indice_menos_accedido = buscar_indice_menos_accedido_tlb();
 		tlb[indice_menos_accedido].idp = idp;
 		tlb[indice_menos_accedido].pagina = num_pagina;
@@ -369,9 +386,10 @@ void marco_desocupado(int num_marco) { 	//testeado
 	marcos_libres[num_marco] = 0;
 }
 
-void cambiar_proceso_activo(int pid, void* cliente) {
+void cambiar_proceso_activo(int idp, void* cliente) {
+	log_info(logger, "Nuevo proceso activo: %d",idp);
 	flush(((t_cliente*) cliente)->proceso_activo); //limpio lo que haya de ese proceso en la tlb
-	((t_cliente*) cliente)->proceso_activo = pid;
+	((t_cliente*) cliente)->proceso_activo = idp;
 }
 
 void escribir_posicion_memoria(int posicion, size_t tamanio, char *buffer) {
@@ -424,6 +442,7 @@ int buscar_indice_menos_accedido_tlb() { //testeado
 }
 
 void flush(int idp) { //cuando cambia el proceso activo limpio el proceso viejo de la tlb
+	log_info(logger, "Limpieza del proceso %d de la TLB por cambio de proceso activo");
 	int i = 0;
 	for (i = 0; i < entradas_tlb; i++) {
 		if (tlb[i].idp == idp) {
@@ -434,10 +453,12 @@ void flush(int idp) { //cuando cambia el proceso activo limpio el proceso viejo 
 
 //operaciones de consola
 void modificar_retardo(int ret) { //testeado
+	log_info(logger, "Comando modificar_retardo: se modifica el retardo de acceso a memoria a %d",ret);
 	retardo = ret;
 }
 
 void dump_est_proceso(int idp, const char * nombreArchivo) { //generar reporte en pantalla y un archivo sobre la tabla de paginas del proceso
+	log_info(logger, "Comando dump_est_proceso: generar un reporte sobre el contenido de la tabla de paginas del proceso %d",idp);
 	int pag;
 	int cantidad_paginas = cant_paginas_procesos[idp];
 	FILE *archivo;
@@ -473,6 +494,7 @@ void dump_est_proceso(int idp, const char * nombreArchivo) { //generar reporte e
 }
 
 void dump_est_gen() { //generar un reporte en pantalla y un archivo con las tablas de paginas de todos los procesos
+	log_info(logger, "Comando dump_est_gen: generar un reporte sobre el contenido de las tablas de paginas de todos los procesos");
 	FILE *archivo = fopen("tablas_de_paginas_todos_los_procesos.txt", "a");
 	if (!archivo) {
 		printf("Error al abrir/crear el archivo! :(\n");
@@ -502,6 +524,7 @@ void dump_est_gen() { //generar un reporte en pantalla y un archivo con las tabl
 void dump_cont_proceso(int idp, const char* nombreArchivo) { //testeado
 //generar un reporte en pantalla y un archivo sobre los datos almacenados en memoria
 //de ese proceso
+	log_info(logger, "Comando dump_cont_proceso: generar un reporte sobre los datos almacenados en memoria del proceso %d",idp);
 	int paginas_proceso=cant_paginas_procesos[idp];
 	FILE *archivo;
 		if (strcmp(nombreArchivo, "contenido_en_memoria.txt"))
@@ -532,9 +555,10 @@ if (archivo) {
 	}
 }
 
-void dump_cont_gen() { //falta testear
+void dump_cont_gen() { //testeado
 //generar un reporte en pantalla y un archivo sobre los datos almacenados en memoria
 //de todos los procesos
+	log_info(logger, "Comando dump_cont_gen: generar un reporte sobre los datos almacenados en memoria de todos los procesos");
 	FILE *archivo = fopen("contenido_en_memoria_de_todos_los_procesos.txt", "a");
 		if (!archivo) {
 			printf("Error al abrir/crear el archivo! :(\n");
@@ -561,6 +585,7 @@ void dump_cont_gen() { //falta testear
 }
 
 void flush_tlb() { //limpia completamente la tlb
+	log_info(logger, "Comando flush_tlb: limpia completamente la TLB");
 	int i;
 	for (i = 0; i < entradas_tlb; i++) {
 		tlb[i].idp = -1;
@@ -568,6 +593,7 @@ void flush_tlb() { //limpia completamente la tlb
 }
 
 void flush_memory(int idp) { //marca todas las paginas del proceso como modificadas
+	log_info(logger, "Comando flush_memory: marcar todas las paginas del proceso como modificadas");
 	int cant_paginas = cant_paginas_procesos[idp];
 	int i;
 	for (i = 0; i < cant_paginas; i++) {
@@ -590,6 +616,7 @@ int buscar_marco_libre() {
 	return -1;
 }
 void reconocer_comando(char *comando, char* param) {
+	log_info(logger, "Reconocer comando %s %s",comando,param);
 	pthread_mutex_lock(&lock);
 	if (!strcmp(comando, "retardo")) {
 		modificar_retardo(atoi(param));
@@ -610,7 +637,7 @@ void reconocer_comando(char *comando, char* param) {
 	}
 	pthread_mutex_unlock(&lock);
 }
-int cant_paginas_asignadas(int idp) { //falta testear
+int cant_paginas_asignadas(int idp) { //testeado
 	int i;
 	int contador = 0;
 	for (i = 0; i < cant_paginas_procesos[idp]; i++) {
@@ -623,21 +650,25 @@ int cant_paginas_asignadas(int idp) { //falta testear
 
 int reemplazar_MP(int idp, int num_pagina) { //testeado
 	int pagina_victima = buscar_pagina_victima(idp);
-
+	log_info(logger, "La pagina a reemplazar: %d",pagina_victima);
 	tabla_procesos[idp][pagina_victima].presencia = 0;
 	sacar_pagina_de_tlb(idp,pagina_victima);
 	int marco_destino = tabla_procesos[idp][pagina_victima].marco;
+	log_info(logger, "El marco en que se copiara la nueva pagina: %d",marco_destino);
 	if (tabla_procesos[idp][pagina_victima].modificado) {
 			//enviar a swap que escriba la pagina victima (en swap quedo desactualizada)
 			void* mensaje;
 			char* pagina=leer_posicion_memoria(marco_destino*marco_size,marco_size);
 			int tamanioMensaje = serializarEscribirPagina(idp, pagina_victima,pagina,&mensaje);
+			pthread_mutex_lock(&lock);
 			enviar(socket_swap, mensaje, tamanioMensaje);
-		}
+			pthread_mutex_unlock(&lock);
+	}
 	return marco_destino;
 
 }
 void sacar_pagina_de_tlb(int idp,int pagina){
+	log_info(logger, "Sacar de la TLB la pagina: %d, del proceso %d",pagina,idp);
 	int i;
 	for(i=0;i<entradas_tlb;i++){
 		if(tlb[i].idp==idp && tlb[i].pagina==pagina){
@@ -650,6 +681,7 @@ int buscar_pagina_victima(int idp) {
 	//segun clock o clock modificado
 	 int paginas_proceso = cant_paginas_procesos[idp];
 		if (!strcmp(alg_reemplazo, "CLOCK_MODIFICADO")) { //clock modificado   testeado
+			log_info(logger, "Buscar pagina victima segun algoritmo clock modificado");
 			int i;
 			int indice;
 			int iteracion;
@@ -689,6 +721,7 @@ int buscar_pagina_victima(int idp) {
 		}//termina el ciclo
 
 	} else if (!strcmp(alg_reemplazo, "CLOCK")) { //clock	testeado
+		log_info(logger, "Buscar pagina victima segun algoritmo clock");
 		int i;
 		for (i = 0; i <= paginas_proceso; i++) {
 			i = punteros_clock[idp];
