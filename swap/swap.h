@@ -54,13 +54,14 @@ int hayEspacio(int paginas_requeridas);
 void agregarProcesoALista(int id_programa,int paginas_requeridas);
 int tamanioListaSwap();
 
+int cant_pags_disponibles();
 int hayQueCompactar(int paginas_requeridas);
 int estanPaginasContinuas(t_list* espaciosLibres, int paginas_requeridas);
-Bool estaUtilizado();
 Bool noEstaUtilizado();
-Bool noSonIguales();
 void compactar();
 t_list* sacarRepetidos(t_list* lista, int paginas_requeridas);
+t_list* espaciosLibres();
+t_list* paginasAReemplazar(t_list* espaciosLibres, int paginas_requeridas);
 
 void terminar();
 void leer_pagina(int id_programa, int num_pagina);
