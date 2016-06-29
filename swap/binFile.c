@@ -43,42 +43,46 @@ char* tamanioArchivo(int pagina_tamanio, int cantidad_pags) {
 	return tamanioTotalString;
 }
 
-void escribirArchivoBinario(char* programa) { //testeado
+void abrirArchivoBinario(){
+	archivo = fopen(rutaArchivoSwap(), "w+");
+}
+
+
+/*void escribirArchivoBinario(char* programa) { //testeado
 
 	usleep(retardo_acceso * 1000);
 
-	archivo = fopen(rutaArchivoSwap(), "a");
+
 
 	if(archivo == NULL){
 		printf("error");
 	}
+	//fseek(archivo,0,SEEK_END);
+	//fwrite(programa,pagina_size,1,archivo);
 
 	fputs(programa, archivo);
 
 	fclose(archivo);
-}
+}*/
 
 void escribirArchivoBinarioEnPag(int numPagina, char* buffer) {
 
 	usleep(retardo_acceso * 1000);
 
-	archivo = fopen(rutaArchivoSwap(), "wb");
-
 	fseek(archivo, paginaEnBytes(numPagina), SEEK_SET);
 
 	fputs(buffer, archivo);
 
-	fclose(archivo);
 }
 
 char* leerArchivoBinarioEnPagina(int numPagina) {
 
 	usleep(retardo_acceso * 1000);
-	archivo = fopen(rutaArchivoSwap(), "rb");
+	//archivo = fopen(rutaArchivoSwap(), "rb+");
 	char* buffer = malloc(pagina_size);
 	fseek(archivo, paginaEnBytes(numPagina), SEEK_SET);
 	fread(buffer, pagina_size, 1, archivo);
-	fclose(archivo);
+	//fclose(archivo);
 
 	return buffer;
 

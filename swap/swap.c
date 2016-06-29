@@ -3,6 +3,7 @@
 int main() {
 	abrirConfiguracion();
 	crearArchivoBinario(nombre_data, pagina_size, cant_paginas);
+	abrirArchivoBinario();
 
 	log_info(logger, "Inicia proceso Swap");
 
@@ -29,23 +30,24 @@ int main() {
 	inicializar(1, 2, "hola como estassss");
 	inicializar(2, 3, "eeeeeeperro come carne humana mm hola como estas");
 	inicializar(3, 2, "agua hola como estass");
-	leer_pagina(2,2);
+	finalizar(2);
+	inicializar(4, 1, "hola");
+	leer_pagina(4, 1);
 
 	/*int k;
-	for (k = 0; k < list_size(espacioTotal); k++) {
-		t_swap* procesoPrueba = list_get(espacioTotal, k);
-		int pagina;
-		int bituso;
+	 for (k = 0; k < list_size(espacioTotal); k++) {
+	 t_swap* procesoPrueba = list_get(espacioTotal, k);
+	 int pagina;
+	 int bituso;
 
-		pagina = procesoPrueba->pagina;
-		bituso = procesoPrueba->bit_uso;
+	 pagina = procesoPrueba->pagina;
+	 bituso = procesoPrueba->bit_uso;
 
-		printf("la pagina es %d\n", pagina);
-		printf("el bituso es %d\n", bituso);
-	}*/
+	 printf("la pagina es %d\n", pagina);
+	 printf("el bituso es %d\n", bituso);
+	 }*/
 
 	//FIN CASOS DE PRUEBA
-
 	void* mensaje;
 
 	while (!flagTerminar) {
@@ -81,6 +83,7 @@ void cerrar_todo() {
 	log_destroy(logger);
 	log_destroy(logger_pantalla);
 	config_destroy(configuracion_swap);
+	fclose(archivo);
 }
 
 void inicializar(int id_programa, int paginas_requeridas, char* programa) { //testeado
@@ -88,19 +91,23 @@ void inicializar(int id_programa, int paginas_requeridas, char* programa) { //te
 		if (hayQueCompactar(paginas_requeridas)) {
 			compactar();
 		}
-		agregarProcesoALista(id_programa, paginas_requeridas);
+
 
 		//llenamos de espacios hasta que ocupe toda la pagina
 		char* caracteresDeRelleno = string_new();
 		int cantidadDeEspacios;
-		cantidadDeEspacios =  (paginas_requeridas * pagina_size - string_length(programa))-1;
+		cantidadDeEspacios = (paginas_requeridas * pagina_size
+				- string_length(programa));
 		caracteresDeRelleno = string_repeat(' ', cantidadDeEspacios);
 		char* programaRelleno = string_new();
 		string_append(&programaRelleno, programa);
 		string_append(&programaRelleno, caracteresDeRelleno);
 		string_append(&programaRelleno, "\0");
 
-		escribirArchivoBinario(programaRelleno); //testeado
+		agregarProcesoALista(id_programa, paginas_requeridas, programaRelleno);
+
+		//escribirArchivoBinario(programaRelleno); //testeado
+		enviar_string(socket_umc, "OK");
 	} else {
 		log_info(logger, "No hay espacio en la swap");
 		enviar_string(socket_umc, "NO OK");
@@ -181,7 +188,6 @@ t_list* paginasAReemplazar(t_list* espaciosLibres, int paginas_requeridas) {
 
 }
 
-
 void compactar() {
 	int cantidadEspaciosLibres = list_size(espaciosLibres());
 	while (!(estanPaginasContinuas(espaciosLibres(), cantidadEspaciosLibres))) {
@@ -222,7 +228,7 @@ void recorrerYModificarArchivoYListas() {
 	}
 }
 
-void agregarProcesoALista(int id_programa, int paginas_requeridas) {
+void agregarProcesoALista(int id_programa, int paginas_requeridas, char* programa) {
 	int j;
 	t_list* listaLibres = espaciosLibres();
 	if (paginas_requeridas == 1) {
@@ -234,6 +240,9 @@ void agregarProcesoALista(int id_programa, int paginas_requeridas) {
 		t_proceso* proceso = malloc(sizeof(t_proceso));
 		proceso->pagina = primerEspacioLibre->pagina;
 		proceso->pid = id_programa;
+
+		escribirArchivoBinarioEnPag(proceso->pagina, programa);
+
 		list_add(listaDeProcesos, (void*) proceso);
 		//free(proceso); //liberar proceso
 
@@ -249,6 +258,11 @@ void agregarProcesoALista(int id_programa, int paginas_requeridas) {
 			proceso->pagina = swap->pagina;
 			proceso->pid = id_programa;
 			list_add(listaDeProcesos, (void*) proceso);
+
+
+			char* bufferDividido;
+			bufferDividido = string_substring(programa,j*pagina_size,pagina_size);
+			escribirArchivoBinarioEnPag(proceso->pagina,bufferDividido);
 			//free(proceso); //liberar proceso
 		}
 
@@ -292,17 +306,17 @@ void leer_pagina(int id_programa, int num_pagina) {
 	if (list_get(paginasDelProceso, 0) == NULL) {
 		log_info(logger, "No existe la pagina solicitada en la Swap");
 	}
-	for (i = 0; i < list_size(paginasDelProceso); i++) {
+	for (i = 1; i <= list_size(paginasDelProceso); i++) {
 		if (i == num_pagina) {
-			t_proceso* proceso = list_get(paginasDelProceso, i-1); //fijarse bien si es menos uno, creo que si
+			t_proceso* proceso = list_get(paginasDelProceso, i - 1); //fijarse bien si es menos uno, creo que si
 			char* paginaLeida = leerArchivoBinarioEnPagina(proceso->pagina);
 			//PRUEBA
 			printf("esto es lo leido %s\n", paginaLeida);
 			//enviar(socket_umc, paginaLeida, pagina_size);
 
 		} /*else {
-			log_info(logger, "No existe la pagina solicitada en la Swap");
-		}*/
+		 log_info(logger, "No existe la pagina solicitada en la Swap");
+		 }*/
 
 	}
 

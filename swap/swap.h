@@ -51,7 +51,7 @@ void finzalizar(int id_programa);
 
 int cant_pags_disponibles();
 int hayEspacio(int paginas_requeridas);
-void agregarProcesoALista(int id_programa,int paginas_requeridas);
+void agregarProcesoALista(int id_programa,int paginas_requeridas, char* programa);
 int tamanioListaSwap();
 
 int cant_pags_disponibles();
