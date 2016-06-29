@@ -95,6 +95,7 @@ int* variablesGlobales;
 pthread_mutex_t mutexVariablesGlobales = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t mutexColaReady = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t mutexPID = PTHREAD_MUTEX_INITIALIZER;
+pthread_mutex_t mutexCPUs = PTHREAD_MUTEX_INITIALIZER;
 
 void abrirConfiguracion();
 void cerrar_todo();

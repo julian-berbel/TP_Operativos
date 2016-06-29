@@ -11,7 +11,7 @@
 #include <stdlib.h>
 #include "pcb.h"
 
-typedef enum {CARGAR_PCB/*, TERMINAR*/, CONTINUAR_EJECUCION, DESALOJAR} interfazCPU;
+typedef enum {CARGAR_PCB/*, TERMINAR*/, CONTINUAR_EJECUCION = 2, DESALOJAR = 3} interfazCPU;
 
 typedef enum{/*IMPRIMIR, */ TERMINAR} interfazConsola;
 

@@ -10,7 +10,7 @@ t_puntero definirVariable(t_nombre_variable variable) {
 	int cantidad_variables;
 	int cantidad_argumentos;
 	int encontre_valor = 1;
-	char tipo;
+//	char tipo;
 	nodo_stack *nodo;
 	pos_mem *posicion_memoria;
 	t_variable *var;
@@ -40,7 +40,7 @@ t_puntero definirVariable(t_nombre_variable variable) {
 				nueva_posicion_memoria->pagina = (posicion_memoria->pagina + 1);
 				nueva_posicion_memoria->offset = 0;
 				nueva_posicion_memoria->size = 4;
-				if(nueva_posicion_memoria >= pcb_actual->cantidadPaginas){
+				if(nueva_posicion_memoria->pagina >= pcb_actual->cantidadPaginas){
 					stackOverflow();
 				} else {
 					list_add(nodo->args, nueva_posicion_memoria);
@@ -49,7 +49,7 @@ t_puntero definirVariable(t_nombre_variable variable) {
 				nueva_posicion_memoria->pagina = posicion_memoria->pagina;
 				nueva_posicion_memoria->offset = (posicion_memoria->offset + posicion_memoria->size);
 				nueva_posicion_memoria->size = 4;
-				if(nueva_posicion_memoria >= pcb_actual->cantidadPaginas){
+				if(nueva_posicion_memoria->pagina >= pcb_actual->cantidadPaginas){
 					stackOverflow();
 				} else {
 					list_add(nodo->args, nueva_posicion_memoria);
@@ -62,7 +62,7 @@ t_puntero definirVariable(t_nombre_variable variable) {
 				nueva_posicion_memoria->pagina = (pcb_actual->cantidadPaginas - tamanio_stack);
 				nueva_posicion_memoria->offset = 0;
 				nueva_posicion_memoria->size = 4;
-				if(nueva_posicion_memoria >= pcb_actual->cantidadPaginas){
+				if(nueva_posicion_memoria->pagina >= pcb_actual->cantidadPaginas){
 					stackOverflow();
 				} else {
 					list_add(nodo->args, nueva_posicion_memoria);
@@ -80,7 +80,7 @@ t_puntero definirVariable(t_nombre_variable variable) {
 				nueva_posicion_memoria->size = 4;
 				nueva_variable->nombre_var = variable;
 				nueva_variable->dir_var = nueva_posicion_memoria;
-				if(nueva_posicion_memoria >= pcb_actual->cantidadPaginas){
+				if(nueva_posicion_memoria->pagina >= pcb_actual->cantidadPaginas){
 					stackOverflow();
 				} else {
 					list_add(nodo->vars, nueva_variable);
@@ -91,7 +91,7 @@ t_puntero definirVariable(t_nombre_variable variable) {
 				nueva_posicion_memoria->size = 4;
 				nueva_variable->nombre_var = variable;
 				nueva_variable->dir_var = nueva_posicion_memoria;
-				if(nueva_posicion_memoria >= pcb_actual->cantidadPaginas){
+				if(nueva_posicion_memoria->pagina >= pcb_actual->cantidadPaginas){
 					stackOverflow();
 				} else {
 					list_add(nodo->vars, nueva_variable);
@@ -106,7 +106,7 @@ t_puntero definirVariable(t_nombre_variable variable) {
 				nueva_posicion_memoria->size = 4;
 				nueva_variable->nombre_var = variable;
 				nueva_variable->dir_var = nueva_posicion_memoria;
-				if(nueva_posicion_memoria >= pcb_actual->cantidadPaginas){
+				if(nueva_posicion_memoria->pagina >= pcb_actual->cantidadPaginas){
 					stackOverflow();
 				} else {
 					list_add(nodo->vars, nueva_variable);
@@ -329,12 +329,14 @@ int main(){
 	log_info(logger, "Inicia proceso CPU");
 	socket_nucleo = crear_socket_cliente(ipNucleo, puertoNucleo);
 	log_info(logger_pantalla, "CPU y Nucleo conectados");
+	void* mensaje = recibir(socket_nucleo);
+	tamanio_stack = *(int*)mensaje;
+	free(mensaje);
 	socket_umc = crear_socket_cliente(ipUMC, puertoUMC);
 	log_info(logger_pantalla, "CPU y UMC conectados");
-	void* respuesta = recibir(socket_umc);
-	tamanio_pagina = *(int*)respuesta;
-	free(respuesta);
-	void* mensaje;
+	mensaje = recibir(socket_umc);
+	tamanio_pagina = *(int*)mensaje;
+	free(mensaje);
 
 	while(!flagTerminar){
 		mensaje = recibir(socket_nucleo);

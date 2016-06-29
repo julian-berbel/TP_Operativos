@@ -191,17 +191,7 @@ void threadReceptorYEscuchaConsolas(){
 			free(mensaje);
 		}else{
 			for(i = 0; i < consolas->elements_count; i++){
-				consola = list_get(consolas, i);
-				if (FD_ISSET(consola->socketConsola, bagDeSockets)) {
-					mensaje = recibir(consola->socketConsola);
-					if(mensaje){
-						procesarMensaje(mensaje, consola);
-					}else{
-						printf("Consola desconectada!\n");
-						list_remove_and_destroy_element(consolas, i,(void*) destruirConsola);
-					}
-					free(mensaje);
-				}
+				if (FD_ISSET(consola->socketConsola, bagDeSockets)) list_remove_and_destroy_element(consolas, i,(void*) destruirConsola);
 			}
 		}
 	}
@@ -214,12 +204,17 @@ void cerrarCPU(void* cpu, void* ultimoMensaje){
 			return elementoDeLaLista == cpu;
 	}
 
+	pthread_mutex_lock(&mutexCPUs);
 	list_remove_by_condition(cpus, (void*) buscarCPU(cpu));
+	pthread_mutex_unlock(&mutexCPUs);
 
 	log_info(logger, "Destruyendo CPU: thread: %d", ((t_cpu*)cpu)->hiloCPU);
 
 	if(ultimoMensaje){
-		t_elemento_cola* elemento = desalojar(cpu);
+		if(((t_cpu*)cpu)->elemento){
+			t_elemento_cola* elemento = desalojar(cpu);
+			elemento->estado = READY;
+		}
 
 		void* mensaje;
 		int tamanioMensaje = serializarTerminar(&mensaje);
@@ -227,8 +222,6 @@ void cerrarCPU(void* cpu, void* ultimoMensaje){
 		free(mensaje);
 
 		shutdown(((t_cpu*)cpu)->socketCPU, 0);
-
-		elemento->estado = READY;
 	}else{
 		// imprimir mensaje de error en la consola?
 		((t_cpu*)cpu)->elemento->estado = EXIT;
@@ -251,6 +244,8 @@ void threadEscuchaCPU(t_cpu* cpu){
 
 	log_info(logger, "Iniciado thread de CPU: thread: %d", cpu->hiloCPU);
 	int socket = cpu->socketCPU;
+
+	enviar(socket, &stack_size, sizeof(int));
 
 	void* mensaje;
 
@@ -276,7 +271,9 @@ void crearThreadDeCPU(int conexionRecibida){
 	cpu->hiloCPU = hiloEscuchaCPU;
 	cpu->elemento = NULL;
 
+	pthread_mutex_lock(&mutexCPUs);
 	list_add(cpus, (void*) cpu);
+	pthread_mutex_unlock(&mutexCPUs);
 
 	pthread_create(hiloEscuchaCPU, NULL,(void*) threadEscuchaCPU, cpu);
 }
