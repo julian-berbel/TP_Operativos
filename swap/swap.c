@@ -32,7 +32,7 @@ int main() {
 	inicializar(1,3,"hola como estassss tengo mucha hambre");
 	int k;
 	for(k=0; k < list_size(listaDeProcesos); k++){
-	t_proceso* procesoPrueba = list_get(listaDeProcesos,0);
+	t_proceso* procesoPrueba = list_get(listaDeProcesos,k);
 	int pagina;
 	int pid;
 
@@ -81,7 +81,7 @@ void cerrar_todo() {
 	config_destroy(configuracion_swap);
 }
 
-void inicializar(int id_programa, int paginas_requeridas, char* programa) {
+void inicializar(int id_programa, int paginas_requeridas, char* programa) { //testeado
 	if (cant_pags_disponibles() >= paginas_requeridas) {
 		if (hayQueCompactar(paginas_requeridas)) {
 			compactar();
@@ -138,47 +138,22 @@ int estanPaginasContinuas(t_list* espaciosLibres, int paginas_requeridas) {
 
 
 //todo
-t_list* sacarRepetidos2(t_list* lista){
-	t_list* sinRepetidos2;
-	sinRepetidos2 = list_filter(lista, (void*) noSonIguales);
+t_list* sacarRepetidos(t_list* lista, int paginas_requeridas){
+	t_list* sinRepetidos2 = list_create();
+	t_swap* primerElemento = list_get(lista,0);
+	int pagina;
+	pagina = primerElemento->pagina;
+	int i;
+	for(i = 0; i < paginas_requeridas; i++){
+		t_swap* swap = malloc(sizeof(t_swap));
+		swap->bit_uso = 0;
+		swap->pagina = pagina + i;
+		list_add(sinRepetidos2,swap);
+	}
 	return sinRepetidos2;
 }
 
 
-Bool noSonIguales(t_swap* swap, t_swap* swapSig) {
-
-	if (swap->bit_uso == swapSig->bit_uso && swap->pagina == swapSig->bit_uso) {
-		return true;
-	} else {
-		return false;
-	}
-}
-
-
-
-
-t_list* sacarRepetidos(t_list* lista) {
-	int i, j;
-	for (i = 0; i < list_size(lista); i++) {
-		t_swap* primerElemento = list_get(lista, i);
-		for (j = i + 1; j <= list_size(lista) - 1; j++) {
-			t_swap* siguienteElemento = list_get(lista, j);
-			if (primerElemento->pagina == siguienteElemento->pagina) {
-
-				t_swap* var;
-				var = list_remove(lista, j);
-				destruirElemento(var);
-				j = j - 1;
-			}
-		}
-
-	}
-	return lista;
-}
-
-void destruirElemento(t_swap* var){
-	free(var);
-}
 
 t_list* paginasAReemplazar(t_list* espaciosLibres, int paginas_requeridas) {
 	int i;
@@ -193,7 +168,7 @@ t_list* paginasAReemplazar(t_list* espaciosLibres, int paginas_requeridas) {
 		}
 
 	}
-	t_list* pagsContSinRepetidos = sacarRepetidos2(paginasContiguas);
+	t_list* pagsContSinRepetidos = sacarRepetidos2(paginasContiguas, paginas_requeridas);
 	return pagsContSinRepetidos;
 
 }

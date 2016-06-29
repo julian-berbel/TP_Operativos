@@ -60,9 +60,7 @@ Bool estaUtilizado();
 Bool noEstaUtilizado();
 Bool noSonIguales();
 void compactar();
-void destruirElemento(t_swap*);
-t_list* sacarRepetidos(t_list* lista);
-t_list* sacarRepetidos2(t_list* lista);
+t_list* sacarRepetidos(t_list* lista, int paginas_requeridas);
 
 void terminar();
 void leer_pagina(int id_programa, int num_pagina);
