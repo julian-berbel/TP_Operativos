@@ -102,7 +102,7 @@ void aumentar_uso_tlb(int idp,int num_pagina);
 int buscar_indice_menos_accedido_tlb();
 void flush (int idp);
 void copiar_pagina_en_memoria(int idp,int num_pagina,char* contenido_pagina);
-void controlar_segmentation_fault(int offset,size_t tamanio);
+
 //operaciones de consola
 void modificar_retardo(int ret);
 void dump_est_proceso(int idp, const char* nombreArchivo);

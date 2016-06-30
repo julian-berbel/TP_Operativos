@@ -128,12 +128,16 @@ void inicializar_estructuras(){
 	 memset(memoria,' ',marcos * marco_size * sizeof(char));
 
 	 //TLB
+	 if (tlb_habilitada){
 	 tlb = (TLB*) malloc(entradas_tlb * sizeof(TLB));
 
 	 for (i = 0; i < entradas_tlb; i++) { //inicializo la tlb con idp en -1:testeado
 	 tlb[i].idp = -1;
+	 tlb[i].marco=-1;
+	 tlb[i].pagina=-1;
+	 tlb[i].uso=0;
 	 }
-
+	 }
 }
 void abrirConfiguracion() {
 	configuracionUMC = config_create(RUTA_CONFIG);
@@ -228,7 +232,7 @@ void leer_pagina(int num_pagina, int offset, size_t t, void* cpu) {
 		copiar_pagina_en_memoria(idp,num_pagina,contenido_pagina);
 		//retomo el pedido de lectura
 		log_info(logger, "Lectura de la pagina %d",num_pagina);
-		char* contenido = leer_posicion_memoria(marco * marco_size + offset, t);
+		char* contenido = leer_posicion_memoria(tabla_procesos[idp][num_pagina].marco * marco_size + offset, t);
 		enviar_string(((t_cliente*)cpu)->socket,contenido);
 		}
 	}
@@ -242,6 +246,7 @@ void escribir_pagina(int num_pagina, int offset, size_t t, char *buffer,void* cp
 	if(marco!=-1){//esta en memoria
 		log_info(logger, "Pagina %d, encontrada en memoria en el marco %d",num_pagina,marco);
 		escribir_posicion_memoria(marco* marco_size + offset, t, buffer);
+		tabla_procesos[idp][num_pagina].modificado=1; //modifique una pagina en memoria ->swap desactualizada
 	}else{//no esta en memoria -> page fault
 		log_info(logger, "Page Fault, no se encontró la pagina %d del proceso %d en memoria",num_pagina,idp);
 		if(num_pagina>=cant_paginas_procesos[idp]){
@@ -286,7 +291,7 @@ void copiar_pagina_en_memoria(int idp,int num_pagina,char* contenido_pagina){
 						int marco_destino = reemplazar_MP(idp, num_pagina);
 						escribir_posicion_memoria(marco_destino * marco_size, marco_size,contenido_pagina);
 						escribir_marco_en_TP(idp, num_pagina, marco_destino);
-						log_info(logger, "Actualización de la tabla de paginasdel proceso %d",idp);
+						log_info(logger, "Actualización de la tabla de paginas del proceso %d",idp);
 					}
 }
 
@@ -387,7 +392,7 @@ void marco_desocupado(int num_marco) { 	//testeado
 }
 
 void cambiar_proceso_activo(int idp, void* cliente) {
-	log_info(logger, "Nuevo proceso activo: %d",idp);
+	log_info(logger, "Nuevo proceso activo: %d",idp); //controlo si la TLB esta habilitada en la funcion flush
 	flush(((t_cliente*) cliente)->proceso_activo); //limpio lo que haya de ese proceso en la tlb
 	((t_cliente*) cliente)->proceso_activo = idp;
 }
@@ -410,6 +415,7 @@ char* leer_posicion_memoria(int posicion, size_t tamanio) {
 }
 
 int buscar_indice_libre_tlb() { //testeado
+	if(tlb_habilitada){
 	int i;
 	for (i = 0; i < entradas_tlb; i++) {
 		if (tlb[i].idp == -1) {
@@ -418,8 +424,11 @@ int buscar_indice_libre_tlb() { //testeado
 	}
 	return -1;
 }
+	return -1;
+}
 
 void aumentar_uso_tlb(int idp, int num_pagina) { //testeado
+	if(tlb_habilitada){
 	int i;
 	for (i = 0; i < entradas_tlb; i++) {
 		if (tlb[i].idp != idp && tlb[0].pagina != num_pagina) {
@@ -429,8 +438,10 @@ void aumentar_uso_tlb(int idp, int num_pagina) { //testeado
 		}
 	}
 }
+}
 
 int buscar_indice_menos_accedido_tlb() { //testeado
+	if(tlb_habilitada){
 	int indice, valormax = 0, i;
 	for (i = 0; i < entradas_tlb; i++) {
 		if (tlb[i].uso >= valormax) {
@@ -440,8 +451,11 @@ int buscar_indice_menos_accedido_tlb() { //testeado
 	}
 	return indice;
 }
+	return -1;
+}
 
 void flush(int idp) { //cuando cambia el proceso activo limpio el proceso viejo de la tlb
+	if(tlb_habilitada){
 	log_info(logger, "Limpieza del proceso %d de la TLB por cambio de proceso activo");
 	int i = 0;
 	for (i = 0; i < entradas_tlb; i++) {
@@ -449,6 +463,7 @@ void flush(int idp) { //cuando cambia el proceso activo limpio el proceso viejo 
 			tlb[i].idp = -1; //queda nuevamente como libre
 		}
 	}
+}
 }
 
 //operaciones de consola
@@ -585,10 +600,12 @@ void dump_cont_gen() { //testeado
 }
 
 void flush_tlb() { //limpia completamente la tlb
+	if(tlb_habilitada){
 	log_info(logger, "Comando flush_tlb: limpia completamente la TLB");
 	int i;
 	for (i = 0; i < entradas_tlb; i++) {
 		tlb[i].idp = -1;
+	}
 	}
 }
 
@@ -668,6 +685,7 @@ int reemplazar_MP(int idp, int num_pagina) { //testeado
 
 }
 void sacar_pagina_de_tlb(int idp,int pagina){
+	if(tlb_habilitada){
 	log_info(logger, "Sacar de la TLB la pagina: %d, del proceso %d",pagina,idp);
 	int i;
 	for(i=0;i<entradas_tlb;i++){
@@ -675,6 +693,7 @@ void sacar_pagina_de_tlb(int idp,int pagina){
 			tlb[i].idp=-1;
 		}
 	}
+}
 }
 
 int buscar_pagina_victima(int idp) {
