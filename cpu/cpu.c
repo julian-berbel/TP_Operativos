@@ -16,6 +16,19 @@ t_puntero definirVariable(t_nombre_variable variable) {
 	t_variable *var;
 	pos_mem* nueva_posicion_memoria;
 	t_variable *nueva_variable;
+	if(nodos_stack == 0){
+		nodo_stack *nodo = malloc(sizeof(nodo_stack));
+		nodo->args = list_create();
+		nodo->vars = list_create();
+		nodo->dir_retorno = 0;
+		pos_mem *retorno = malloc(sizeof(pos_mem));
+		retorno->pagina = 0;
+		retorno->offset = 0;
+		retorno->size = 0;
+		nodo->var_retorno = retorno;
+		list_add(pcb_actual->indiceStack, nodo);
+	}
+	nodos_stack = list_size(pcb_actual->indiceStack);
 	for(posicion_stack = (nodos_stack - 1); posicion_stack >= 0; posicion_stack--){
 		nodo = list_get(pcb_actual->indiceStack, posicion_stack);
 		cantidad_variables = list_size(nodo->vars);
@@ -337,6 +350,15 @@ int main(){
 	mensaje = recibir(socket_umc);
 	tamanio_pagina = *(int*)mensaje;
 	free(mensaje);
+	pcb_actual = malloc(sizeof(t_PCB));//Fake pcb para arrancar
+	pcb_actual->pid = 151515;
+	pcb_actual->programCounter = 0;
+	pcb_actual->cantidadPaginas = 2;
+	pcb_actual->cantidadInstrucciones = 0;
+	pcb_actual->indiceCodigo = malloc(sizeof(int));
+	pcb_actual->tamanioIndiceEtiquetas = 1;
+	pcb_actual->indiceEtiquetas = malloc(50);
+	pcb_actual->indiceStack = list_create();
 
 	while(!flagTerminar){
 		mensaje = recibir(socket_nucleo);
