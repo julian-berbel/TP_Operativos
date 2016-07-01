@@ -176,10 +176,6 @@ void threadReceptorYEscuchaConsolas(){
 
 		if(FD_ISSET(socket_consolas, bagDeSockets)){
 			conexionRecibida = recibirConexion(socket_consolas);
-			printf("Conectado a una consola!\n");
-			consola = malloc(sizeof(t_consola));
-			consola->socketConsola = conexionRecibida;
-			list_add(consolas, consola);
 			nuevoPrograma(conexionRecibida);
 			n = mayorSocket(n) + 1;
 		}else if(FD_ISSET(descriptor_inotify, bagDeSockets)){
@@ -324,9 +320,10 @@ int main(){
 	listaPCBBlock = list_create();
 	listaPCBExit = list_create();
 
-	int i;
-	dispositivos = malloc(sizeof(t_dispositivo) * tamanioArray(io_id));
-	for(i = 0; i < tamanioArray(io_id); i++){
+	int i, tamanio;
+	tamanio = tamanioArray(io_id);
+	dispositivos = malloc(sizeof(t_dispositivo) * tamanio);
+	for(i = 0; i < tamanio; i++){
 		pthread_t hiloDispositivo;
 		dispositivos[i].hiloDispositivo = hiloDispositivo;
 		dispositivos[i].cola_dispositivo = queue_create();
@@ -337,14 +334,16 @@ int main(){
 		pthread_create(&hiloDispositivo, NULL,(void*) threadDispositivo,(void*) &dispositivos[i]);
 	}
 
-	semaforosGlobales = malloc(sizeof(t_semaforo) * tamanioArray(sem_id));
-	for(i = 0; i < tamanioArray(sem_id); i++){
+	tamanio = tamanioArray(sem_id);
+	semaforosGlobales = malloc(sizeof(t_semaforo) * tamanio);
+	for(i = 0; i < tamanio; i++){
 		semaforosGlobales[i].valor = atoi(sem_inits[i]);
 		semaforosGlobales[i].cola_bloqueados = queue_create();
 	}
 
-	variablesGlobales = malloc(sizeof(int) * tamanioArray(shared_vars));
-	for(i = 0; i < tamanioArray(shared_vars); i++) shared_vars[i] = 0;
+	tamanio = tamanioArray(shared_vars);
+	variablesGlobales = malloc(sizeof(int) * tamanio);
+	for(i = 0; i < tamanio; i++) shared_vars[i] = 0;
 
 	sem_init(&moverPCBs, 0, 0);
 	sem_init(&semTerminar, 0, 0);
@@ -599,6 +598,10 @@ void threadPlanificador(){
 			}else if(elemento->estado == EXIT){
 				pidABuscar = elemento->pcb->pid;
 				list_remove_by_condition(listaPCBBlock, (void*)compararPid);
+				int j, tamanio = tamanioArray(io_id);
+				for(j = 0; j < tamanio; j++) list_remove_by_condition(dispositivos[j].cola_dispositivo->elements, (void*)compararPid);
+				tamanio = tamanioArray(sem_id);
+				for(j = 0; j < tamanio; j++) list_remove_by_condition(semaforosGlobales[j].cola_bloqueados->elements, (void*)compararPid);
 				list_add(listaPCBExit, elemento);
 				i--;
 			}
@@ -606,9 +609,9 @@ void threadPlanificador(){
 
 		//cola ready
 		pthread_mutex_lock(&mutexColaReady);
-		for(i = 0; colaPCBReady->elements->elements_count && hayCPUsLibres(); i++){
+		while(colaPCBReady->elements->elements_count && hayCPUsLibres()){
+			elemento = queue_pop(colaPCBReady);
 			if(elemento->estado == EXEC){
-				elemento = queue_pop(colaPCBReady);
 				queue_push(colaPCBExec, elemento);
 				cpu = cpuLibre();
 				cpu->elemento = elemento;
@@ -620,7 +623,6 @@ void threadPlanificador(){
 				pidABuscar = elemento->pcb->pid;
 				list_remove_by_condition(colaPCBExec->elements, (void*)compararPid);
 				list_add(listaPCBExit, elemento);
-				i--;
 			}
 		}
 		pthread_mutex_unlock(&mutexColaReady);

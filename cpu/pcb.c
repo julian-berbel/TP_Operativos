@@ -33,9 +33,9 @@ int calcularTamanioPCB(t_PCB* pcb){
 
 int serializarPCB(t_PCB* pcb, void** pcbSerializado){
 	log_info(logger, "Serializando PCB: pid: %d", pcb->pid);
-	int tamanioSerializado = calcularTamanioPCB(pcb);
 
-	*pcbSerializado = malloc(tamanioSerializado);
+	int tamanioSerializado = calcularTamanioPCB(pcb);
+	if(!*pcbSerializado)*pcbSerializado = malloc(tamanioSerializado);
 
 	void* posicion = *pcbSerializado;
 

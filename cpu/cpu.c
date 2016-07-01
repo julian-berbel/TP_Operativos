@@ -462,7 +462,7 @@ void continuarEjecucion(int quantum){
 }
 
 void desalojar(){
-	void* mensaje;
+	void* mensaje = NULL;
 	int tamanioMensaje = serializarPCB(pcb_actual, &mensaje);
 	enviar(socket_nucleo, mensaje, tamanioMensaje);
 	free(mensaje);
