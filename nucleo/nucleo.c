@@ -42,7 +42,8 @@ t_elemento_cola* desalojar(t_cpu* cpu){
 	enviar(cpu->socketCPU, mensaje, tamanioMensaje);
 	free(mensaje);
 
-	t_PCB* pcbActualizado = recibir(cpu->socketCPU);
+	mensaje = recibir(cpu->socketCPU);
+	t_PCB* pcbActualizado = deserializarPCB(mensaje);
 	t_elemento_cola* elemento = actualizarPCB(colaPCBExec->elements, pcbActualizado);
 
 	cpu->elemento = NULL;
@@ -337,13 +338,14 @@ int main(){
 	tamanio = tamanioArray(sem_id);
 	semaforosGlobales = malloc(sizeof(t_semaforo) * tamanio);
 	for(i = 0; i < tamanio; i++){
-		semaforosGlobales[i].valor = atoi(sem_inits[i]);
+		char *ptr;
+		semaforosGlobales[i].valor = strtol(sem_inits[i], &ptr, 10);
 		semaforosGlobales[i].cola_bloqueados = queue_create();
 	}
 
 	tamanio = tamanioArray(shared_vars);
 	variablesGlobales = malloc(sizeof(int) * tamanio);
-	for(i = 0; i < tamanio; i++) shared_vars[i] = 0;
+	for(i = 0; i < tamanio; i++) variablesGlobales[i] = 0;
 
 	sem_init(&moverPCBs, 0, 0);
 	sem_init(&semTerminar, 0, 0);
@@ -459,7 +461,6 @@ void cerrar_todo(){
 }
 
 int indiceEnArray(char** array, char* elemento){
-	log_info(logger, "Buscando indice");
 	int i = 0;
 	while(array[i] && strcmp(array[i], elemento)) i++;
 
@@ -479,11 +480,12 @@ void obtener_valor(char* identificador, void* cpu){
 	pthread_mutex_lock(&mutexVariablesGlobales);
 	valor = variablesGlobales[indice];
 	pthread_mutex_unlock(&mutexVariablesGlobales);
+	log_info(logger, "Valor obtenido: %d", valor);
 	enviar(((t_cpu*) cpu)->socketCPU, &valor, sizeof(int));
 }
 
 void grabar_valor(char* identificador, int valorAGrabar){
-	log_info(logger, "Obtener Valor: id: %s, valor: &d", identificador, valorAGrabar);
+	log_info(logger, "Grabar Valor: id: %s, valor: %d", identificador, valorAGrabar);
 	int indice = indiceEnArray(shared_vars, identificador);
 	pthread_mutex_lock(&mutexVariablesGlobales);
 	variablesGlobales[indice] = valorAGrabar;
@@ -493,6 +495,8 @@ void grabar_valor(char* identificador, int valorAGrabar){
 void esperar(char* identificador, void* cpu){
 	log_info(logger, "Esperar: id: %s", identificador);
 	int indice = indiceEnArray(sem_id, identificador);
+	log_info(logger, "Indice encontrado: %d", indice);
+	log_info(logger, "Valor en el indice: %d", semaforosGlobales[indice].valor);
 	if(semaforosGlobales[indice].valor){
 		semaforosGlobales[indice].valor--;
 		enviar_string(((t_cpu*)cpu)->socketCPU, "dale para adelante!");
@@ -501,6 +505,7 @@ void esperar(char* identificador, void* cpu){
 		t_elemento_cola* elemento = desalojar(cpu);
 
 		elemento->estado = BLOCK;
+		queue_push(semaforosGlobales[indice].cola_bloqueados, elemento);
 		sem_post(&moverPCBs);
 	}
 }
@@ -518,7 +523,7 @@ void avisar(char* identificador){
 }
 
 void entradaSalida(char* identificador, int operaciones, void* cpu){
-	log_info(logger, "Entrada/Salida: id: %s, operaciones: &d", identificador, operaciones);
+	log_info(logger, "Entrada/Salida: id: %s, operaciones: %d", identificador, operaciones);
     t_pedido* pedido = malloc(sizeof(t_pedido));
     pedido->cantidadDeOperaciones = operaciones;
 
@@ -586,7 +591,8 @@ void threadPlanificador(){
 
 		//lista block
 		for(i = 0; i < listaPCBBlock->elements_count; i++){
-			elemento = list_get(colaPCBExec->elements, i);
+			//elemento = list_get(colaPCBExec->elements, i);
+			elemento = list_get(listaPCBBlock, i);
 			if(elemento->estado == READY){
 				pidABuscar = elemento->pcb->pid;
 				list_remove_by_condition(listaPCBBlock, (void*)compararPid);

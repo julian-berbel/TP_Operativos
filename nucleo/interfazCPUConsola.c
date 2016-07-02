@@ -69,10 +69,13 @@ int serializarContinuarEjecucion(void** serializacion){
 
 int serializarDesalojar(void** serializacion){
 	log_info(logger, "Serializando: Desalojar");
-	int tamanio = sizeof(interfazCPU);
+	int tamanio = sizeof(int);
 	*serializacion = malloc(tamanio);
+	memset(*serializacion, 0, tamanio);
+	int i = DESALOJAR;
+	memcpy(*serializacion, &i, tamanio);
 
-	*((interfazCPU*) serializacion) = DESALOJAR;
+	//*((interfazCPU*) serializacion) = DESALOJAR;
 
 	return tamanio;
 }

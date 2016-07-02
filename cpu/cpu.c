@@ -187,32 +187,62 @@ void asignar(t_puntero puntero, t_valor_variable variable) {
 }
 
 t_valor_variable obtenerValorCompartida(t_nombre_compartida variable){
+	char** string_cortado = string_split(variable, "\n");
+	char* variable_con_formato = string_new();
+	string_append(&variable_con_formato, "!");
+	string_append(&variable_con_formato, string_cortado[0]);
 	void* variable_serializada;
-	int tamanioMensaje = serializarObtenerValor(variable, &variable_serializada);
+	int tamanioMensaje = serializarObtenerValor(variable_con_formato, &variable_serializada);
 	enviar(socket_nucleo, variable_serializada, tamanioMensaje);
+	free(variable_con_formato);
 	free(variable_serializada);
-	char *valor_variable_char = recibir_string_generico(socket_nucleo);
-	char *ptr;
-	int valor_variable = strtol(valor_variable_char, &ptr, 10);
-	free(valor_variable_char);
+	int* valor_variable_recibida = malloc(sizeof(int));
+	valor_variable_recibida = (int*) recibir(socket_nucleo);
+	int valor_variable = *valor_variable_recibida;
+	log_info(logger, "Valor convertido del nucleo: %d", valor_variable);
+	int i = 0;
+	while(string_cortado[i] != NULL){
+		free(string_cortado[i]);
+		i++;
+	}
+	free(string_cortado);
 	return valor_variable;
 }
 
 t_valor_variable asignarValorCompartida(t_nombre_compartida variable, t_valor_variable valor){
+	char** string_cortado = string_split(variable, "\n");
+	char* variable_con_formato = string_new();
+	string_append(&variable_con_formato, "!");
+	string_append(&variable_con_formato, string_cortado[0]);
 	void* variable_serializada;
-	int tamanioMensaje = serializarGrabarValor(variable, valor, &variable_serializada);
+	int tamanioMensaje = serializarGrabarValor(variable_con_formato, valor, &variable_serializada);
 	enviar(socket_nucleo, variable_serializada, tamanioMensaje);
+	free(variable_con_formato);
 	free(variable_serializada);
+	int i = 0;
+	while(string_cortado[i] != NULL){
+		free(string_cortado[i]);
+		i++;
+	}
+	free(string_cortado);
 	return valor;
 }
 
 void irAlLabel(t_nombre_etiqueta etiqueta){
-	int program_counter = metadata_buscar_etiqueta(etiqueta, pcb_actual->indiceEtiquetas, pcb_actual->tamanioIndiceEtiquetas);
+	char** string_cortado = string_split(etiqueta, "\n");
+	int program_counter = metadata_buscar_etiqueta(string_cortado[0], pcb_actual->indiceEtiquetas, pcb_actual->tamanioIndiceEtiquetas);
 	if(program_counter == -1){
-		printf("No se encontro la etiqueta %s en el indice de etiquetas\n", etiqueta);
+		log_info(logger_pantalla, "No se encontro la etiqueta: %s en el indice de etiquetas", string_cortado[0]);
 	} else {
-		pcb_actual->programCounter = program_counter;
+		pcb_actual->programCounter = (program_counter - 1);
+		log_info(logger, "Program Counter, despues de etiqueta: %d", pcb_actual->programCounter);
 	}
+	int i = 0;
+	while(string_cortado[i] != NULL){
+		free(string_cortado[i]);
+		i++;
+	}
+	free(string_cortado);
 }
 
 void llamarSinRetorno(t_nombre_etiqueta etiqueta){
@@ -232,12 +262,19 @@ void llamarConRetorno(t_nombre_etiqueta etiqueta, t_puntero donde_retornar){
 	retorno->size = 4;
 	nodo->var_retorno = retorno;
 	list_add(pcb_actual->indiceStack, nodo);
-	int program_counter = metadata_buscar_etiqueta(etiqueta, pcb_actual->indiceEtiquetas, pcb_actual->tamanioIndiceEtiquetas);
+	char** string_cortado = string_split(etiqueta, "\n");
+	int program_counter = metadata_buscar_etiqueta(string_cortado[0], pcb_actual->indiceEtiquetas, pcb_actual->tamanioIndiceEtiquetas);
 	if(program_counter == -1){
-		printf("No se encontro la funcion %s en el indice de etiquetas\n", etiqueta);
+		printf("No se encontro la funcion %s en el indice de etiquetas\n", string_cortado[0]);
 	} else {
-		pcb_actual->programCounter = program_counter;
+		pcb_actual->programCounter = (program_counter - 1);
 	}
+	int i = 0;
+	while(string_cortado[i] != NULL){
+		free(string_cortado[i]);
+		i++;
+	}
+	free(string_cortado);
 }
 
 void finalizar(){
@@ -309,22 +346,39 @@ void entradaSalida(t_nombre_dispositivo dispositivo, int tiempo){
 }
 
 void wait(t_nombre_semaforo identificador_semaforo){
+	char** string_cortado = string_split(identificador_semaforo, "\n");
+	log_info(logger, "Semaforo a bajar: %s", string_cortado[0]);
 	void* wait_serializado;
-	int tamanioMensaje = serializarWait(identificador_semaforo, &wait_serializado);
+	int tamanioMensaje = serializarWait(string_cortado[0], &wait_serializado);
 	enviar(socket_nucleo, wait_serializado, tamanioMensaje);
 	free(wait_serializado);
 	char* mensaje = recibir_string_generico(socket_nucleo);
 	if(strcmp(mensaje, "dale para adelante!") != 0){
 		pcb_bloqueado = 1;
+		log_info(logger, "pid: %d bloqueado por semaforo: %s", pcb_actual->pid, string_cortado[0]);
 	}
+	int i = 0;
+	while(string_cortado[i] != NULL){
+		free(string_cortado[i]);
+		i++;
+	}
+	free(string_cortado);
+	free(mensaje);
 }
 
 void signal_primitiva(t_nombre_semaforo identificador_semaforo){
+	char** string_cortado = string_split(identificador_semaforo, "\n");
+	log_info(logger, "Semaforo a subir: %s", string_cortado[0]);
 	void* signal_serializado;
-	int tamanioMensaje = serializarSignal(identificador_semaforo, &signal_serializado);
+	int tamanioMensaje = serializarSignal(string_cortado[0], &signal_serializado);
 	enviar(socket_nucleo, signal_serializado, tamanioMensaje);
 	free(signal_serializado);
-
+	int i = 0;
+	while(string_cortado[i] != NULL){
+		free(string_cortado[i]);
+		i++;
+	}
+	free(string_cortado);
 }
 
 void cerrarCPU(int n){
@@ -416,6 +470,17 @@ char* obtener_instruccion(t_PCB * pcb){
 		string_append(&instruccion, continuacion_instruccion);
 		free(continuacion_instruccion);
 	}
+	char** string_cortado = string_split(instruccion, "\n");
+	free(instruccion);
+	instruccion = string_new();
+	string_append(&instruccion, string_cortado[0]);
+	log_info(logger, "Instruccion obtenida: %s", instruccion);
+	int i = 0;
+	while(string_cortado[i] != NULL){
+		free(string_cortado[i]);
+		i++;
+	}
+	free(string_cortado);
 	return instruccion;
 	//Una vez que se usa la instruccion hay que hacer free
 }
@@ -486,11 +551,12 @@ void continuarEjecucion(int quantum){
 }
 
 void desalojar(){
+	log_info(logger, "Desalojando pid: %d", pcb_actual->pid);
 	void* mensaje = NULL;
 	int tamanioMensaje = serializarPCB(pcb_actual, &mensaje);
 	enviar(socket_nucleo, mensaje, tamanioMensaje);
 	free(mensaje);
-	pcb_destroy(pcb_actual);
+	//pcb_destroy(pcb_actual);
 }
 
 void stackOverflow(){
