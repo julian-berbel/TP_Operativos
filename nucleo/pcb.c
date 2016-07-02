@@ -202,7 +202,7 @@ t_PCB* crearPCB(const char* programa, int pid){
 
 	pcb->pid = pid;
 
-	pcb->programCounter = 0;
+	pcb->programCounter = metadata->instruccion_inicio;
 	pcb->cantidadInstrucciones = metadata->instrucciones_size;
 	pcb->indiceCodigo = crearIndiceCodigo(metadata->instrucciones_size);
 	cargarIndiceCodigo(pcb->indiceCodigo, metadata);

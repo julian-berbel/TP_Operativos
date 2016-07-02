@@ -498,15 +498,19 @@ void esperar(char* identificador, void* cpu){
 	int indice = indiceEnArray(sem_id, identificador);
 	log_info(logger, "Indice encontrado: %d", indice);
 	log_info(logger, "Valor en el indice: %d", semaforosGlobales[indice].valor);
+	pthread_mutex_lock(&mutexSemaforosGlobales);
 	if(semaforosGlobales[indice].valor){
 		semaforosGlobales[indice].valor--;
+		pthread_mutex_unlock(&mutexSemaforosGlobales);
 		enviar_string(((t_cpu*)cpu)->socketCPU, "dale para adelante!");
 	}else{
 		enviar_string(((t_cpu*)cpu)->socketCPU, "bloqueate!");
 		t_elemento_cola* elemento = desalojar(cpu);
 
-		elemento->estado = BLOCK;
 		queue_push(semaforosGlobales[indice].cola_bloqueados, elemento);
+		pthread_mutex_unlock(&mutexSemaforosGlobales);
+
+		elemento->estado = BLOCK;
 		sem_post(&moverPCBs);
 	}
 }
@@ -514,12 +518,15 @@ void esperar(char* identificador, void* cpu){
 void avisar(char* identificador){
 	log_info(logger, "Avisar: id: %s", identificador);
 	int indice = indiceEnArray(sem_id, identificador);
+	pthread_mutex_lock(&mutexSemaforosGlobales);
 	if(queue_peek(semaforosGlobales[indice].cola_bloqueados)){
 		t_elemento_cola* elemento = queue_pop(semaforosGlobales[indice].cola_bloqueados);
+		pthread_mutex_unlock(&mutexSemaforosGlobales);
 		elemento->estado = READY;
 		sem_post(&moverPCBs);
 	}else{
 		semaforosGlobales[indice].valor++;
+		pthread_mutex_unlock(&mutexSemaforosGlobales);
 	}
 }
 
@@ -530,9 +537,8 @@ void entradaSalida(char* identificador, int operaciones, void* cpu){
 
     t_elemento_cola* elemento = desalojar(cpu);
 
-    pedido->elemento = &elemento;
+    pedido->elemento = elemento;
     elemento->estado = BLOCK;
-
     int indice = indiceEnArray(io_id, identificador);
     queue_push(dispositivos[indice].cola_dispositivo, (void*)pedido);
     sem_post(&dispositivos[indice].semaforoDispositivo);
@@ -545,10 +551,10 @@ void threadDispositivo(t_dispositivo* dispositivo){
         sem_wait(&dispositivo->semaforoDispositivo);
         if(flagTerminar) break;
         t_pedido* pedido = queue_pop(dispositivo->cola_dispositivo);
-        if(!*pedido->elemento) break;
+        if(!pedido->elemento) break;
         usleep(dispositivo->retardo * 1000 * pedido->cantidadDeOperaciones);
-        if(!*pedido->elemento) break;
-        (*pedido->elemento)->estado = READY;
+        if(!pedido->elemento) break;
+        pedido->elemento->estado = READY;
         sem_post(&moverPCBs);
     }
 }
@@ -609,7 +615,7 @@ void threadPlanificador(){
 				int j, tamanio = tamanioArray(io_id);
 				for(j = 0; j < tamanio; j++){
 					t_pedido* pedido = list_get(dispositivos[j].cola_dispositivo->elements, j);
-					if((*pedido->elemento) == elemento) (*pedido->elemento) = NULL;
+					if(pedido->elemento == elemento) pedido->elemento = NULL;
 				}
 				tamanio = tamanioArray(sem_id);
 				for(j = 0; j < tamanio; j++) list_remove_by_condition(semaforosGlobales[j].cola_bloqueados->elements, (void*)compararPid);

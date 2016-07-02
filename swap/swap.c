@@ -10,9 +10,10 @@ int main() {
 	int socket_servidor = crear_socket_servidor(ipSwap, puertoSwap);
 	socket_umc = recibirConexion(socket_servidor);
 
-	log_info(logger_pantalla, "Swap y UMC conectados");
+	log_info(logger, "Swap y UMC conectados");
 
-	//inicializo las lista de utilizados en vacio porque no hay nada todavia? o como esta ahora???
+	//inicializo las lista de espacioTotal con la cantidad de paginas y el bit de uso en 0
+	//creo la lista de procesos para su posterior uso
 	espacioTotal = list_create();
 	int iterator;
 
@@ -102,6 +103,7 @@ void cerrar_todo() {
 }
 
 void inicializar(int id_programa, int paginas_requeridas, char* programa) { //testeado
+	log_info(logger, "Inicializando proceso %d", id_programa);
 	if (cant_pags_disponibles() >= paginas_requeridas) {
 		if (hayQueCompactar(paginas_requeridas)) {
 			compactar();
@@ -124,6 +126,7 @@ void inicializar(int id_programa, int paginas_requeridas, char* programa) { //te
 		free(programaRelleno);
 
 		enviar_string(socket_umc, "OK");
+		log_info(logger, "Proceso inicializado %d", id_programa);
 	} else {
 		log_info(logger, "No hay espacio en la swap");
 		enviar_string(socket_umc, "NO OK");
@@ -215,12 +218,14 @@ t_list* paginasAReemplazar(t_list* espaciosLibres, int paginas_requeridas) {
 }
 
 void compactar() {
+	log_info(logger, "Iniciando compactacion");
 	int cantidadEspaciosLibres = list_size(espaciosLibres());
 	while (!(estanPaginasContinuas(espaciosLibres(), cantidadEspaciosLibres))) {
 		recorrerYModificarArchivoYListas();
 	}
 
 	usleep(retardo_compactacion * 1000);
+	log_info(logger, "Compactacion finalizada");
 }
 
 void recorrerYModificarArchivoYListas() {
@@ -305,7 +310,7 @@ void agregarProcesoALista(int id_programa, int paginas_requeridas, char* program
 }
 
 void finalizar(int id_programa) { // testeado
-
+	log_info(logger, "Finalizando proceso %d", id_programa);
 	int j;
 	for (j = 0; j < list_size(listaDeProcesos); j++) {
 		t_proceso* proceso = list_get(listaDeProcesos, j);
@@ -318,7 +323,7 @@ void finalizar(int id_programa) { // testeado
 			j--;
 		}
 		free(proceso);
-
+	log_info(logger, "Proceso finalizado %d", id_programa);
 	}
 
 }
@@ -335,6 +340,7 @@ int cant_pags_disponibles() {
 }
 
 void leer_pagina(int id_programa, int num_pagina) {
+	log_info(logger, "Leyendo pagina %d del programa %d", num_pagina, id_programa);
 	int i;
 	t_list* paginasDelProceso = list_create();
 	int tamanioListaProcesos = list_size(listaDeProcesos);
@@ -365,11 +371,11 @@ void leer_pagina(int id_programa, int num_pagina) {
 		list_remove(paginasDelProceso, i);
 	}
 	list_destroy(paginasDelProceso);
-
+	log_info(logger, "Leida la pagina %d del programa %d", num_pagina, id_programa);
 }
 //NO HABRIA QUE MANDARLE A LA UMC QUE ESTA TODO BIEN??
 void escribir_pagina(int id_programa, int num_pagina, char* buffer) {
-	//recibir(socke_umc);
+	log_info(logger, "Escribiendo la pagina %d del programa %d", num_pagina, id_programa);
 	int i;
 	t_list* paginasDelProceso = list_create();
 	int paginaAEscribir = -1;
@@ -379,7 +385,7 @@ void escribir_pagina(int id_programa, int num_pagina, char* buffer) {
 			list_add(paginasDelProceso, proceso);
 		}
 	}
-	if (list_get(paginasDelProceso, 0) == NULL) //si no encuentra el preoceso
+	if (list_get(paginasDelProceso, 0) == NULL) //si no encuentra el proceso
 		log_info(logger, "No existe la pagina solicitada en la Swap");
 
 	for (i = 0; i <= list_size(paginasDelProceso); i++) {
@@ -392,7 +398,7 @@ void escribir_pagina(int id_programa, int num_pagina, char* buffer) {
 		log_info(logger, "No existe la pagina solicitada en la Swap");
 	else
 		escribirArchivoBinarioEnPag(paginaAEscribir, buffer);
-
+	log_info(logger, "Escrita la pagina %d del programa %d", num_pagina, id_programa);
 }
 
 void terminar() {
