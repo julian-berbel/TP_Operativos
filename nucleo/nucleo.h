@@ -80,7 +80,7 @@ typedef struct{
 
 typedef struct{
 	int cantidadDeOperaciones;
-	t_elemento_cola** elemento;
+	t_elemento_cola* elemento;
 }t_pedido;
 
 typedef struct{
@@ -96,6 +96,7 @@ pthread_mutex_t mutexVariablesGlobales = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t mutexColaReady = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t mutexPID = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t mutexCPUs = PTHREAD_MUTEX_INITIALIZER;
+pthread_mutex_t mutexSemaforosGlobales = PTHREAD_MUTEX_INITIALIZER;
 
 void abrirConfiguracion();
 void cerrar_todo();
