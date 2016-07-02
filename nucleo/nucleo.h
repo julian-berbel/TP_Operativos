@@ -80,7 +80,7 @@ typedef struct{
 
 typedef struct{
 	int cantidadDeOperaciones;
-	t_elemento_cola* elemento;
+	t_elemento_cola** elemento;
 }t_pedido;
 
 typedef struct{

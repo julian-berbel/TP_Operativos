@@ -42,7 +42,9 @@ t_elemento_cola* desalojar(t_cpu* cpu){
 	enviar(cpu->socketCPU, mensaje, tamanioMensaje);
 	free(mensaje);
 
-	t_PCB* pcbActualizado = recibir(cpu->socketCPU);
+	mensaje = recibir(cpu->socketCPU);
+	t_PCB* pcbActualizado = deserializarPCB(mensaje);
+	free(mensaje);
 	t_elemento_cola* elemento = actualizarPCB(colaPCBExec->elements, pcbActualizado);
 
 	cpu->elemento = NULL;
@@ -524,7 +526,7 @@ void entradaSalida(char* identificador, int operaciones, void* cpu){
 
     t_elemento_cola* elemento = desalojar(cpu);
 
-    pedido->elemento = elemento;
+    pedido->elemento = &elemento;
     elemento->estado = BLOCK;
 
     int indice = indiceEnArray(io_id, identificador);
@@ -539,8 +541,10 @@ void threadDispositivo(t_dispositivo* dispositivo){
         sem_wait(&dispositivo->semaforoDispositivo);
         if(flagTerminar) break;
         t_pedido* pedido = queue_pop(dispositivo->cola_dispositivo);
+        if(!*pedido->elemento) break;
         usleep(dispositivo->retardo * 1000 * pedido->cantidadDeOperaciones);
-        pedido->elemento->estado = READY;
+        if(!*pedido->elemento) break;
+        (*pedido->elemento)->estado = READY;
         sem_post(&moverPCBs);
     }
 }
@@ -586,7 +590,7 @@ void threadPlanificador(){
 
 		//lista block
 		for(i = 0; i < listaPCBBlock->elements_count; i++){
-			elemento = list_get(colaPCBExec->elements, i);
+			elemento = list_get(listaPCBBlock, i);
 			if(elemento->estado == READY){
 				pidABuscar = elemento->pcb->pid;
 				list_remove_by_condition(listaPCBBlock, (void*)compararPid);
@@ -599,7 +603,10 @@ void threadPlanificador(){
 				pidABuscar = elemento->pcb->pid;
 				list_remove_by_condition(listaPCBBlock, (void*)compararPid);
 				int j, tamanio = tamanioArray(io_id);
-				for(j = 0; j < tamanio; j++) list_remove_by_condition(dispositivos[j].cola_dispositivo->elements, (void*)compararPid);
+				for(j = 0; j < tamanio; j++){
+					t_pedido* pedido = list_get(dispositivos[j].cola_dispositivo->elements, j);
+					if((*pedido->elemento) == elemento) (*pedido->elemento) = NULL;
+				}
 				tamanio = tamanioArray(sem_id);
 				for(j = 0; j < tamanio; j++) list_remove_by_condition(semaforosGlobales[j].cola_bloqueados->elements, (void*)compararPid);
 				list_add(listaPCBExit, elemento);
