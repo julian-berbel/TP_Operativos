@@ -27,24 +27,28 @@ int main() {
 
 	//CASOS DE PRUEBA
 
-	/*inicializar(1, 2, "hola como estassss");
+	/*debe compactar
+	inicializar(1, 2, "hola como estassss");
 	inicializar(2, 3, "eeeeeeperro come carne humana mm hola como estas");
-	inicializar(3, 2, "agua hola como estass");
-	finalizar(2);
-	inicializar(4, 1, "hola");
-	leer_pagina(4, 1);*/
+	inicializar(3, 1, "agua hola");
+	inicializar(4, 3, "patricio rey y sus redonditos de ricota");
+	inicializar(5, 1, " como estass");
+	finalizar(3);
+	finalizar(5);
+	inicializar(6,2,"abcdefghijklmnopqrstuvxyz1234567");
 
-	/*int k;
-	 for (k = 0; k < list_size(espacioTotal); k++) {
-	 t_swap* procesoPrueba = list_get(espacioTotal, k);
+
+	 int k;
+	 for (k = 0; k < list_size(listaDeProcesos); k++) {
+	 t_proceso* procesoPrueba = list_get(listaDeProcesos, k);
+	 int pid;
 	 int pagina;
-	 int bituso;
 
+	 pid = procesoPrueba->pid;
 	 pagina = procesoPrueba->pagina;
-	 bituso = procesoPrueba->bit_uso;
 
+	 printf("el proceso es %d\n", pid);
 	 printf("la pagina es %d\n", pagina);
-	 printf("el bituso es %d\n", bituso);
 	 }*/
 
 	//FIN CASOS DE PRUEBA
@@ -119,7 +123,6 @@ void inicializar(int id_programa, int paginas_requeridas, char* programa) { //te
 		agregarProcesoALista(id_programa, paginas_requeridas, programaRelleno);
 		free(programaRelleno);
 
-		//escribirArchivoBinario(programaRelleno); //testeado
 		enviar_string(socket_umc, "OK");
 	} else {
 		log_info(logger, "No hay espacio en la swap");
@@ -223,24 +226,21 @@ void compactar() {
 void recorrerYModificarArchivoYListas() {
 
 	char* paginaAMoverEnUso/*, paginaAMoverSinUso*/;
-	int tamTotal = list_size(espacioTotal);
 	int i;
-	for (i = 0; i < tamTotal; i++) { //Recorre la lista de espacioTotal para correr los espacios libres al final del archivo y de la lista
+	for (i = 0; i < list_size(espacioTotal) - 1; i++) { //Recorre la lista de espacioTotal para correr los espacios libres al final del archivo y de la lista
 		t_swap* swap = list_get(espacioTotal, i);
 		t_swap* swapSig = list_get(espacioTotal, i + 1);
 		if (swap->bit_uso == 0 && swapSig->bit_uso == 1) {
 			int j;
-			int tamProcesos = list_size(listaDeProcesos);
-			for (j = 0; j < tamProcesos; j++) { //Recorre lista de procesos para asignarle la nueva pagina
+			for (j = 0; j < list_size(listaDeProcesos); j++) { //Recorre lista de procesos para asignarle la nueva pagina
 				t_proceso* proceso = list_get(listaDeProcesos, j);
 				if (proceso->pagina == swapSig->pagina) {
 					proceso->pagina = swap->pagina;
 					list_replace(listaDeProcesos, j, proceso);
-					j = tamProcesos; //para que salga del for y no recorra toda la lista
+					j = list_size(listaDeProcesos); //para que salga del for y no recorra toda la lista
 				}
 			}
 			paginaAMoverEnUso = leerArchivoBinarioEnPagina(swapSig->pagina);
-			//paginaAMoverSinUso = leerArchivoBinarioEnPagina()
 			escribirArchivoBinarioEnPag(swap->pagina, paginaAMoverEnUso);
 			swap->bit_uso = 1;
 			swapSig->bit_uso = 0;
