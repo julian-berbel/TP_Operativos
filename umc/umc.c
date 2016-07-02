@@ -698,11 +698,11 @@ int reemplazar_MP(int idp, int num_pagina) { //testeado
 	if (tabla_procesos[idp][pagina_victima].modificado) {
 			//enviar a swap que escriba la pagina victima (en swap quedo desactualizada)
 			void* mensaje;
+			log_info(logger, "Marco destino: %d", marco_destino);
 			char* pagina=leer_posicion_memoria(marco_destino*marco_size,marco_size);
 			log_info(logger, "contenido: %s, tamanio: %d", pagina, string_length(pagina));
 			int tamanioMensaje = serializarEscribirPagina(idp, pagina_victima,pagina,&mensaje);
 			enviar(socket_swap, mensaje, tamanioMensaje);
-
 	}
 	return marco_destino;
 

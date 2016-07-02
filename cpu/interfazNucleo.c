@@ -137,11 +137,15 @@ int serializarCerrarCPU(void** serializacion){
 
 int serializarProgramaTerminado(void** serializacion){
 	log_info(logger, "Serializando: Programa Terminado");
-	int tamanio = sizeof(interfazNucleo);
+	/*int tamanio = sizeof(interfazNucleo);
 	*serializacion = malloc(tamanio);
 
-	*(interfazNucleo*)*serializacion = PROGRAMA_TERMINADO;
+	*(interfazNucleo*)*serializacion = 8;//8
 
+	return tamanio;*/
+	int tamanio = sizeof(int);
+	*serializacion = malloc(tamanio);
+	*(interfazNucleo*)*serializacion = PROGRAMA_TERMINADO;
 	return tamanio;
 }
 

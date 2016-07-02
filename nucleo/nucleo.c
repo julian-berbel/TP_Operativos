@@ -14,7 +14,6 @@ void imprimir(char* mensaje, void* cpu){
 	if(((t_cpu*) cpu)->elemento->estado == EXIT) return;
 	log_info(logger, "Imprimir: mensaje: %s", mensaje);
 	int socket_consola = buscarSocketConsola(((t_cpu*)cpu)->elemento->pcb->pid);
-
 	void* mensajeSerializado;
 	int tamanio = serializarImprimir(mensaje, &mensajeSerializado);
 	enviar(socket_consola, mensajeSerializado, tamanio);
@@ -664,8 +663,8 @@ void matarProceso(t_elemento_cola* elemento){
 	if(socket != -1){
 		tamanioSerializacion = serializarTerminar(&mensaje);
 		enviar(buscarSocketConsola(elemento->pcb->pid), mensaje, tamanioSerializacion);
+		free(mensaje);
 	}
-	free(mensaje);
 	pcb_destroy(elemento->pcb);
 	//free(elemento);
 }
