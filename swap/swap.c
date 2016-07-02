@@ -119,7 +119,7 @@ void inicializar(int id_programa, int paginas_requeridas, char* programa) { //te
 		char* programaRelleno = string_new();
 		string_append(&programaRelleno, programa);
 		string_append(&programaRelleno, caracteresDeRelleno);
-		string_append(&programaRelleno, "\0");
+		//string_append(&programaRelleno, "\0");
 		free(caracteresDeRelleno);
 
 		agregarProcesoALista(id_programa, paginas_requeridas, programaRelleno);
@@ -323,9 +323,9 @@ void finalizar(int id_programa) { // testeado
 			j--;
 		}
 		free(proceso);
-	log_info(logger, "Proceso finalizado %d", id_programa);
-	}
 
+	}
+	log_info(logger, "Proceso finalizado %d", id_programa);
 }
 
 int cant_pags_disponibles() {

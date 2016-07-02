@@ -7,10 +7,11 @@ int buscarSocketConsola(int pid){
 	}
 
 	t_consola* consola = list_find(consolas, (void*)compararPid);
-	return consola->socketConsola;
+	return consola ? consola->socketConsola : -1;
 }
 
 void imprimir(char* mensaje, void* cpu){
+	if(((t_cpu*) cpu)->elemento->estado == EXIT) return;
 	log_info(logger, "Imprimir: mensaje: %s", mensaje);
 	int socket_consola = buscarSocketConsola(((t_cpu*)cpu)->elemento->pcb->pid);
 
@@ -52,6 +53,7 @@ t_elemento_cola* desalojar(t_cpu* cpu){
 }
 
 void quantumTerminado(void* cpu){
+	if(((t_cpu*) cpu)->elemento->estado == EXIT) return;
 	log_info(logger, "Quantum Terminado: pid: %d", ((t_cpu*)cpu)->elemento->pcb->pid);
 	void* mensaje;
 	int tamanioMensaje;
@@ -189,7 +191,11 @@ void threadReceptorYEscuchaConsolas(){
 			free(mensaje);
 		}else{
 			for(i = 0; i < consolas->elements_count; i++){
-				if (FD_ISSET(consola->socketConsola, bagDeSockets)) list_remove_and_destroy_element(consolas, i,(void*) destruirConsola);
+				consola = list_get(consolas, i);
+				if (FD_ISSET(consola->socketConsola, bagDeSockets)){
+					printf("Destruyendo una consola\n");
+					list_remove_and_destroy_element(consolas, i,(void*) destruirConsola);
+				}
 			}
 		}
 	}
@@ -654,8 +660,11 @@ void matarProceso(t_elemento_cola* elemento){
 	void* mensaje;
 	int tamanioSerializacion = serializarFinalizar(elemento->pcb->pid, &mensaje);
 	enviar(socket_umc, mensaje, tamanioSerializacion);
-	tamanioSerializacion = serializarTerminar(&mensaje);
-	enviar(buscarSocketConsola(elemento->pcb->pid), mensaje, tamanioSerializacion);
+	int socket = buscarSocketConsola(elemento->pcb->pid);
+	if(socket != -1){
+		tamanioSerializacion = serializarTerminar(&mensaje);
+		enviar(buscarSocketConsola(elemento->pcb->pid), mensaje, tamanioSerializacion);
+	}
 	free(mensaje);
 	pcb_destroy(elemento->pcb);
 	//free(elemento);

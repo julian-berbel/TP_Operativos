@@ -290,21 +290,27 @@ void copiar_pagina_en_memoria(int idp,int num_pagina,char* contenido_pagina){
 							escribir_posicion_memoria(marco_libre * marco_size, marco_size,	contenido_pagina);
 							escribir_marco_en_TP(idp, num_pagina, marco_libre);
 							marco_ocupado(marco_libre);
-							escribir_marco_en_tlb(idp,num_pagina,marco_libre);
+							if (tlb_habilitada){
+								escribir_marco_en_tlb(idp,num_pagina,marco_libre);
+							}
 							}else {//memoria ocupada
 							log_info(logger, "No se encontraron marcos libres en memoria, se reemplazara una pagina del proceso");
 						//reemplazo local
 						int marco = reemplazar_MP(idp, num_pagina);
 						escribir_posicion_memoria(marco * marco_size, marco_size,contenido_pagina);
 						escribir_marco_en_TP(idp, num_pagina, marco);
-						escribir_marco_en_tlb(idp,num_pagina,marco);
+						if(tlb_habilitada){
+							escribir_marco_en_tlb(idp,num_pagina,marco);
+						}
 							}
 					}else {//ya tiene todos los marcos asignados
 						log_info(logger, "El proceso tiene asignados todos los marcos, reemplazo local");
 						int marco_destino = reemplazar_MP(idp, num_pagina);
 						escribir_posicion_memoria(marco_destino * marco_size, marco_size,contenido_pagina);
 						escribir_marco_en_TP(idp, num_pagina, marco_destino);
-						escribir_marco_en_tlb(idp,num_pagina,marco_destino);
+						if(tlb_habilitada){
+							escribir_marco_en_tlb(idp,num_pagina,marco_destino);
+						}
 						log_info(logger, "Actualización de la tabla de paginas del proceso %d",idp);
 					}
 }
@@ -380,6 +386,7 @@ void escribir_marco_en_TP(int idp, int pagina, int marco) { //al guardar en MP d
 }
 
 void escribir_marco_en_tlb(int idp, int num_pagina, int marco) {	//testeado
+	if (tlb_habilitada){
 	log_info(logger, "Nueva entrada en la TLB: pagina %d del proceso %d en el marco %d",num_pagina,idp,marco);
 	int indice_libre = buscar_indice_libre_tlb();
 	if (indice_libre != -1) { //si hay un indice libre
@@ -397,7 +404,7 @@ void escribir_marco_en_tlb(int idp, int num_pagina, int marco) {	//testeado
 		tlb[indice_menos_accedido].uso = 0;
 	}
 }
-
+}
 void marco_ocupado(int num_marco) { 	//testeado
 	marcos_libres[num_marco] = 1;
 }
@@ -692,10 +699,10 @@ int reemplazar_MP(int idp, int num_pagina) { //testeado
 			//enviar a swap que escriba la pagina victima (en swap quedo desactualizada)
 			void* mensaje;
 			char* pagina=leer_posicion_memoria(marco_destino*marco_size,marco_size);
+			log_info(logger, "contenido: %s, tamanio: %d", pagina, string_length(pagina));
 			int tamanioMensaje = serializarEscribirPagina(idp, pagina_victima,pagina,&mensaje);
-			pthread_mutex_lock(&lock);
 			enviar(socket_swap, mensaje, tamanioMensaje);
-			pthread_mutex_unlock(&lock);
+
 	}
 	return marco_destino;
 
