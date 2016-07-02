@@ -467,10 +467,14 @@ char* obtener_instruccion(t_PCB * pcb){
 		bytes_a_leer_primera_pagina = tamanio_pagina - offset;
 		instruccion = pedir_bytes_umc(num_pagina, offset, bytes_a_leer_primera_pagina);
 		log_info(logger, "Primer parte de instruccion: %s", instruccion);
-		continuacion_instruccion = pedir_bytes_umc((num_pagina + 1), 0, (bytes_tamanio_instruccion - bytes_a_leer_primera_pagina - 1));
-		log_info(logger, "Continuacion ejecucion: %s", continuacion_instruccion);
-		string_append(&instruccion, continuacion_instruccion);
-		free(continuacion_instruccion);
+		if((bytes_tamanio_instruccion - bytes_a_leer_primera_pagina) > 0){
+			continuacion_instruccion = pedir_bytes_umc((num_pagina + 1), 0, (bytes_tamanio_instruccion - bytes_a_leer_primera_pagina));
+			log_info(logger, "Continuacion ejecucion: %s", continuacion_instruccion);
+			string_append(&instruccion, continuacion_instruccion);
+			free(continuacion_instruccion);
+		}else{
+			log_info(logger, "La continuacion de la instruccion es 0. Ni la leo");
+		}
 	}
 	char** string_cortado = string_split(instruccion, "\n");
 	free(instruccion);
@@ -562,10 +566,10 @@ void desalojar(){
 }
 
 void stackOverflow(){
-	log_info("pid %d sufrio stack overflow", pcb_actual->pid);
+	log_info(logger, "pid %d sufrio stack overflow", pcb_actual->pid);
 	char *mensaje = string_new();
 	string_append(&mensaje, "Stack Overflow");
-	imprimirTexto(mensaje);
+	imprimirTexto("Stack Overflow");
 	free(mensaje);
 	finalizar();
 }

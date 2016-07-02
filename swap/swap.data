@@ -1,25 +1,15 @@
 #!/usr/bin/ansisop
-#Overflow en el numero 3*4 + 5 % 300 = 16
-begin
-	variables r
-	r <- f 0
-end
+begin	
+	:etiqueta
+	
+	wait b
+		!colas = !colas +1
+	signal c
+	
+	#Ciclar indefinidamente
+	goto etiqueta
 
-function f
-	variables a, r
-	io HDD1 5
-	a=$0+1
-	print a
-	r <- g a
-end
-
-function g
-	variables a, r
-	io HDD1 1
-	a=$0+1
-	print a
-	r <- f a
 end
 
 
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 
