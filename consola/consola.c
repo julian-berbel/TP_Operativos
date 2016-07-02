@@ -56,7 +56,8 @@ char* leerArchivo(char* ruta){
 		fseek (f, 0, SEEK_END);
 		largo = ftell (f);
 		fseek (f, 0, SEEK_SET);
-		buffer = malloc (largo);
+		buffer = malloc (largo + 1);
+		memset(buffer, '\0', (largo + 1));
 		if (buffer) fread (buffer, 1, largo, f);
 		fclose (f);
 	}else{

@@ -534,7 +534,7 @@ void entradaSalida(char* identificador, int operaciones, void* cpu){
 }
 
 void threadDispositivo(t_dispositivo* dispositivo){
-	log_info(logger, "Iniciado Thread de dispositivo: thread: %d", dispositivo->hiloDispositivo);
+	//log_info(logger, "Iniciado Thread de dispositivo: thread: %d", dispositivo->hiloDispositivo);
     while(!flagTerminar){
         sem_wait(&dispositivo->semaforoDispositivo);
         if(flagTerminar) break;
@@ -641,7 +641,7 @@ void matarProceso(t_elemento_cola* elemento){
 	enviar(buscarSocketConsola(elemento->pcb->pid), mensaje, tamanioSerializacion);
 	free(mensaje);
 	pcb_destroy(elemento->pcb);
-	free(elemento);
+	//free(elemento);
 }
 
 _Bool estaLibre(t_cpu* cpu){

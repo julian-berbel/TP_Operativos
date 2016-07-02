@@ -19,7 +19,11 @@ int serializarCargarPCB(t_PCB* pcb, void** serializacion){
 	*((int*) aux) = quantum;
 	aux += sizeof(int);
 
-	serializarPCB(pcb, aux);
+	//serializarPCB(pcb, aux);
+	void* puntero = NULL;
+	int tamanio_pcb_serializado = serializarPCB(pcb, &puntero);
+	memcpy(aux, puntero, tamanio_pcb_serializado);
+	free(puntero);
 
 	return tamanio;
 }
@@ -27,7 +31,7 @@ int serializarCargarPCB(t_PCB* pcb, void** serializacion){
 int serializarTerminar(void** serializacion){
 	log_info(logger, "Serializando: Terminar");
 	*serializacion = malloc(sizeof(interfazCPU));
-	*(interfazCPU*)*serializacion = TERMINAR;
+	*(interfazCPU*)*serializacion = 1;
 
 	return sizeof(interfazCPU);
 }

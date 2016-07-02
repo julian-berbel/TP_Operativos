@@ -20,7 +20,6 @@ void procesarMensaje(void* mensaje, void* dataAdicional){
 	log_info(logger, "Procesando mensaje");
 	interfazPropia tipo = *((interfazPropia*) mensaje);
 	void* aux = mensaje + sizeof(interfazPropia);
-
 	(*deserializadores[tipo])(aux, dataAdicional);
 	free(mensaje);
 }

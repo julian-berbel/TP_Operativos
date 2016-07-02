@@ -186,11 +186,13 @@ void inicializar(int id_programa, int paginas_requeridas, char* programa, void* 
 	int tamanioMensaje = serializarInicializar(id_programa, paginas_requeridas, programa, &mensaje);
 	pthread_mutex_lock(&lock);
 	enviar(socket_swap, mensaje, tamanioMensaje);
+	free(mensaje);
 	char* respuesta = recibir_string_generico(socket_swap);
 	enviar_string(((t_cliente*)cliente)->socket, respuesta);
 	if(!strcmp(respuesta,"OK")){
 	crear_tabla_de_paginas(id_programa, paginas_requeridas); //testeado
 	}
+	free(respuesta);
 	pthread_mutex_unlock(&lock);
 }
 
@@ -203,6 +205,7 @@ void finalizar(int id_programa) {
 		pthread_mutex_lock(&lock);
 		enviar(socket_swap, mensaje, tamanioMensaje);
 		pthread_mutex_unlock(&lock);
+		free(mensaje);
 }
 
 void leer_pagina(int num_pagina, int offset, size_t t, void* cpu) {
@@ -213,6 +216,7 @@ void leer_pagina(int num_pagina, int offset, size_t t, void* cpu) {
 		log_info(logger, "Pagina %d, encontrada en memoria en el marco %d",num_pagina,marco);
 		char* contenido = leer_posicion_memoria(marco * marco_size + offset, t);
 		enviar_string(((t_cliente*)cpu)->socket,contenido);
+		free(contenido);
 
 	} else { //no esta en MP
 		log_info(logger, "Page Fault, no se encontró la pagina %d en memoria",num_pagina);
@@ -226,6 +230,7 @@ void leer_pagina(int num_pagina, int offset, size_t t, void* cpu) {
 		void* mensaje;
 		int tamanioMensaje = serializarLeerPagina(idp, num_pagina, &mensaje);
 		enviar(socket_swap, mensaje, tamanioMensaje);
+		free(mensaje);
 		char* contenido_pagina=recibir_string_generico(socket_swap);
 		//copiar en memoria la pagina
 		log_info(logger, "Copia de la pagina %d en memoria",num_pagina);
@@ -234,6 +239,8 @@ void leer_pagina(int num_pagina, int offset, size_t t, void* cpu) {
 		log_info(logger, "Lectura de la pagina %d",num_pagina);
 		char* contenido = leer_posicion_memoria(tabla_procesos[idp][num_pagina].marco * marco_size + offset, t);
 		enviar_string(((t_cliente*)cpu)->socket,contenido);
+		free(contenido);
+		free(contenido_pagina);
 		}
 	}
 	pthread_mutex_unlock(&lock);
@@ -259,10 +266,12 @@ void escribir_pagina(int num_pagina, int offset, size_t t, char *buffer,void* cp
 		void* mensaje;
 				int tamanioMensaje = serializarLeerPagina(idp, num_pagina, &mensaje);
 				enviar(socket_swap, mensaje, tamanioMensaje);
+				free(mensaje);
 				char* contenido_pagina=recibir_string_generico(socket_swap);
 		//copiar pagina en memoria
 			log_info(logger, "Copia de la pagina %d del proceso %d en memoria",num_pagina,idp);
 		copiar_pagina_en_memoria(idp,num_pagina,contenido_pagina);
+		free(contenido_pagina);
 		//retomo el pedido de escritura
 		escribir_posicion_memoria(tabla_procesos[idp][num_pagina].marco* marco_size + offset, t, buffer);
 			}
@@ -402,6 +411,7 @@ void escribir_posicion_memoria(int posicion, size_t tamanio, char *buffer) {
 	int i;
 	for (i = 0; i < tamanio; i++)
 		memoria[posicion + i] = buffer[i];
+
 }
 
 char* leer_posicion_memoria(int posicion, size_t tamanio) {
@@ -456,7 +466,7 @@ int buscar_indice_menos_accedido_tlb() { //testeado
 
 void flush(int idp) { //cuando cambia el proceso activo limpio el proceso viejo de la tlb
 	if(tlb_habilitada){
-	log_info(logger, "Limpieza del proceso %d de la TLB por cambio de proceso activo");
+	//log_info(logger, "Limpieza del proceso %d de la TLB por cambio de proceso activo", idp);
 	int i = 0;
 	for (i = 0; i < entradas_tlb; i++) {
 		if (tlb[i].idp == idp) {

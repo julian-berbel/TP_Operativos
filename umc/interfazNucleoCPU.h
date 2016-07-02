@@ -10,6 +10,9 @@
 
 #include <stdlib.h>
 #include <commons/log.h>
+#include <string.h>
+#include <stdio.h>
+#include <commons/string.h>
 
 typedef enum {/*INICIALIZAR, TERMINAR,*/ SOLICITAR = 2, ALMACENAR = 3/*, FINALIZAR*/, CAMBIAR_PROCESO_ACTIVO} interfazPropia;
 

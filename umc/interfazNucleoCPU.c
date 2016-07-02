@@ -50,6 +50,8 @@ void deserializarAlmacenar(void* parametrosSerializados, void* cliente){
 
 	buffer = parametrosSerializados;
 
+
+
 	log_info(logger, "Deserializado: Escribir Pagina: num_pagina: %d, offset: %d, t: %d, buffer: %s", num_pagina, offset, t, buffer);
 	escribir_pagina(num_pagina, offset, t, buffer, cliente);
 }

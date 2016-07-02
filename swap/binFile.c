@@ -30,6 +30,7 @@ void crearArchivoBinario(char* nombre_data, int pagina_size, int cant_paginas) {
 	string_append(&comando, " count=1");
 
 	system(comando);
+	free(comando);
 
 }
 
@@ -44,7 +45,9 @@ char* tamanioArchivo(int pagina_tamanio, int cantidad_pags) {
 }
 
 void abrirArchivoBinario(){
-	archivo = fopen(rutaArchivoSwap(), "w+");
+	char* ruta = rutaArchivoSwap();
+	archivo = fopen(ruta, "w+");
+	free(ruta);
 }
 
 
@@ -79,7 +82,8 @@ char* leerArchivoBinarioEnPagina(int numPagina) {
 
 	usleep(retardo_acceso * 1000);
 	//archivo = fopen(rutaArchivoSwap(), "rb+");
-	char* buffer = malloc(pagina_size);
+	char* buffer = malloc(pagina_size + 1);
+	memset(buffer, '\0', (pagina_size + 1));
 	fseek(archivo, paginaEnBytes(numPagina), SEEK_SET);
 	fread(buffer, pagina_size, 1, archivo);
 	//fclose(archivo);

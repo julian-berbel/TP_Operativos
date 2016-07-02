@@ -32,6 +32,7 @@ void* recibir(int socket){
 	int checkSocket = -1;
 
 	void* recibido = malloc(sizeof(int));
+	memset(recibido, '\0', sizeof(int));
 
 	checkSocket = read(socket, recibido, sizeof(int));
 
@@ -41,7 +42,8 @@ void* recibir(int socket){
 
 	if(!checkSocket) return NULL;
 
-	recibido = malloc(tamanioDelMensaje);
+	recibido = malloc(tamanioDelMensaje + 1);
+	memset(recibido, '\0', (tamanioDelMensaje + 1));
 
 	int bytesRecibidos = 0;
 

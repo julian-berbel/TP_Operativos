@@ -429,6 +429,7 @@ char* pedir_bytes_umc(int num_pagina, int offset, int tamanio){
 	char* recibido = recibir(socket_umc);
 	string_append(&instruccion, recibido);
 	free(recibido);
+	free(pedido);
 	return instruccion;
 }
 
@@ -475,6 +476,7 @@ void ejecutarInstruccion(){
 
 void terminar(){
 	// terminar lo recibe cuando se cierra el nucleo.
+	log_info(logger, "Se envio desde el nucleo la señal para cerrarse. Comenzando cierre del CPU");
 	flagTerminar = 1;
 }
 

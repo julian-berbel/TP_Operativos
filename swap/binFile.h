@@ -14,6 +14,7 @@
 #include <commons/string.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <string.h>
 
 #define RUTA_BINFILE "/home/utnso/tp-2016-1c-Hellfish-Group/swap/"
 
