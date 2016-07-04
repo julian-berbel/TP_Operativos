@@ -134,6 +134,7 @@ t_puntero definirVariable(t_nombre_variable variable) {
 }
 
 t_puntero obtenerPosicionVariable(t_nombre_variable variable) {
+	log_info(logger, "Obteniendo la posicion de la variable: %c", variable);
 	int nodos_stack = list_size(pcb_actual->indiceStack);
 	int cantidad_variables;
 	int i;
@@ -172,9 +173,11 @@ t_valor_variable dereferenciar(t_puntero puntero) {
 	int num_pagina = puntero / tamanio_pagina;
 	int offset = puntero - (num_pagina * tamanio_pagina);
 	char *valor_variable_char = pedir_bytes_umc(num_pagina, offset, 4);
+	log_info(logger, "Valor Obtenido de la umc: %s", valor_variable_char);
 	char *ptr;
 	int valor_variable = strtol(valor_variable_char, &ptr, 10);
 	free(valor_variable_char);
+	log_info(logger, "dereferenciar: Valor Obtenido: %d", valor_variable);
 	return valor_variable;
 }
 
@@ -183,6 +186,7 @@ void asignar(t_puntero puntero, t_valor_variable variable) {
 	int offset = puntero - (num_pagina * tamanio_pagina);
 	char *valor_variable = string_itoa(variable);
 	enviar_bytes_umc(num_pagina, offset, 4, valor_variable);
+	log_info(logger, "asignar: Valor a Asignar: %s", valor_variable);
 	free(valor_variable);
 }
 

@@ -220,6 +220,7 @@ void leer_pagina(int num_pagina, int offset, size_t t, void* cpu) {
 		log_info(logger, "Pagina %d, encontrada en memoria en el marco %d",num_pagina,marco);
 		char* contenido = leer_posicion_memoria(marco * marco_size + offset, t);
 		enviar_string(((t_cliente*)cpu)->socket,contenido);
+		log_info(logger, "Contenido enviado: %s", contenido);
 		free(contenido);
 
 	} else { //no esta en MP
@@ -242,6 +243,7 @@ void leer_pagina(int num_pagina, int offset, size_t t, void* cpu) {
 		log_info(logger, "Lectura de la pagina %d",num_pagina);
 		char* contenido = leer_posicion_memoria(tabla_procesos[idp][num_pagina].marco * marco_size + offset, t);
 		enviar_string(((t_cliente*)cpu)->socket,contenido);
+		log_info(logger, "Contenido enviado: %s", contenido);
 		free(contenido);
 		free(contenido_pagina);
 		}

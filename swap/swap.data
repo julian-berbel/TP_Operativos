@@ -1,15 +1,26 @@
 #!/usr/bin/ansisop
-begin	
-	:etiqueta
+begin
+variables f, i, t
+
+	#`i`: Iterador
+	i=0
 	
-	wait b
-		!colas = !colas +1
-	signal c
+	#`f`: Hasta donde contar
+	f=20
+	:inicio
+
+	#Incrementar el iterador
+	i=i+1
 	
-	#Ciclar indefinidamente
-	goto etiqueta
+	#Imprimir el contador
+	print i
+
+	#`t`: Comparador entre `i` y `f`
+	t=f-i
+	#De no ser iguales, salta a inicio
+	jnz t inicio
 
 end
 
 
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 
+             20                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              
