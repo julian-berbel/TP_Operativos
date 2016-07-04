@@ -98,7 +98,7 @@ pthread_mutex_t mutexPID = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t mutexCPUs = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t mutexSemaforosGlobales = PTHREAD_MUTEX_INITIALIZER;
 
-void abrirConfiguracion();
+void init();
 void cerrar_todo();
 
 void cancelar(void* consola);

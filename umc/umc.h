@@ -79,11 +79,11 @@ typedef struct{
 
 char* memoria;
 int *marcos_libres;
-tabla_paginas tabla_procesos[50][20];
+tabla_paginas tabla_procesos[20][50];
 TLB *tlb;
-int cant_paginas_procesos[50];
-int procesos_ocupados[50];
-int punteros_clock[50];
+int cant_paginas_procesos[20];
+int procesos_ocupados[20];
+int punteros_clock[20];
 
 
 void crear_tabla_de_paginas(int idp, int paginas_requeridas);
@@ -102,6 +102,8 @@ void aumentar_uso_tlb(int idp,int num_pagina);
 int buscar_indice_menos_accedido_tlb();
 void flush (int idp);
 void copiar_pagina_en_memoria(int idp,int num_pagina,char* contenido_pagina);
+void vaciar_marco(int marco);
+void borrar_marcos(int idp);
 
 //operaciones de consola
 void modificar_retardo(int ret);
