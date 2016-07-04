@@ -69,7 +69,6 @@ void threadInterpreteConsola() {
 
 	free(mensaje);
 }
-
 int main(int cantidadArgumentos, char* argumentos[]) {
 
  abrirConfiguracion();
@@ -107,7 +106,7 @@ int main(int cantidadArgumentos, char* argumentos[]) {
 
 void inicializar_estructuras(){
 	int i;
-	 for (i = 0; i < 50; i++) {
+	 for (i = 0; i < 20; i++) {
 	 punteros_clock[i] = 0;	//comienzan apuntando a la pagina 0
 	 }
 	 //array de disponibilidad de marcos
@@ -118,7 +117,7 @@ void inicializar_estructuras(){
 	 }
 	 //array con la cantidad de paginas de cada proceso y procesos ocupados
 
-	 for (i = 0; i < 50; i++) { //inicializo en cero
+	 for (i = 0; i < 20; i++) { //inicializo en cero
 	 cant_paginas_procesos[i] = 0;
 	 procesos_ocupados[i] = 0;
 	 }
@@ -201,8 +200,9 @@ void inicializar(int id_programa, int paginas_requeridas, char* programa, void* 
 }
 
 void finalizar(int id_programa) {
-	memset(tabla_procesos[id_programa], '0', sizeof(tabla_paginas) * 20);
+	borrar_marcos(id_programa);
 	procesos_ocupados[id_programa] = 0;
+	flush(id_programa);
 	//avisar al swap para que libere memoria
 	void* mensaje;
 		int tamanioMensaje = serializarFinalizar(id_programa, &mensaje);
@@ -210,6 +210,25 @@ void finalizar(int id_programa) {
 		enviar(socket_swap, mensaje, tamanioMensaje);
 		pthread_mutex_unlock(&lock);
 		free(mensaje);
+}
+
+void borrar_marcos(int idp){
+	int i;
+	int paginas=cant_paginas_procesos[idp];
+	for(i=0;i<paginas;i++){
+		if(tabla_procesos[idp][i].presencia==1){
+			int marco= tabla_procesos[idp][i].marco;
+			vaciar_marco(marco);
+			marcos_libres[marco]=0;
+		}
+	}
+}
+
+void vaciar_marco(int marco){
+	int i;
+	for(i=0;i<marco_size;i++){
+		memoria[marco*marco_size+i]=' ';
+	}
 }
 
 void leer_pagina(int num_pagina, int offset, size_t t, void* cpu) {
@@ -236,6 +255,7 @@ void leer_pagina(int num_pagina, int offset, size_t t, void* cpu) {
 		enviar(socket_swap, mensaje, tamanioMensaje);
 		free(mensaje);
 		char* contenido_pagina=recibir_string_generico(socket_swap);
+		log_info(logger,"se recibio la pagina, contenido: %s",contenido_pagina);
 		//copiar en memoria la pagina
 		log_info(logger, "Copia de la pagina %d en memoria",num_pagina);
 		copiar_pagina_en_memoria(idp,num_pagina,contenido_pagina);
@@ -422,7 +442,7 @@ void cambiar_proceso_activo(int idp, void* cliente) {
 
 void escribir_posicion_memoria(int posicion, size_t tamanio, char *buffer) {
 	usleep(retardo * 1000);
-	/*memcpy(memoria[posicion],buffer,tamanio);*/
+
 	int i;
 	for (i = 0; i < tamanio; i++)
 		memoria[posicion + i] = buffer[i];
@@ -700,7 +720,7 @@ int reemplazar_MP(int idp, int num_pagina) { //testeado
 	if (tabla_procesos[idp][pagina_victima].modificado) {
 			//enviar a swap que escriba la pagina victima (en swap quedo desactualizada)
 			void* mensaje;
-			log_info(logger, "Marco destino: %d", marco_destino);
+			log_info(logger,"pedido de escritura de la pagina en swap");
 			char* pagina=leer_posicion_memoria(marco_destino*marco_size,marco_size);
 			log_info(logger, "contenido: %s, tamanio: %d", pagina, string_length(pagina));
 			int tamanioMensaje = serializarEscribirPagina(idp, pagina_victima,pagina,&mensaje);
@@ -709,6 +729,8 @@ int reemplazar_MP(int idp, int num_pagina) { //testeado
 	return marco_destino;
 
 }
+
+
 void sacar_pagina_de_tlb(int idp,int pagina){
 	if(tlb_habilitada){
 	log_info(logger, "Sacar de la TLB la pagina: %d, del proceso %d",pagina,idp);

@@ -358,7 +358,8 @@ void leer_pagina(int id_programa, int num_pagina) {
 			t_proceso* proceso = list_get(paginasDelProceso, i); //fijarse bien si es menos uno, creo que si
 			char* paginaLeida = leerArchivoBinarioEnPagina(proceso->pagina);
 			//PRUEBA
-			//printf("esto es lo leido %s\n", paginaLeida);
+			log_info(logger,"esto es lo leido %s\n", paginaLeida);
+
 			enviar(socket_umc, paginaLeida, (pagina_size + 1));
 			free(paginaLeida);
 
