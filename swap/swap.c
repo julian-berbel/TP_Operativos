@@ -28,8 +28,8 @@ int main() {
 
 	//CASOS DE PRUEBA
 
-	/*debe compactar
-	inicializar(1, 2, "hola como estassss");
+	//debe compactar
+	/*inicializar(1, 2, "hola como estassss");
 	inicializar(2, 3, "eeeeeeperro come carne humana mm hola como estas");
 	inicializar(3, 1, "agua hola");
 	inicializar(4, 3, "patricio rey y sus redonditos de ricota");
@@ -68,6 +68,8 @@ int main() {
 
 	return 0;
 }
+
+
 
 void abrirConfiguracion() {
 	configuracion_swap = config_create(RUTA_CONFIG);
@@ -316,6 +318,7 @@ void finalizar(int id_programa) { // testeado
 		t_proceso* proceso = list_get(listaDeProcesos, j);
 		if (proceso->pid == id_programa) {
 			int paginaALiberar = proceso->pagina;
+			//escribir_pagina(id_programa,paginaALiberar,' '); //AGREGO ESTO
 			list_remove(listaDeProcesos, j);
 			t_swap* swap = list_get(espacioTotal, paginaALiberar);
 			swap->bit_uso = 0;
@@ -357,8 +360,7 @@ void leer_pagina(int id_programa, int num_pagina) {
 		if (i == num_pagina) {
 			t_proceso* proceso = list_get(paginasDelProceso, i); //fijarse bien si es menos uno, creo que si
 			char* paginaLeida = leerArchivoBinarioEnPagina(proceso->pagina);
-			//PRUEBA
-			//printf("esto es lo leido %s\n", paginaLeida);
+			log_info(logger, "esto es lo leido %s\n", paginaLeida);
 			enviar(socket_umc, paginaLeida, (pagina_size + 1));
 			free(paginaLeida);
 
@@ -375,6 +377,13 @@ void leer_pagina(int id_programa, int num_pagina) {
 }
 //NO HABRIA QUE MANDARLE A LA UMC QUE ESTA TODO BIEN??
 void escribir_pagina(int id_programa, int num_pagina, char* buffer) {
+	/*int o =string_length(buffer);
+	if(o != pagina_size){
+		for(o = string_length(buffer); (o == pagina_size); o++){
+			string_append(&buffer, " ");
+		}
+
+	}*/
 	log_info(logger, "Escribiendo la pagina %d del programa %d", num_pagina, id_programa);
 	int i;
 	t_list* paginasDelProceso = list_create();

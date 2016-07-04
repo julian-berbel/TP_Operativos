@@ -702,7 +702,11 @@ int reemplazar_MP(int idp, int num_pagina) { //testeado
 			void* mensaje;
 			log_info(logger, "Marco destino: %d", marco_destino);
 			char* pagina=leer_posicion_memoria(marco_destino*marco_size,marco_size);
-			log_info(logger, "contenido: %s, tamanio: %d", pagina, string_length(pagina));
+			log_info(logger, "contenido: %s, tamanio: %d", pagina, sizeof(pagina));
+			char* variable = malloc(20);
+			memset(variable, '\0', 20);
+			log_info(logger, "tamanio variable: %d", sizeof(variable));
+			free(variable);
 			int tamanioMensaje = serializarEscribirPagina(idp, pagina_victima,pagina,&mensaje);
 			enviar(socket_swap, mensaje, tamanioMensaje);
 	}
