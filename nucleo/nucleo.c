@@ -208,10 +208,10 @@ void cerrarCPU(void* cpu, void* ultimoMensaje){
 	}
 
 	pthread_mutex_lock(&mutexCPUs);
-	list_remove_by_condition(cpus, (void*) buscarCPU(cpu));
+	list_remove_by_condition(cpus, (void*) buscarCPU);
 	pthread_mutex_unlock(&mutexCPUs);
 
-	log_info(logger, "Destruyendo CPU: thread: %d", ((t_cpu*)cpu)->hiloCPU);
+	log_info(logger, "Destruyendo CPU");
 
 	if(ultimoMensaje){
 		if(((t_cpu*)cpu)->elemento){
@@ -226,8 +226,13 @@ void cerrarCPU(void* cpu, void* ultimoMensaje){
 
 		shutdown(((t_cpu*)cpu)->socketCPU, 0);
 	}else{
-		// imprimir mensaje de error en la consola?
-		((t_cpu*)cpu)->elemento->estado = EXIT;
+		if(((t_cpu*)cpu)->elemento){
+			void* mensaje;
+			int tamanioMensaje = serializarImprimir("Perdida conexion con la CPU que ejecutaba el programa. Finalizando ejecucion.", &mensaje);
+			int socketConsola = buscarSocketConsola(((t_cpu*)cpu)->elemento->pcb->pid);
+			enviar(socketConsola, mensaje, tamanioMensaje);
+			((t_cpu*)cpu)->elemento->estado = EXIT;
+		}
 	}
 	sem_post(&moverPCBs);
 	free(((t_cpu*)cpu)->hiloCPU);
@@ -249,6 +254,8 @@ void threadEscuchaCPU(t_cpu* cpu){
 	int socket = cpu->socketCPU;
 
 	enviar(socket, &stack_size, sizeof(int));
+
+	sem_post(&moverPCBs);
 
 	void* mensaje;
 
@@ -318,9 +325,34 @@ void destruirCPU(t_cpu* cpu){
 
 int main(){
 
-	abrirConfiguracion();
+	init();
 
 	log_info(logger, "Inicia proceso Núcleo");
+
+	sem_wait(&semTerminar);
+
+	cerrar_todo();
+
+	return 0;
+}
+
+void init(){
+	configuracionNucleo = config_create(RUTA_CONFIG);
+	ipNucleo = config_get_string_value(configuracionNucleo, "IP_NUCLEO");
+	puertoNucleo = config_get_string_value(configuracionNucleo, "PUERTO_PROG");
+	puertoCPU = config_get_string_value(configuracionNucleo, "PUERTO_CPU");
+	quantum = config_get_int_value(configuracionNucleo, "QUANTUM");
+	quantum_sleep = config_get_int_value(configuracionNucleo, "QUANTUM_SLEEP");
+	io_id = config_get_array_value(configuracionNucleo, "IO_ID");
+	io_sleep = config_get_array_value(configuracionNucleo, "IO_SLEEP");
+	sem_id = config_get_array_value(configuracionNucleo, "SEM_ID");
+	sem_inits = config_get_array_value(configuracionNucleo, "SEM_INIT");
+	shared_vars = config_get_array_value(configuracionNucleo, "SHARED_VARS");
+	stack_size = config_get_int_value(configuracionNucleo, "STACK_SIZE");
+	logger = log_create(RUTA_LOG, "Nucleo", false, LOG_LEVEL_INFO);
+	logger_pantalla = log_create(RUTA_LOG, "Nucleo", true, LOG_LEVEL_INFO);
+	puertoUMC = config_get_string_value(configuracionNucleo, "PUERTO_UMC");
+	ipUMC = config_get_string_value(configuracionNucleo, "IP_UMC");
 
 	colaPCBExec = queue_create();
 	colaPCBReady = queue_create();
@@ -373,41 +405,6 @@ int main(){
 	pthread_create(&hiloReceptorCPUs, NULL,(void*) threadReceptorCPUs, &socket_cpus);
 
 	pthread_create(&hiloPlanificador, NULL,(void*) threadPlanificador, NULL);
-
-	sem_wait(&semTerminar);
-
-	cerrar_todo();
-
-	return 0;
-}
-
-void abrirConfiguracion(){
-	configuracionNucleo = config_create(RUTA_CONFIG);
-	ipNucleo = config_get_string_value(configuracionNucleo, "IP_NUCLEO");
-	puertoNucleo = config_get_string_value(configuracionNucleo, "PUERTO_PROG");
-	puertoCPU = config_get_string_value(configuracionNucleo, "PUERTO_CPU");
-	quantum = config_get_int_value(configuracionNucleo, "QUANTUM");
-	quantum_sleep = config_get_int_value(configuracionNucleo, "QUANTUM_SLEEP");
-	io_id = config_get_array_value(configuracionNucleo, "IO_ID");
-	io_sleep = config_get_array_value(configuracionNucleo, "IO_SLEEP");
-	sem_id = config_get_array_value(configuracionNucleo, "SEM_ID");
-	sem_inits = config_get_array_value(configuracionNucleo, "SEM_INIT");
-	shared_vars = config_get_array_value(configuracionNucleo, "SHARED_VARS");
-	stack_size = config_get_int_value(configuracionNucleo, "STACK_SIZE");
-	logger = log_create(RUTA_LOG, "Nucleo", false, LOG_LEVEL_INFO);
-	logger_pantalla = log_create(RUTA_LOG, "Nucleo", true, LOG_LEVEL_INFO);
-	puertoUMC = config_get_string_value(configuracionNucleo, "PUERTO_UMC");
-	ipUMC = config_get_string_value(configuracionNucleo, "IP_UMC");
-
-	printf("%s\n", ipNucleo);
-	printf("%s\n", puertoNucleo);
-	printf("%s\n", puertoCPU);
-	printf("%d\n", quantum);
-	printf("%d\n", quantum_sleep);
-	printf("%s\n", io_id[0]);
-	printf("%s\n", ipUMC);
-	printf("%s\n", puertoUMC);
-
 }
 
 void cerrar_todo(){
@@ -593,7 +590,7 @@ void threadPlanificador(){
 				pthread_mutex_lock(&mutexColaReady);
 				queue_push(colaPCBReady, elemento);
 				pthread_mutex_unlock(&mutexColaReady);
-				elemento->estado = EXEC;
+				if(elemento->estado != EXIT)elemento->estado = EXEC;
 				i--;
 			}else if(elemento->estado == EXIT){
 				pidABuscar = elemento->pcb->pid;
@@ -612,7 +609,7 @@ void threadPlanificador(){
 				pthread_mutex_lock(&mutexColaReady);
 				queue_push(colaPCBReady, elemento);
 				pthread_mutex_unlock(&mutexColaReady);
-				elemento->estado = EXEC;
+				if(elemento->estado != EXIT)elemento->estado = EXEC;
 				i--;
 			}else if(elemento->estado == EXIT){
 				pidABuscar = elemento->pcb->pid;
@@ -666,7 +663,7 @@ void matarProceso(t_elemento_cola* elemento){
 		free(mensaje);
 	}
 	pcb_destroy(elemento->pcb);
-	//free(elemento);
+	free(elemento);
 }
 
 _Bool estaLibre(t_cpu* cpu){

@@ -13,7 +13,7 @@ void threadEscucha(t_cliente* cliente) {
 		mensaje = recibir(socket);
 		if (!mensaje) {
 			printf("Cliente desconectado!\n");
-			list_remove_by_condition(clientes, (void*) buscarCliente(cliente));
+			list_remove_by_condition(clientes, (void*) buscarCliente);
 			shutdown(cliente->socket, 0);
 			free(cliente->hiloCliente);
 			free(cliente);

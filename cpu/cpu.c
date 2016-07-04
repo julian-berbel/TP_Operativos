@@ -16,6 +16,9 @@ t_puntero definirVariable(t_nombre_variable variable) {
 	t_variable *var;
 	pos_mem* nueva_posicion_memoria;
 	t_variable *nueva_variable;
+	if(pcb_finalizar == 1){
+		return 0;
+	}
 	if(nodos_stack == 0){
 		nodo_stack *nodo = malloc(sizeof(nodo_stack));
 		nodo->args = list_create();
@@ -576,4 +579,5 @@ void stackOverflow(){
 	imprimirTexto("Stack Overflow");
 	free(mensaje);
 	finalizar();
+
 }
