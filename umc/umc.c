@@ -32,6 +32,7 @@ void crearThreadEscucha(int conexionRecibida) {
 	cliente->socket = conexionRecibida;
 
 	cliente->hiloCliente = hiloEscucha;
+	cliente->proceso_activo = -2;
 
 	list_add(clientes, (void*) cliente);
 
@@ -285,23 +286,24 @@ void escribir_pagina(int num_pagina, int offset, size_t t, char *buffer,void* cp
 			log_info(logger, "EL pedido de pagina %d del proceso %d es invalido",num_pagina,idp);
 		}else{ //el pedido es valido
 			log_info(logger, "Pedido de pagina valido");
-		//pido la pagina a swap
+			//pido la pagina a swap
 			log_info(logger, "Solicitud de pagina a SWAP");
-		void* mensaje;
-				int tamanioMensaje = serializarLeerPagina(idp, num_pagina, &mensaje);
-				enviar(socket_swap, mensaje, tamanioMensaje);
-				free(mensaje);
-				char* contenido_pagina=recibir_string_generico(socket_swap);
-		//copiar pagina en memoria
+			void* mensaje;
+			int tamanioMensaje = serializarLeerPagina(idp, num_pagina, &mensaje);
+			enviar(socket_swap, mensaje, tamanioMensaje);
+			free(mensaje);
+			char* contenido_pagina=recibir_string_generico(socket_swap);
+			//copiar pagina en memoria
 			log_info(logger, "Copia de la pagina %d del proceso %d en memoria",num_pagina,idp);
-		copiar_pagina_en_memoria(idp,num_pagina,contenido_pagina);
-		free(contenido_pagina);
-		//retomo el pedido de escritura
-		escribir_posicion_memoria(tabla_procesos[idp][num_pagina].marco* marco_size + offset, t, buffer);
-			}
+			copiar_pagina_en_memoria(idp,num_pagina,contenido_pagina);
+			free(contenido_pagina);
+			//retomo el pedido de escritura
+			escribir_posicion_memoria(tabla_procesos[idp][num_pagina].marco* marco_size + offset, t, buffer);
+			tabla_procesos[idp][num_pagina].modificado=1;
+		}
 	}
 	pthread_mutex_unlock(&lock);
-	}
+}
 
 
 void copiar_pagina_en_memoria(int idp,int num_pagina,char* contenido_pagina){
@@ -444,7 +446,7 @@ void escribir_posicion_memoria(int posicion, size_t tamanio, char *buffer) {
 	usleep(retardo * 1000);
 
 	int i;
-	for (i = 0; i < tamanio; i++)
+	for (i = 0; ((i < tamanio) && (buffer[i] != '\0')); i++)
 		memoria[posicion + i] = buffer[i];
 
 }
@@ -723,12 +725,10 @@ int reemplazar_MP(int idp, int num_pagina) { //testeado
 			log_info(logger,"pedido de escritura de la pagina en swap");
 			char* pagina=leer_posicion_memoria(marco_destino*marco_size,marco_size);
 			log_info(logger, "contenido: %s, tamanio: %d", pagina, sizeof(pagina));
-			char* variable = malloc(20);
-			memset(variable, '\0', 20);
-			log_info(logger, "tamanio variable: %d", sizeof(variable));
-			free(variable);
 			int tamanioMensaje = serializarEscribirPagina(idp, pagina_victima,pagina,&mensaje);
 			enviar(socket_swap, mensaje, tamanioMensaje);
+			free(mensaje);
+			free(pagina);
 	}
 	return marco_destino;
 

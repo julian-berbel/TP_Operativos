@@ -410,6 +410,12 @@ void escribir_pagina(int id_programa, int num_pagina, char* buffer) {
 	else
 		escribirArchivoBinarioEnPag(paginaAEscribir, buffer);
 	log_info(logger, "Escrita la pagina %d del programa %d", num_pagina, id_programa);
+	int q;
+	for(q = 0; q < (list_size(paginasDelProceso)); q++){
+		list_remove(paginasDelProceso, q);
+	}
+	list_destroy(paginasDelProceso);
+
 }
 
 void terminar() {
