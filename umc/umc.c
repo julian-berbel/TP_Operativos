@@ -70,6 +70,7 @@ void threadInterpreteConsola() {
 
 	free(mensaje);
 }
+
 int main(int cantidadArgumentos, char* argumentos[]) {
 
  abrirConfiguracion();
@@ -104,8 +105,10 @@ int main(int cantidadArgumentos, char* argumentos[]) {
  return 0;
  }
 
-
 void inicializar_estructuras(){
+	ref_tlb=0;
+	cant_reemplazos_tlb=5;
+	cant_reemplazos_memoria=5;
 	int i;
 	 for (i = 0; i < 20; i++) {
 	 punteros_clock[i] = 0;	//comienzan apuntando a la pagina 0
@@ -128,7 +131,7 @@ void inicializar_estructuras(){
 	 memset(memoria,' ',marcos * marco_size * sizeof(char));
 
 	 //TLB
-	 if (tlb_habilitada){
+	 if (entradas_tlb!=0){
 	 tlb = (TLB*) malloc(entradas_tlb * sizeof(TLB));
 
 	 for (i = 0; i < entradas_tlb; i++) { //inicializo la tlb con idp en -1:testeado
@@ -149,7 +152,6 @@ void abrirConfiguracion() {
 	marco_size = config_get_int_value(configuracionUMC, "MARCO_SIZE");
 	marco_x_proc = config_get_int_value(configuracionUMC, "MARCO_X_PROC");
 	entradas_tlb = config_get_int_value(configuracionUMC, "ENTRADAS_TLB");
-	tlb_habilitada = config_get_int_value(configuracionUMC, "TLB_HABILITADA");
 	retardo = config_get_int_value(configuracionUMC, "RETARDO");
 	alg_reemplazo = config_get_string_value(configuracionUMC, "ALG_REEMPLAZO");
 	logger = log_create(RUTA_LOG, "UMC", false, LOG_LEVEL_INFO);
@@ -178,7 +180,7 @@ void cerrar_todo() {
 	log_destroy(logger_pantalla);
 	config_destroy(configuracionUMC);
 	free(memoria);
-	if(tlb_habilitada)
+	if(entradas_tlb!=0)
 	free(tlb);
 	free(marcos_libres);
 	log_info(logger, "finalizacion del proceso UMC");
@@ -314,7 +316,7 @@ void copiar_pagina_en_memoria(int idp,int num_pagina,char* contenido_pagina){
 							escribir_posicion_memoria(marco_libre * marco_size, marco_size,	contenido_pagina);
 							escribir_marco_en_TP(idp, num_pagina, marco_libre);
 							marco_ocupado(marco_libre);
-							if (tlb_habilitada){
+							if (entradas_tlb!=0){
 								escribir_marco_en_tlb(idp,num_pagina,marco_libre);
 							}
 							}else {//memoria ocupada
@@ -323,16 +325,22 @@ void copiar_pagina_en_memoria(int idp,int num_pagina,char* contenido_pagina){
 						int marco = reemplazar_MP(idp, num_pagina);
 						escribir_posicion_memoria(marco * marco_size, marco_size,contenido_pagina);
 						escribir_marco_en_TP(idp, num_pagina, marco);
-						if(tlb_habilitada){
+						if(entradas_tlb!=0){
 							escribir_marco_en_tlb(idp,num_pagina,marco);
 						}
 							}
 					}else {//ya tiene todos los marcos asignados
 						log_info(logger, "El proceso tiene asignados todos los marcos, reemplazo local");
+						if(cant_reemplazos_memoria>0){
+							imprimir_TP(idp,"Tabla de paginas antes del reemplazo:");
+						}
 						int marco_destino = reemplazar_MP(idp, num_pagina);
 						escribir_posicion_memoria(marco_destino * marco_size, marco_size,contenido_pagina);
 						escribir_marco_en_TP(idp, num_pagina, marco_destino);
-						if(tlb_habilitada){
+						if(cant_reemplazos_memoria>0){
+							imprimir_TP(idp,"Tabla de paginas despues del reemplazo:");
+						}
+						if(entradas_tlb!=0){
 							escribir_marco_en_tlb(idp,num_pagina,marco_destino);
 						}
 						log_info(logger, "Actualización de la tabla de paginas del proceso %d",idp);
@@ -347,7 +355,7 @@ void crear_tabla_de_paginas(int idp, int paginas_requeridas) { //testeado
 	//inicializo
 	int i;
 	for (i = 0; i < paginas_requeridas; i++) {
-		tabla_paginas.marco = -1;
+		tabla_paginas.marco = 0;
 		tabla_paginas.presencia = 0;
 		tabla_paginas.bit_uso = 0;
 		tabla_paginas.modificado = 0;
@@ -359,7 +367,7 @@ void crear_tabla_de_paginas(int idp, int paginas_requeridas) { //testeado
 
 int obtener_marco(int idp, int num_pagina) { //testeado
 	int marco;
-	if (tlb_habilitada) {
+	if (entradas_tlb!=0) {
 		log_info(logger, "TLB habilitada, buscar pagina");
 		marco = obtener_marco_tlb(idp, num_pagina);
 		if (marco == -1) { //si no esta en la tlb
@@ -369,8 +377,9 @@ int obtener_marco(int idp, int num_pagina) { //testeado
 				log_info(logger, "Se encontro la pagina en la tabla de paginas, actualizar TLB");
 				escribir_marco_en_tlb(idp, num_pagina, marco);
 			}
+		}else{//se encontro en la tlb
+			actualizar_referencia(idp,num_pagina);
 		}
-		aumentar_uso_tlb(idp, num_pagina);
 	} else { //si no esta habilitada la tlb
 		log_info(logger, "TLB no habilitada, busco en la tabla de paginas");
 		marco = obtener_marco_tabla_paginas(idp, num_pagina);
@@ -410,7 +419,7 @@ void escribir_marco_en_TP(int idp, int pagina, int marco) { //al guardar en MP d
 }
 
 void escribir_marco_en_tlb(int idp, int num_pagina, int marco) {	//testeado
-	if (tlb_habilitada){
+	if (entradas_tlb!=0){
 	log_info(logger, "Nueva entrada en la TLB: pagina %d del proceso %d en el marco %d",num_pagina,idp,marco);
 	int indice_libre = buscar_indice_libre_tlb();
 	if (indice_libre != -1) { //si hay un indice libre
@@ -418,17 +427,72 @@ void escribir_marco_en_tlb(int idp, int num_pagina, int marco) {	//testeado
 		tlb[indice_libre].idp = idp;
 		tlb[indice_libre].pagina = num_pagina;
 		tlb[indice_libre].marco = marco;
-		tlb[indice_libre].uso = 0;
+		tlb[indice_libre].uso = ref_tlb;
+		ref_tlb++;
 	} else { //no hay indice libre ->reemplazo con LRU
 		log_info(logger, "TLB llena, reemplazo con LRU");
+		if(cant_reemplazos_tlb>0){
+		imprimir_tlb("tlb antes del reemplazo:\n");
+		}
 		int indice_menos_accedido = buscar_indice_menos_accedido_tlb();
 		tlb[indice_menos_accedido].idp = idp;
 		tlb[indice_menos_accedido].pagina = num_pagina;
 		tlb[indice_menos_accedido].marco = marco;
-		tlb[indice_menos_accedido].uso = 0;
+		tlb[indice_menos_accedido].uso = ref_tlb;
+		ref_tlb++;
+		if(cant_reemplazos_tlb>0){
+		imprimir_tlb("tlb despues del reemplazo\n");
+		cant_reemplazos_tlb--;
+		}
 	}
 }
 }
+void actualizar_referencia(int idp,int num_pagina){ //testeado
+	int i;
+	for(i=0;i<entradas_tlb;i++){
+		if(tlb[i].idp==idp && tlb[i].pagina==num_pagina){
+			tlb[i].uso=ref_tlb;
+			ref_tlb++;
+		}
+	}
+}
+void imprimir_tlb(char* estado){  //testeado
+	if(entradas_tlb!=0){
+	FILE* archivo_tlb=fopen("reemplazos_en_tlb.txt","a");
+	if(!archivo_tlb){
+		log_info(logger,"error al abrir el archivo");
+	}else{
+		fprintf(archivo_tlb,"%s\n",estado);
+		fprintf(archivo_tlb,"ID_PROCESO   PAGINA   MARCO   REFERENCIA\n");
+		int i;
+		for(i=0;i<entradas_tlb;i++){
+		fprintf(archivo_tlb,"          %d                           %d                %d                     %d\n",tlb[i].idp,tlb[i].pagina,tlb[i].marco,tlb[i].uso);
+		}
+		fprintf(archivo_tlb,"\n\n");
+	}
+	fclose(archivo_tlb);
+	}
+}
+
+void imprimir_TP(int idp,char* estado){
+	FILE* archivo_TP=fopen("reemplazos_en_memoria.txt","a");
+	if(!archivo_TP){
+		log_info(logger,"error al abrir el archivo");
+	}else{
+		fprintf(archivo_TP,"Proceso %d\n%s\n",idp,estado);
+		fprintf(archivo_TP,"el puntero apunta al indice: %d\n",punteros_clock[idp]);
+		fprintf(archivo_TP,"PAGINA     MARCO    PRESENCIA    USO    MODIFICADO\n");
+		int i,paginas;
+		paginas=cant_paginas_procesos[idp];
+		for(i=0;i<paginas;i++){
+		fprintf(archivo_TP,"         %d                    %d                   %d                    %d                  %d\n",i,tabla_procesos[idp][i].marco,tabla_procesos[idp][i].presencia,tabla_procesos[idp][i].bit_uso,tabla_procesos[idp][i].modificado);
+		}
+		fprintf(archivo_TP,"\n\n");
+	}
+	fclose(archivo_TP);
+	}
+
+
 void marco_ocupado(int num_marco) { 	//testeado
 	marcos_libres[num_marco] = 1;
 }
@@ -462,7 +526,7 @@ char* leer_posicion_memoria(int posicion, size_t tamanio) {
 }
 
 int buscar_indice_libre_tlb() { //testeado
-	if(tlb_habilitada){
+	if(entradas_tlb!=0){
 	int i;
 	for (i = 0; i < entradas_tlb; i++) {
 		if (tlb[i].idp == -1) {
@@ -475,7 +539,7 @@ int buscar_indice_libre_tlb() { //testeado
 }
 
 void aumentar_uso_tlb(int idp, int num_pagina) { //testeado
-	if(tlb_habilitada){
+	if(entradas_tlb!=0){
 	int i;
 	for (i = 0; i < entradas_tlb; i++) {
 		if (tlb[i].idp != idp && tlb[0].pagina != num_pagina) {
@@ -488,11 +552,12 @@ void aumentar_uso_tlb(int idp, int num_pagina) { //testeado
 }
 
 int buscar_indice_menos_accedido_tlb() { //testeado
-	if(tlb_habilitada){
-	int indice, valormax = 0, i;
+	if(entradas_tlb!=0){
+	int indice, valorMin, i;
+	valorMin=tlb[0].uso;
 	for (i = 0; i < entradas_tlb; i++) {
-		if (tlb[i].uso >= valormax) {
-			valormax = tlb[i].uso;
+		if (tlb[i].uso <= valorMin) {
+			valorMin = tlb[i].uso;
 			indice = i;
 		}
 	}
@@ -502,7 +567,7 @@ int buscar_indice_menos_accedido_tlb() { //testeado
 }
 
 void flush(int idp) { //cuando cambia el proceso activo limpio el proceso viejo de la tlb
-	if(tlb_habilitada){
+	if(entradas_tlb!=0){
 	//log_info(logger, "Limpieza del proceso %d de la TLB por cambio de proceso activo", idp);
 	int i = 0;
 	for (i = 0; i < entradas_tlb; i++) {
@@ -647,7 +712,7 @@ void dump_cont_gen() { //testeado
 }
 
 void flush_tlb() { //limpia completamente la tlb
-	if(tlb_habilitada){
+	if(entradas_tlb!=0){
 	log_info(logger, "Comando flush_tlb: limpia completamente la TLB");
 	int i;
 	for (i = 0; i < entradas_tlb; i++) {
@@ -736,7 +801,7 @@ int reemplazar_MP(int idp, int num_pagina) { //testeado
 
 
 void sacar_pagina_de_tlb(int idp,int pagina){
-	if(tlb_habilitada){
+	if(entradas_tlb!=0){
 	log_info(logger, "Sacar de la TLB la pagina: %d, del proceso %d",pagina,idp);
 	int i;
 	for(i=0;i<entradas_tlb;i++){

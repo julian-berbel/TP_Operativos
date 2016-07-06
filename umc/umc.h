@@ -27,12 +27,14 @@ int marcos;
 int marco_size;
 int marco_x_proc;
 int entradas_tlb;
-int tlb_habilitada;
 int retardo;
 char* alg_reemplazo;
 t_log* logger;
 t_log* logger_pantalla;
 int socket_swap;
+int ref_tlb;
+int cant_reemplazos_tlb;
+int cant_reemplazos_memoria;
 
 pthread_mutex_t lock;
 
@@ -98,12 +100,14 @@ void cambiar_proceso_activo(int pid, void* cliente);
 void escribir_posicion_memoria(int posicion,size_t tamanio,char *buffer);
 char* leer_posicion_memoria(int posicion, size_t tamanio);
 int buscar_indice_libre_tlb();
-void aumentar_uso_tlb(int idp,int num_pagina);
 int buscar_indice_menos_accedido_tlb();
 void flush (int idp);
 void copiar_pagina_en_memoria(int idp,int num_pagina,char* contenido_pagina);
 void vaciar_marco(int marco);
 void borrar_marcos(int idp);
+void imprimir_tlb(char*);
+void imprimir_TP(int idp,char*);
+void actualizar_referencia(int idp, int num_pagina);
 
 //operaciones de consola
 void modificar_retardo(int ret);
