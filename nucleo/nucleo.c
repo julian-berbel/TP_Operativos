@@ -11,7 +11,7 @@ int buscarSocketConsola(int pid){
 }
 
 void imprimir(char* mensaje, void* cpu){
-	if(((t_cpu*) cpu)->elemento->estado == EXIT) return;
+	if(((t_cpu*) cpu)->elemento == (t_elemento_cola*)-1) return;
 	log_info(logger, "Imprimir: mensaje: %s", mensaje);
 	int socket_consola = buscarSocketConsola(((t_cpu*)cpu)->elemento->pcb->pid);
 	void* mensajeSerializado;
@@ -52,7 +52,11 @@ t_elemento_cola* desalojar(t_cpu* cpu){
 }
 
 void quantumTerminado(void* cpu){
-	if(((t_cpu*) cpu)->elemento->estado == EXIT) return;
+	if(((t_cpu*) cpu)->elemento == (t_elemento_cola*)-1){
+		((t_cpu*) cpu)->elemento = NULL;
+		sem_post(&moverPCBs);
+		return;
+	}
 	log_info(logger, "Quantum Terminado: pid: %d", ((t_cpu*)cpu)->elemento->pcb->pid);
 	void* mensaje;
 	int tamanioMensaje;
@@ -141,9 +145,13 @@ void leerCambios(){
 }
 
 void destruirConsola(t_consola* consola){
+	_Bool buscarCPU(t_cpu* cpu){
+		return cpu->elemento == consola->elemento;
+	}
 	log_info(logger, "Destruyendo consola: socket consola: %d", consola->socketConsola);
 	close(consola->socketConsola);
-	consola->elemento->estado = EXIT;
+	t_cpu* cpu = list_find(cpus, (void*)buscarCPU);
+	if(cpu)cpu->elemento = (t_elemento_cola*)-1;
 	sem_post(&moverPCBs);
 	free(consola);
 }
@@ -240,6 +248,10 @@ void cerrarCPU(void* cpu, void* ultimoMensaje){
 }
 
 void programaTerminado(void* cpu){
+	if(((t_cpu*) cpu)->elemento == (t_elemento_cola*)-1){
+		((t_cpu*)cpu)->elemento = NULL;
+		return;
+	}
 	((t_cpu*)cpu)->elemento->estado = EXIT;
 	((t_cpu*)cpu)->elemento = NULL;
 	sem_post(&moverPCBs);
@@ -429,6 +441,7 @@ void cerrar_todo(){
 	int i;
 	int largo_array = tamanioArray(io_id);
 	for(i = 0; i < largo_array; i++){
+		sem_post(&dispositivos[i].semaforoDispositivo);
 		pthread_join(dispositivos[i].hiloDispositivo, NULL);
 		sem_destroy(&dispositivos[i].semaforoDispositivo);
 		queue_destroy_and_destroy_elements(dispositivos[i].cola_dispositivo,free);
@@ -477,6 +490,7 @@ int tamanioArray(char** array){
 }
 
 void obtener_valor(char* identificador, void* cpu){
+	if(((t_cpu*) cpu)->elemento == (t_elemento_cola*)-1) return;
 	log_info(logger, "Obtener Valor: id: %s", identificador);
 	int indice = indiceEnArray(shared_vars, identificador);
 	int valor;
@@ -496,6 +510,7 @@ void grabar_valor(char* identificador, int valorAGrabar){
 }
 
 void esperar(char* identificador, void* cpu){
+	if(((t_cpu*) cpu)->elemento == (t_elemento_cola*)-1) return;
 	log_info(logger, "Esperar: id: %s", identificador);
 	int indice = indiceEnArray(sem_id, identificador);
 	log_info(logger, "Indice encontrado: %d", indice);
@@ -533,6 +548,7 @@ void avisar(char* identificador){
 }
 
 void entradaSalida(char* identificador, int operaciones, void* cpu){
+	if(((t_cpu*) cpu)->elemento == (t_elemento_cola*)-1) return;
 	log_info(logger, "Entrada/Salida: id: %s, operaciones: %d", identificador, operaciones);
     t_pedido* pedido = malloc(sizeof(t_pedido));
     pedido->cantidadDeOperaciones = operaciones;

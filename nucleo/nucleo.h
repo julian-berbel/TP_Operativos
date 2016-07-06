@@ -53,7 +53,7 @@ int tamanioDePagina;
 int descriptor_inotify;
 sem_t moverPCBs;
 
-typedef enum{READY, EXEC, BLOCK, EXIT} estadoACambiar;
+typedef enum{READY, EXEC, BLOCK, EXIT, CANCELADO} estadoACambiar;
 
 typedef struct{
 	estadoACambiar estado;
