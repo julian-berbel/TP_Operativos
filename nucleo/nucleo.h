@@ -72,16 +72,17 @@ typedef struct{
 }t_consola;
 
 typedef struct{
+	int cantidadDeOperaciones;
+	t_elemento_cola* elemento;
+}t_pedido;
+
+typedef struct{
 	pthread_t hiloDispositivo;
 	sem_t semaforoDispositivo;
 	int retardo;
 	t_queue* cola_dispositivo;
+	t_pedido* pedidoActual;
 }t_dispositivo;
-
-typedef struct{
-	int cantidadDeOperaciones;
-	t_elemento_cola* elemento;
-}t_pedido;
 
 typedef struct{
 	int valor;

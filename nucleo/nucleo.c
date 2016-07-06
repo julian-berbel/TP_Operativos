@@ -1,13 +1,17 @@
 #include "nucleo.h"
 
-int buscarSocketConsola(int pid){
-	log_info(logger, "Buscar Socket de Consola: pid: %d", pid);
+t_consola* buscarConsola(int pid){
+	log_info(logger, "Buscando consola: pid: %d", pid);
 	_Bool compararPid(t_consola* consola){
 		return consola->elemento->pcb->pid == pid;
 	}
 
-	t_consola* consola = list_find(consolas, (void*)compararPid);
-	return consola ? consola->socketConsola : -1;
+	return list_find(consolas, (void*)compararPid);
+}
+
+int buscarSocketConsola(int pid){
+	t_consola* consola = buscarConsola(pid);
+	return consola ? consola->socketConsola:-1;
 }
 
 void imprimir(char* mensaje, void* cpu){
@@ -52,6 +56,7 @@ t_elemento_cola* desalojar(t_cpu* cpu){
 }
 
 void quantumTerminado(void* cpu){
+	usleep(quantum_sleep * 1000);
 	if(((t_cpu*) cpu)->elemento == (t_elemento_cola*)-1){
 		((t_cpu*) cpu)->elemento = NULL;
 		sem_post(&moverPCBs);
@@ -148,10 +153,24 @@ void destruirConsola(t_consola* consola){
 	_Bool buscarCPU(t_cpu* cpu){
 		return cpu->elemento == consola->elemento;
 	}
+	_Bool buscarIndiceConsola(t_consola* unaConsola){
+		return unaConsola == consola;
+	}
+
+	list_remove_by_condition(consolas, (void*) buscarIndiceConsola);
+	if(consola->socketConsola != -1){
+		void* mensaje;
+		int tamanioSerializacion = serializarTerminar(&mensaje);
+		enviar(consola->socketConsola, mensaje, tamanioSerializacion);
+		free(mensaje);
+		close(consola->socketConsola);
+	}
+
 	log_info(logger, "Destruyendo consola: socket consola: %d", consola->socketConsola);
-	close(consola->socketConsola);
 	t_cpu* cpu = list_find(cpus, (void*)buscarCPU);
-	if(cpu)cpu->elemento = (t_elemento_cola*)-1;
+	if(cpu) cpu->elemento = (t_elemento_cola*)-1;
+
+	consola->elemento->estado = EXIT;
 	sem_post(&moverPCBs);
 	free(consola);
 }
@@ -201,7 +220,9 @@ void threadReceptorYEscuchaConsolas(){
 				consola = list_get(consolas, i);
 				if (FD_ISSET(consola->socketConsola, bagDeSockets)){
 					printf("Destruyendo una consola\n");
-					list_remove_and_destroy_element(consolas, i,(void*) destruirConsola);
+					close(consola->socketConsola);
+					consola->socketConsola = -1;
+					destruirConsola(consola);
 				}
 			}
 		}
@@ -233,14 +254,13 @@ void cerrarCPU(void* cpu, void* ultimoMensaje){
 		free(mensaje);
 
 		shutdown(((t_cpu*)cpu)->socketCPU, 0);
-	}else{
-		if(((t_cpu*)cpu)->elemento){
-			void* mensaje;
-			int tamanioMensaje = serializarImprimir("Perdida conexion con la CPU que ejecutaba el programa. Finalizando ejecucion.", &mensaje);
-			int socketConsola = buscarSocketConsola(((t_cpu*)cpu)->elemento->pcb->pid);
-			enviar(socketConsola, mensaje, tamanioMensaje);
-			((t_cpu*)cpu)->elemento->estado = EXIT;
-		}
+	}else if(((t_cpu*)cpu)->elemento){
+		void* mensaje;
+		int tamanioMensaje = serializarImprimir("Perdida conexion con la CPU que ejecutaba el programa. Finalizando ejecucion.", &mensaje);
+		t_consola* consola = buscarConsola(((t_cpu*)cpu)->elemento->pcb->pid);
+		enviar(consola->socketConsola, mensaje, tamanioMensaje);
+
+		((t_cpu*)cpu)->elemento->estado = EXIT;
 	}
 	sem_post(&moverPCBs);
 	free(((t_cpu*)cpu)->hiloCPU);
@@ -248,11 +268,8 @@ void cerrarCPU(void* cpu, void* ultimoMensaje){
 }
 
 void programaTerminado(void* cpu){
-	if(((t_cpu*) cpu)->elemento == (t_elemento_cola*)-1){
-		((t_cpu*)cpu)->elemento = NULL;
-		return;
-	}
-	((t_cpu*)cpu)->elemento->estado = EXIT;
+	if(((t_cpu*) cpu)->elemento != (t_elemento_cola*)-1) ((t_cpu*)cpu)->elemento->estado = EXIT;
+
 	((t_cpu*)cpu)->elemento = NULL;
 	sem_post(&moverPCBs);
 }
@@ -376,6 +393,7 @@ void init(){
 	dispositivos = malloc(sizeof(t_dispositivo) * tamanio);
 	for(i = 0; i < tamanio; i++){
 		pthread_t hiloDispositivo;
+		dispositivos[i].pedidoActual = NULL;
 		dispositivos[i].hiloDispositivo = hiloDispositivo;
 		dispositivos[i].cola_dispositivo = queue_create();
 		sem_t semaforoDispositivo;
@@ -568,11 +586,12 @@ void threadDispositivo(t_dispositivo* dispositivo){
     while(!flagTerminar){
         sem_wait(&dispositivo->semaforoDispositivo);
         if(flagTerminar) break;
-        t_pedido* pedido = queue_pop(dispositivo->cola_dispositivo);
-        if(!pedido->elemento) break;
+        t_pedido* pedido = dispositivo->pedidoActual = queue_pop(dispositivo->cola_dispositivo);
+        if(!pedido->elemento) continue;
         usleep(dispositivo->retardo * 1000 * pedido->cantidadDeOperaciones);
-        if(!pedido->elemento) break;
+        if(!pedido->elemento) continue;
         pedido->elemento->estado = READY;
+        dispositivo->pedidoActual = NULL;
         sem_post(&moverPCBs);
     }
 }
@@ -584,7 +603,7 @@ void threadPlanificador(){
 			return elemento->pcb->pid == pidABuscar;
 	}
 
-	int i;
+	int i, j, k, tamanio;
 
 	t_elemento_cola* elemento;
 
@@ -630,10 +649,13 @@ void threadPlanificador(){
 			}else if(elemento->estado == EXIT){
 				pidABuscar = elemento->pcb->pid;
 				list_remove_by_condition(listaPCBBlock, (void*)compararPid);
-				int j, tamanio = tamanioArray(io_id);
+				tamanio = tamanioArray(io_id);
 				for(j = 0; j < tamanio; j++){
-					t_pedido* pedido = list_get(dispositivos[j].cola_dispositivo->elements, j);
-					if(pedido->elemento == elemento) pedido->elemento = NULL;
+					if(dispositivos[j].pedidoActual && dispositivos[j].pedidoActual->elemento == elemento) dispositivos[j].pedidoActual->elemento = NULL;
+					for(k = 0; k < dispositivos[j].cola_dispositivo->elements->elements_count; k++){
+						t_pedido* pedido = list_get(dispositivos[j].cola_dispositivo->elements, k);
+						if(pedido->elemento == elemento) pedido->elemento = NULL;
+					}
 				}
 				tamanio = tamanioArray(sem_id);
 				for(j = 0; j < tamanio; j++) list_remove_by_condition(semaforosGlobales[j].cola_bloqueados->elements, (void*)compararPid);
@@ -651,8 +673,8 @@ void threadPlanificador(){
 				cpu = cpuLibre();
 				cpu->elemento = elemento;
 				void* mensaje;
-				int tamanioSerializacion = serializarCargarPCB(elemento->pcb, &mensaje);
-				enviar(cpu->socketCPU, mensaje, tamanioSerializacion);
+				tamanio = serializarCargarPCB(elemento->pcb, &mensaje);
+				enviar(cpu->socketCPU, mensaje, tamanio);
 				free(mensaje);
 			}else if(elemento->estado == EXIT){
 				pidABuscar = elemento->pcb->pid;
@@ -672,12 +694,8 @@ void matarProceso(t_elemento_cola* elemento){
 	void* mensaje;
 	int tamanioSerializacion = serializarFinalizar(elemento->pcb->pid, &mensaje);
 	enviar(socket_umc, mensaje, tamanioSerializacion);
-	int socket = buscarSocketConsola(elemento->pcb->pid);
-	if(socket != -1){
-		tamanioSerializacion = serializarTerminar(&mensaje);
-		enviar(buscarSocketConsola(elemento->pcb->pid), mensaje, tamanioSerializacion);
-		free(mensaje);
-	}
+	t_consola* consola = buscarConsola(elemento->pcb->pid);
+	if(consola) destruirConsola(consola);
 	pcb_destroy(elemento->pcb);
 	free(elemento);
 }
