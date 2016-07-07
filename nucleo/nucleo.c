@@ -15,7 +15,7 @@ int buscarSocketConsola(int pid){
 }
 
 void imprimir(char* mensaje, void* cpu){
-	if(((t_cpu*) cpu)->elemento == (t_elemento_cola*)-1) return;
+	if(((t_cpu*) cpu)->elemento->estado == CANCELADO) return;
 	log_info(logger, "Imprimir: mensaje: %s", mensaje);
 	int socket_consola = buscarSocketConsola(((t_cpu*)cpu)->elemento->pcb->pid);
 	void* mensajeSerializado;
@@ -57,7 +57,8 @@ t_elemento_cola* desalojar(t_cpu* cpu){
 
 void quantumTerminado(void* cpu){
 	usleep(quantum_sleep * 1000);
-	if(((t_cpu*) cpu)->elemento == (t_elemento_cola*)-1){
+	if(((t_cpu*) cpu)->elemento->estado == CANCELADO){
+		((t_cpu*) cpu)->elemento->estado = EXIT;
 		((t_cpu*) cpu)->elemento = NULL;
 		sem_post(&moverPCBs);
 		return;
@@ -166,11 +167,10 @@ void destruirConsola(t_consola* consola){
 		close(consola->socketConsola);
 	}
 
-	log_info(logger, "Destruyendo consola: socket consola: %d", consola->socketConsola);
+	log_info(logger, "Destruyendo consola: pid: %d", consola->elemento->pcb->pid);
 	t_cpu* cpu = list_find(cpus, (void*)buscarCPU);
-	if(cpu) cpu->elemento = (t_elemento_cola*)-1;
+	if(cpu) cpu->elemento->estado = CANCELADO;
 
-	consola->elemento->estado = EXIT;
 	sem_post(&moverPCBs);
 	free(consola);
 }
@@ -268,7 +268,7 @@ void cerrarCPU(void* cpu, void* ultimoMensaje){
 }
 
 void programaTerminado(void* cpu){
-	if(((t_cpu*) cpu)->elemento != (t_elemento_cola*)-1) ((t_cpu*)cpu)->elemento->estado = EXIT;
+	((t_cpu*)cpu)->elemento->estado = EXIT;
 
 	((t_cpu*)cpu)->elemento = NULL;
 	sem_post(&moverPCBs);
@@ -345,7 +345,7 @@ void bloquearConsola(t_consola* consola){
 }
 
 void destruirCPU(t_cpu* cpu){
-	log_info(logger, "Destruyendo CPU: thread: %d", cpu->hiloCPU);
+	log_info(logger, "Destruyendo CPU!", cpu->hiloCPU);
 	shutdown(cpu->socketCPU, 0);
 	pthread_join(*cpu->hiloCPU, NULL);
 	free(cpu->hiloCPU);
@@ -508,7 +508,6 @@ int tamanioArray(char** array){
 }
 
 void obtener_valor(char* identificador, void* cpu){
-	if(((t_cpu*) cpu)->elemento == (t_elemento_cola*)-1) return;
 	log_info(logger, "Obtener Valor: id: %s", identificador);
 	int indice = indiceEnArray(shared_vars, identificador);
 	int valor;
@@ -528,7 +527,13 @@ void grabar_valor(char* identificador, int valorAGrabar){
 }
 
 void esperar(char* identificador, void* cpu){
-	if(((t_cpu*) cpu)->elemento == (t_elemento_cola*)-1) return;
+	if(((t_cpu*) cpu)->elemento->estado == CANCELADO){
+		enviar_string(((t_cpu*)cpu)->socketCPU, "bloqueate!");
+		((t_cpu*) cpu)->elemento->estado = EXIT;
+		((t_cpu*) cpu)->elemento = NULL;
+		sem_post(&moverPCBs);
+		return;
+	}
 	log_info(logger, "Esperar: id: %s", identificador);
 	int indice = indiceEnArray(sem_id, identificador);
 	log_info(logger, "Indice encontrado: %d", indice);
@@ -566,7 +571,12 @@ void avisar(char* identificador){
 }
 
 void entradaSalida(char* identificador, int operaciones, void* cpu){
-	if(((t_cpu*) cpu)->elemento == (t_elemento_cola*)-1) return;
+	if(((t_cpu*) cpu)->elemento->estado == CANCELADO){
+		((t_cpu*) cpu)->elemento->estado = EXIT;
+		((t_cpu*) cpu)->elemento = NULL;
+		sem_post(&moverPCBs);
+		return;
+	}
 	log_info(logger, "Entrada/Salida: id: %s, operaciones: %d", identificador, operaciones);
     t_pedido* pedido = malloc(sizeof(t_pedido));
     pedido->cantidadDeOperaciones = operaciones;
