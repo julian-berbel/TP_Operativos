@@ -169,7 +169,11 @@ void destruirConsola(t_consola* consola){
 
 	log_info(logger, "Destruyendo consola: pid: %d", consola->elemento->pcb->pid);
 	t_cpu* cpu = list_find(cpus, (void*)buscarCPU);
-	if(cpu) cpu->elemento->estado = CANCELADO;
+	if(cpu){
+		cpu->elemento->estado = CANCELADO;
+	}else{
+		consola->elemento->estado = EXIT;
+	}
 
 	sem_post(&moverPCBs);
 	free(consola);

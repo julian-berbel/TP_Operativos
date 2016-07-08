@@ -324,8 +324,8 @@ void finalizar(int id_programa) { // testeado
 			swap->bit_uso = 0;
 			list_replace(espacioTotal, paginaALiberar, swap);
 			j--;
+			free(proceso);
 		}
-		free(proceso);
 
 	}
 	log_info(logger, "Proceso finalizado %d", id_programa);

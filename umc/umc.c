@@ -203,6 +203,7 @@ void inicializar(int id_programa, int paginas_requeridas, char* programa, void* 
 }
 
 void finalizar(int id_programa) {
+	log_info(logger, "Finalizando programa: %d. Borrando marcos", id_programa);
 	borrar_marcos(id_programa);
 	procesos_ocupados[id_programa] = 0;
 	flush(id_programa);
