@@ -12,7 +12,7 @@
 #include "pcb.h"
 #include <signal.h>
 
-#define RUTA_LOG "/home/utnso/cpu.log"
+#define RUTA_LOG "/home/utnso/cpu"
 #define RUTA_CONFIG "/home/utnso/tp-2016-1c-Hellfish-Group/cpu/config/cpu.config"
 
 //Defino funciones de primitivas
@@ -91,5 +91,7 @@ void continuarEjecucion(int quantum);
 void desalojar();
 
 void stackOverflow();
+
+char* devolver_ruta_log();
 
 #endif

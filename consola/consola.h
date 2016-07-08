@@ -9,7 +9,7 @@
 #include <signal.h>
 #include "interfazNucleo.h"
 
-#define RUTA_LOG "/home/utnso/consola.log"
+#define RUTA_LOG "/home/utnso/consola"
 #define RUTA_CONFIG "/home/utnso/tp-2016-1c-Hellfish-Group/consola/config/consola.config"
 #define RUTA_PROGRAMA argumentos[1]
 
@@ -32,5 +32,7 @@ void imprimir(char* mensaje);
 void senialTerminar(int n);
 
 void terminar();
+
+char* devolver_ruta_log();
 
 #endif

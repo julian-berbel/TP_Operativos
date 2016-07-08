@@ -33,8 +33,10 @@ void abrirConfiguracion(){
 	configuracionConsola = config_create(RUTA_CONFIG);
 	ipNucleo = config_get_string_value(configuracionConsola, "IP_NUCLEO");
 	puertoNucleo = config_get_string_value(configuracionConsola, "PUERTO_NUCLEO");
-	logger = log_create(RUTA_LOG, "Consola", false, LOG_LEVEL_INFO);
-	logger_pantalla = log_create(RUTA_LOG, "Consola", true, LOG_LEVEL_INFO);
+	char* ruta_log = devolver_ruta_log();
+	logger = log_create(ruta_log, "Consola", false, LOG_LEVEL_INFO);
+	logger_pantalla = log_create(ruta_log, "Consola", true, LOG_LEVEL_INFO);
+	free(ruta_log);
 }
 
 void cerrar_todo(){
@@ -82,4 +84,26 @@ void senialTerminar(int n){
 void terminar(){
 	flagTerminar = 1;
 	shutdown(socket_nucleo, 0);
+}
+
+char* devolver_ruta_log(){
+	int ruta_valida = 0;
+	int i = 0;
+	char* ruta_log = string_new();
+	char* j;
+	while(!ruta_valida){
+		free(ruta_log);
+		ruta_log = string_new();
+		string_append(&ruta_log, RUTA_LOG);
+		j = string_itoa(i);
+		string_append(&ruta_log, j);
+		free(j);
+		string_append(&ruta_log, ".log");
+		if(access( ruta_log, F_OK ) != -1){
+			i++;
+		} else {
+			ruta_valida = 1;
+		}
+	}
+	return ruta_log;
 }

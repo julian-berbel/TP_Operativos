@@ -41,6 +41,7 @@ void* recibir(int socket){
 	free(recibido);
 
 	if(!checkSocket) return NULL;
+	if(checkSocket == -1) return NULL;
 
 	recibido = malloc(tamanioDelMensaje + 1);
 	memset(recibido, '\0', (tamanioDelMensaje + 1));

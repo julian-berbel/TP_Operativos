@@ -440,8 +440,10 @@ void abrirConfiguracion(){
 	puertoNucleo = config_get_string_value(configuracionCPU, "PUERTO_NUCLEO");
 	ipUMC = config_get_string_value(configuracionCPU, "IP_UMC");
 	puertoUMC = config_get_string_value(configuracionCPU, "PUERTO_UMC");
-	logger = log_create(RUTA_LOG, "CPU", false, LOG_LEVEL_INFO);
-	logger_pantalla = log_create(RUTA_LOG, "CPU", true, LOG_LEVEL_INFO);
+	char* ruta_log = devolver_ruta_log();
+	logger = log_create(ruta_log, "CPU", false, LOG_LEVEL_INFO);
+	logger_pantalla = log_create(ruta_log, "CPU", true, LOG_LEVEL_INFO);
+	free(ruta_log);
 
 	printf("%s\n", ipNucleo);
 	printf("%s\n", puertoNucleo);
@@ -580,4 +582,26 @@ void stackOverflow(){
 	free(mensaje);
 	finalizar();
 
+}
+
+char* devolver_ruta_log(){
+	int ruta_valida = 0;
+	int i = 0;
+	char* ruta_log = string_new();
+	char* j;
+	while(!ruta_valida){
+		free(ruta_log);
+		ruta_log = string_new();
+		string_append(&ruta_log, RUTA_LOG);
+		j = string_itoa(i);
+		string_append(&ruta_log, j);
+		free(j);
+		string_append(&ruta_log, ".log");
+		if(access( ruta_log, F_OK ) != -1){
+			i++;
+		} else {
+			ruta_valida = 1;
+		}
+	}
+	return ruta_log;
 }
