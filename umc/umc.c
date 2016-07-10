@@ -110,7 +110,7 @@ void inicializar_estructuras(){
 	cant_reemplazos_tlb=5;
 	cant_reemplazos_memoria=5;
 	int i;
-	 for (i = 0; i < 20; i++) {
+	 for (i = 0; i < 100; i++) {
 	 punteros_clock[i] = 0;	//comienzan apuntando a la pagina 0
 	 }
 	 //array de disponibilidad de marcos
@@ -121,7 +121,7 @@ void inicializar_estructuras(){
 	 }
 	 //array con la cantidad de paginas de cada proceso y procesos ocupados
 
-	 for (i = 0; i < 20; i++) { //inicializo en cero
+	 for (i = 0; i < 100; i++) { //inicializo en cero
 	 cant_paginas_procesos[i] = 0;
 	 procesos_ocupados[i] = 0;
 	 }
@@ -203,7 +203,6 @@ void inicializar(int id_programa, int paginas_requeridas, char* programa, void* 
 }
 
 void finalizar(int id_programa) {
-	log_info(logger, "Finalizando programa: %d. Borrando marcos", id_programa);
 	borrar_marcos(id_programa);
 	procesos_ocupados[id_programa] = 0;
 	flush(id_programa);
@@ -314,7 +313,8 @@ void copiar_pagina_en_memoria(int idp,int num_pagina,char* contenido_pagina){
 						int marco_libre = buscar_marco_libre();
 							if (marco_libre != -1) {//hay un marco libre en memoria
 							log_info(logger, "Se encontro el marco %d libre",marco_libre);
-							escribir_posicion_memoria(marco_libre * marco_size, marco_size,	contenido_pagina);
+							escribir_posicion_memoria(marco_libre * marco_size, marco_size,
+contenido_pagina);
 							escribir_marco_en_TP(idp, num_pagina, marco_libre);
 							marco_ocupado(marco_libre);
 							if (entradas_tlb!=0){
@@ -324,7 +324,8 @@ void copiar_pagina_en_memoria(int idp,int num_pagina,char* contenido_pagina){
 							log_info(logger, "No se encontraron marcos libres en memoria, se reemplazara una pagina del proceso");
 						//reemplazo local
 						int marco = reemplazar_MP(idp, num_pagina);
-						escribir_posicion_memoria(marco * marco_size, marco_size,contenido_pagina);
+						escribir_posicion_memoria(marco * marco_size,
+marco_size,contenido_pagina);
 						escribir_marco_en_TP(idp, num_pagina, marco);
 						if(entradas_tlb!=0){
 							escribir_marco_en_tlb(idp,num_pagina,marco);
@@ -336,7 +337,8 @@ void copiar_pagina_en_memoria(int idp,int num_pagina,char* contenido_pagina){
 							imprimir_TP(idp,"Tabla de paginas antes del reemplazo:");
 						}
 						int marco_destino = reemplazar_MP(idp, num_pagina);
-						escribir_posicion_memoria(marco_destino * marco_size, marco_size,contenido_pagina);
+						escribir_posicion_memoria(marco_destino * marco_size,
+marco_size,contenido_pagina);
 						escribir_marco_en_TP(idp, num_pagina, marco_destino);
 						if(cant_reemplazos_memoria>0){
 							imprimir_TP(idp,"Tabla de paginas despues del reemplazo:");
@@ -486,7 +488,7 @@ void imprimir_TP(int idp,char* estado){
 		int i,paginas;
 		paginas=cant_paginas_procesos[idp];
 		for(i=0;i<paginas;i++){
-		fprintf(archivo_TP,"         %d                    %d                   %d                    %d                  %d\n",i,tabla_procesos[idp][i].marco,tabla_procesos[idp][i].presencia,tabla_procesos[idp][i].bit_uso,tabla_procesos[idp][i].modificado);
+		fprintf(archivo_TP,"         %d                    %d                   %d                    %d           %d\n",i,tabla_procesos[idp][i].marco,tabla_procesos[idp][i].presencia,tabla_procesos[idp][i].bit_uso,tabla_procesos[idp][i].modificado);
 		}
 		fprintf(archivo_TP,"\n\n");
 	}
@@ -586,14 +588,17 @@ void modificar_retardo(int ret) { //testeado
 }
 
 void dump_est_proceso(int idp, const char * nombreArchivo) { //generar reporte en pantalla y un archivo sobre la tabla de paginas del proceso
+	if(procesos_ocupados[idp]==0){
+		printf("no existe el proceso\n");
+	}else{
 	log_info(logger, "Comando dump_est_proceso: generar un reporte sobre el contenido de la tabla de paginas del proceso %d",idp);
 	int pag;
 	int cantidad_paginas = cant_paginas_procesos[idp];
 	FILE *archivo;
-	if (strcmp(nombreArchivo, "tablas_de_paginas.txt"))
+	if (strcmp(nombreArchivo, "/home/utnso/tabla_de_paginas"))
 		archivo = fopen(nombreArchivo, "a");
 	else
-		archivo = fopen("tablas_de_paginas.txt", "a");
+		archivo = fopen("/home/utnso/tabla_de_paginas", "a");
 	if (!archivo) {
 		printf("Error al abrir/crear el archivo! :(\n");
 
@@ -619,11 +624,12 @@ void dump_est_proceso(int idp, const char * nombreArchivo) { //generar reporte e
 		fprintf(archivo, "\n");
 		fclose(archivo);
 	}
+	}
 }
 
 void dump_est_gen() { //generar un reporte en pantalla y un archivo con las tablas de paginas de todos los procesos
 	log_info(logger, "Comando dump_est_gen: generar un reporte sobre el contenido de las tablas de paginas de todos los procesos");
-	FILE *archivo = fopen("tablas_de_paginas_todos_los_procesos.txt", "a");
+	FILE *archivo = fopen("/home/utnso/tablas_de_paginas_todos_los_procesos.txt", "a");
 	if (!archivo) {
 		printf("Error al abrir/crear el archivo! :(\n");
 	} else {
@@ -632,14 +638,13 @@ void dump_est_gen() { //generar un reporte en pantalla y un archivo con las tabl
 	}
 	printf("Tablas de Paginas de todos los Procesos:\n\n");
 	int proceso;
-	for (proceso = 0; proceso < 50; proceso++) {
+	for (proceso = 0; proceso < 100; proceso++) {
 		int proceso_existente = procesos_ocupados[proceso];
 		if (proceso_existente) {
-			dump_est_proceso(proceso,
-					"tablas_de_paginas_todos_los_procesos.txt");
+			dump_est_proceso(proceso,"/home/utnso/tablas_de_paginas_todos_los_procesos.txt");
 		}
 	}
-	fopen("tablas_de_paginas_todos_los_procesos.txt", "a");
+	fopen("/home/utnso/tablas_de_paginas_todos_los_procesos.txt", "a");
 	if (!archivo) {
 		printf("Error al escribir finalizacion de archivo! :(\n");
 	} else {
@@ -652,13 +657,16 @@ void dump_est_gen() { //generar un reporte en pantalla y un archivo con las tabl
 void dump_cont_proceso(int idp, const char* nombreArchivo) { //testeado
 //generar un reporte en pantalla y un archivo sobre los datos almacenados en memoria
 //de ese proceso
+	if(procesos_ocupados[idp]==0){
+		printf("no existe el proceso\n");
+	}else{
 	log_info(logger, "Comando dump_cont_proceso: generar un reporte sobre los datos almacenados en memoria del proceso %d",idp);
 	int paginas_proceso=cant_paginas_procesos[idp];
 	FILE *archivo;
-		if (strcmp(nombreArchivo, "contenido_en_memoria.txt"))
-			archivo = fopen(nombreArchivo, "a");
+		if (strcmp(nombreArchivo, "/home/utnso/contenido_en_memoria.txt"))
+			archivo = fopen("/home/utnso/contenido_en_memoria_de_todos_los_procesos.txt", "a");
 		else
-			archivo = fopen("contenido_en_memoria.txt", "a");
+			archivo = fopen("/home/utnso/contenido_en_memoria.txt", "a");
 		if (!archivo) {
 			printf("Error al abrir/crear el archivo! :(\n");
 
@@ -681,13 +689,14 @@ if (archivo) {
 		fprintf(archivo, "\n");
 		fclose(archivo);
 	}
+	}
 }
 
 void dump_cont_gen() { //testeado
 //generar un reporte en pantalla y un archivo sobre los datos almacenados en memoria
 //de todos los procesos
 	log_info(logger, "Comando dump_cont_gen: generar un reporte sobre los datos almacenados en memoria de todos los procesos");
-	FILE *archivo = fopen("contenido_en_memoria_de_todos_los_procesos.txt", "a");
+	FILE *archivo = fopen("/home/utnso/contenido_en_memoria_de_todos_los_procesos.txt", "a");
 		if (!archivo) {
 			printf("Error al abrir/crear el archivo! :(\n");
 		} else {
@@ -696,18 +705,19 @@ void dump_cont_gen() { //testeado
 		}
 	printf("Contenido en Memoria de todos los procesos:\n\n");
 	int proceso, proceso_existente;
-		for (proceso = 0; proceso < 50; proceso++) {
+		for (proceso = 0; proceso < 100; proceso++) {
 			proceso_existente = procesos_ocupados[proceso];
 			if (proceso_existente) {
 				dump_cont_proceso(proceso, "contenido_en_memoria_de_todos_los_procesos.txt");
 }
 		}
-	fopen("contenido_en_memoria_de_todos_los_procesos.txt", "a");
+	fopen("/home/utnso/contenido_en_memoria_de_todos_los_procesos.txt", "a");
 		if (!archivo) {
 				printf("Error al escribir finalizacion de archivo! :(\n");
 			} else {
 				fprintf(archivo,
-						"------------------------------------------------------------------------------\n");
+
+"------------------------------------------------------------------------------\n");
 				fclose(archivo);
 			}
 }
@@ -753,11 +763,11 @@ void reconocer_comando(char *comando, char* param) {
 	} else if (!strcmp(comando, "dump_est") && !strcmp(param, "gen")) {
 		dump_est_gen();
 	} else if (!strcmp(comando, "dump_est") && strcmp(param, "gen")) {
-		dump_est_proceso(atoi(param), "tabla_paginas_proceso.txt");
+		dump_est_proceso(atoi(param), "/home/utnso/tabla_paginas_proceso.txt");
 	} else if (!strcmp(comando, "dump_cont") && !strcmp(param, "gen")) {
 		dump_cont_gen();
 	} else if (!strcmp(comando, "dump_cont") && strcmp(param, "gen")) {
-		dump_cont_proceso(atoi(param),"contenido_en_memoria.txt");
+		dump_cont_proceso(atoi(param),"/home/utnso/contenido_en_memoria.txt");
 	} else if (!strcmp(comando, "flush") && !strcmp(param, "tlb")) {
 		flush_tlb();
 	} else if (!strcmp(comando, "flush_memory")) {
@@ -824,7 +834,8 @@ int buscar_pagina_victima(int idp) {
 		for(iteracion=0;iteracion<2;iteracion++){
 			for(i=0;i<paginas_proceso;i++){
 				indice=punteros_clock[idp];
-				if(tabla_procesos[idp][indice].bit_uso==0 && tabla_procesos[idp][indice].modificado==0 && tabla_procesos[idp][indice].presencia==1){
+				if(tabla_procesos[idp][indice].bit_uso==0 && tabla_procesos[idp][indice].modificado==0 &&
+tabla_procesos[idp][indice].presencia==1){
 					punteros_clock[idp]+=1;
 					if(punteros_clock[idp]==paginas_proceso){
 						punteros_clock[idp]=0;
@@ -840,7 +851,8 @@ int buscar_pagina_victima(int idp) {
 			//busco U=0, M=1
 			for(i=0;i<paginas_proceso;i++){
 				indice=punteros_clock[idp];
-				if(tabla_procesos[idp][indice].bit_uso==0 && tabla_procesos[idp][indice].modificado==1 && tabla_procesos[idp][indice].presencia==1){
+				if(tabla_procesos[idp][indice].bit_uso==0 && tabla_procesos[idp][indice].modificado==1 &&
+tabla_procesos[idp][indice].presencia==1){
 					punteros_clock[idp]+=1;
 					if(punteros_clock[idp]==paginas_proceso){
 						punteros_clock[idp]=0;
@@ -879,6 +891,4 @@ int buscar_pagina_victima(int idp) {
 	}
 	return -1;
 }
-
-
 
