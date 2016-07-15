@@ -1,6 +1,11 @@
 #!/usr/bin/ansisop
 begin
-	variables a, b
-	a = 3
-	b = 5
-	a = b +                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 
+variables f, i, t
+
+	#`f`: Hasta donde c                                                               	#Imprimir el contador
+	print i
+
+	#`t`: Comparador entre `i` y `f                                                               
+
+
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              

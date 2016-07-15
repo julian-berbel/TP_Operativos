@@ -324,8 +324,7 @@ contenido_pagina);
 							log_info(logger, "No se encontraron marcos libres en memoria, se reemplazara una pagina del proceso");
 						//reemplazo local
 						int marco = reemplazar_MP(idp, num_pagina);
-						escribir_posicion_memoria(marco * marco_size,
-marco_size,contenido_pagina);
+						escribir_posicion_memoria(marco * marco_size,marco_size,contenido_pagina);
 						escribir_marco_en_TP(idp, num_pagina, marco);
 						if(entradas_tlb!=0){
 							escribir_marco_en_tlb(idp,num_pagina,marco);
@@ -337,11 +336,11 @@ marco_size,contenido_pagina);
 							imprimir_TP(idp,"Tabla de paginas antes del reemplazo:");
 						}
 						int marco_destino = reemplazar_MP(idp, num_pagina);
-						escribir_posicion_memoria(marco_destino * marco_size,
-marco_size,contenido_pagina);
+						escribir_posicion_memoria(marco_destino * marco_size,marco_size,contenido_pagina);
 						escribir_marco_en_TP(idp, num_pagina, marco_destino);
 						if(cant_reemplazos_memoria>0){
 							imprimir_TP(idp,"Tabla de paginas despues del reemplazo:");
+							cant_reemplazos_memoria--;
 						}
 						if(entradas_tlb!=0){
 							escribir_marco_en_tlb(idp,num_pagina,marco_destino);
@@ -461,7 +460,7 @@ void actualizar_referencia(int idp,int num_pagina){ //testeado
 }
 void imprimir_tlb(char* estado){  //testeado
 	if(entradas_tlb!=0){
-	FILE* archivo_tlb=fopen("reemplazos_en_tlb.txt","a");
+	FILE* archivo_tlb=fopen("/home/utnso/reemplazos_en_tlb.txt","a");
 	if(!archivo_tlb){
 		log_info(logger,"error al abrir el archivo");
 	}else{
@@ -478,7 +477,7 @@ void imprimir_tlb(char* estado){  //testeado
 }
 
 void imprimir_TP(int idp,char* estado){
-	FILE* archivo_TP=fopen("reemplazos_en_memoria.txt","a");
+	FILE* archivo_TP=fopen("/home/utnso/reemplazos_en_memoria.txt","a");
 	if(!archivo_TP){
 		log_info(logger,"error al abrir el archivo");
 	}else{

@@ -1,0 +1,23 @@
+IP_NUCLEO=
+PUERTO_PROG=
+PUERTO_CPU=
+QUANTUM=3
+QUANTUM_SLEEP=1000
+IO_ID=[Disco, Impresora, Scanner, impresora, LPT1, HDD1]
+IO_SLEEP=[1000, 2000, 1000, 4000, 500, 100]
+SEM_ID=[SEM1, b, c, mutexA, mutexB]
+SEM_INIT=[0, 1, 0, 1, 0]
+SHARED_VARS=[!colas, !UnaVar, !tiempo3, !compartida, !Global]
+PUERTO_UMC=
+IP_UMC=
+STACK_SIZE=8
+
+como debe ser:
+QUANTUM=3
+QUANTUM_SLEEP=1000
+SEM_IDS=[b, c]
+SEM_INIT=[1, 0]
+IO_IDS=[HDD1, LPT1]
+IO_SLEEP=[500, 200]
+SHARED_VARS=[colas,compartida]
+STACK_SIZE=8
