@@ -26,33 +26,6 @@ int main() {
 
 	listaDeProcesos = list_create();
 
-	//CASOS DE PRUEBA
-
-	//debe compactar
-	/*inicializar(1, 2, "hola como estassss");
-	inicializar(2, 3, "eeeeeeperro come carne humana mm hola como estas");
-	inicializar(3, 1, "agua hola");
-	inicializar(4, 3, "patricio rey y sus redonditos de ricota");
-	inicializar(5, 1, " como estass");
-	finalizar(3);
-	finalizar(5);
-	inicializar(6,2,"abcdefghijklmnopqrstuvxyz1234567");
-
-
-	 int k;
-	 for (k = 0; k < list_size(listaDeProcesos); k++) {
-	 t_proceso* procesoPrueba = list_get(listaDeProcesos, k);
-	 int pid;
-	 int pagina;
-
-	 pid = procesoPrueba->pid;
-	 pagina = procesoPrueba->pagina;
-
-	 printf("el proceso es %d\n", pid);
-	 printf("la pagina es %d\n", pagina);
-	 }*/
-
-	//FIN CASOS DE PRUEBA
 	void* mensaje;
 
 	while (!flagTerminar) {
@@ -314,11 +287,13 @@ void agregarProcesoALista(int id_programa, int paginas_requeridas, char* program
 void finalizar(int id_programa) { // testeado
 	log_info(logger, "Finalizando proceso %d", id_programa);
 	int j;
+	int contPagDelProceso = 1;
 	for (j = 0; j < list_size(listaDeProcesos); j++) {
 		t_proceso* proceso = list_get(listaDeProcesos, j);
 		if (proceso->pid == id_programa) {
 			int paginaALiberar = proceso->pagina;
-			//escribir_pagina(id_programa,paginaALiberar,' '); //AGREGO ESTO
+			escribir_pagina(id_programa,contPagDelProceso,paginaEnBlanco());
+			contPagDelProceso++;
 			list_remove(listaDeProcesos, j);
 			t_swap* swap = list_get(espacioTotal, paginaALiberar);
 			swap->bit_uso = 0;
@@ -418,6 +393,12 @@ void escribir_pagina(int id_programa, int num_pagina, char* buffer) {
 
 }
 
-void terminar() {
+char * paginaEnBlanco(){
+	char * paginaBlanco = string_repeat(' ',pagina_size -1);
+
+	return paginaBlanco;
+}
+
+void terminar(){
 
 }

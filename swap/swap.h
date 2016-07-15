@@ -62,10 +62,12 @@ void compactar();
 t_list* sacarRepetidos(t_list* lista, int paginas_requeridas);
 t_list* espaciosLibres();
 t_list* paginasAReemplazar(t_list* espaciosLibres, int paginas_requeridas);
+char* paginaEnBlanco();
 
-void terminar();
+void finalizar(int id_programa);
 void leer_pagina(int id_programa, int num_pagina);
 void escribir_pagina(int id_programa, int num_pagina, char* buffer);
 void recorrerYModificarArchivoYListas();
+void terminar();
 
 #endif
