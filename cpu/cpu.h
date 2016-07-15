@@ -71,6 +71,7 @@ sig_atomic_t flagTerminar;
 int quantum_definido;
 int pcb_bloqueado;
 int pcb_finalizar;
+int cpu_ocupada;
 
 void abrirConfiguracion();
 void cerrar_todo();

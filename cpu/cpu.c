@@ -424,10 +424,19 @@ int main(){
 	while(!flagTerminar){
 		mensaje = recibir(socket_nucleo);
 		if(!mensaje)break;
+		if((strcmp(mensaje, "cerrate") != 0)){
+			procesarMensaje(mensaje, NULL);
+		}
+	}
+
+	if(cpu_ocupada){
+		mensaje = recibir(socket_nucleo);
 		procesarMensaje(mensaje, NULL);
 	}
 
-	close(socket_nucleo);
+	if(!cpu_ocupada){
+		log_info(logger, "La cpu esta libre antes de cerrarse");
+	}
 
 	cerrar_todo();
 
@@ -453,6 +462,11 @@ void abrirConfiguracion(){
 }
 
 void cerrar_todo(){
+	void* mensaje;
+	int tamanioMensaje = serializarCerrarCPU(&mensaje);
+	enviar(socket_nucleo, mensaje, tamanioMensaje);
+	free(mensaje);
+	close(socket_nucleo);
 	log_destroy(logger);
 	log_destroy(logger_pantalla);
 	config_destroy(configuracionCPU);
@@ -523,6 +537,7 @@ void enviar_bytes_umc(int num_pagina, int offset, int tamanio, char* buffer){
 void cargarPCB(t_PCB* pcb, int quantum){
 	pcb_destroy(pcb_actual);
 	pcb_actual = pcb;
+	cpu_ocupada = 1;
 	quantum_definido = quantum;
 	pcb_bloqueado = 0;
 	pcb_finalizar = 0;
@@ -571,6 +586,7 @@ void desalojar(){
 	int tamanioMensaje = serializarPCB(pcb_actual, &mensaje);
 	enviar(socket_nucleo, mensaje, tamanioMensaje);
 	free(mensaje);
+	cpu_ocupada = 0;
 	//pcb_destroy(pcb_actual);
 }
 
