@@ -107,6 +107,8 @@ void borrar_marcos(int idp);
 void imprimir_tlb(char*);
 void imprimir_TP(int idp,char*estado);
 void actualizar_referencia(int idp, int num_pagina);
+int memoria_llena();
+void ver_tlb();
 
 //operaciones de consola
 void modificar_retardo(int ret);

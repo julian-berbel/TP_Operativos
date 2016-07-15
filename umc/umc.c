@@ -138,7 +138,7 @@ void inicializar_estructuras(){
 	 tlb[i].idp = -1;
 	 tlb[i].marco=-1;
 	 tlb[i].pagina=-1;
-	 tlb[i].uso=0;
+	 tlb[i].uso=-1;
 	 }
 	 }
 }
@@ -187,7 +187,10 @@ void cerrar_todo() {
 }
 
 void inicializar(int id_programa, int paginas_requeridas, char* programa, void* cliente) {
-	log_info(logger, "Inicializar proceso %d, consultar a SWAP espacio disponible",id_programa);
+	log_info(logger, "Inicializar proceso %d, consultar espacio disponible",id_programa);
+	if(memoria_llena()){
+		enviar_string(((t_cliente*)cliente)->socket, "NO OK");
+	}else{//consulto a swap
 	void* mensaje;
 	int tamanioMensaje = serializarInicializar(id_programa, paginas_requeridas, programa, &mensaje);
 	pthread_mutex_lock(&lock);
@@ -200,6 +203,7 @@ void inicializar(int id_programa, int paginas_requeridas, char* programa, void* 
 	}
 	free(respuesta);
 	pthread_mutex_unlock(&lock);
+	}
 }
 
 void finalizar(int id_programa) {
@@ -508,6 +512,16 @@ void cambiar_proceso_activo(int idp, void* cliente) {
 	((t_cliente*) cliente)->proceso_activo = idp;
 }
 
+int memoria_llena(){
+	int i;
+	for (i=0;i<marcos;i++){
+		if(marcos_libres[i]==0){
+			return 0;
+		}
+	}
+	return 1;
+}
+
 void escribir_posicion_memoria(int posicion, size_t tamanio, char *buffer) {
 	usleep(retardo * 1000);
 
@@ -601,30 +615,30 @@ void dump_est_proceso(int idp, const char * nombreArchivo) { //generar reporte e
 	if (!archivo) {
 		printf("Error al abrir/crear el archivo! :(\n");
 
-	} else
+	} else{
 		fprintf(archivo, "Tabla de Paginas del Proceso: %d\n", idp);
-	printf("Tabla de Paginas del Proceso: %d\n", idp);
-	for (pag = 0; pag < cantidad_paginas; pag++) {
-		printf(	"Pagina: %d, Marco: %d, Presencia: %d, Bit_uso: %d, Modificado: %d\n",
-				pag, tabla_procesos[idp][pag].marco,
-				tabla_procesos[idp][pag].presencia,
-				tabla_procesos[idp][pag].bit_uso,
-				tabla_procesos[idp][pag].modificado);
-		if(archivo)
-				fprintf(archivo,
-				"Pagina: %d, Marco: %d, Presencia: %d, Bit_uso: %d, Modificado: %d\n",
-				pag, tabla_procesos[idp][pag].marco,
-				tabla_procesos[idp][pag].presencia,
-				tabla_procesos[idp][pag].bit_uso,
-				tabla_procesos[idp][pag].modificado);
+		fprintf(archivo,"PAGINA     MARCO    PRESENCIA    USO    MODIFICADO\n");
 	}
-	printf("\n");
+	printf("Tabla de Paginas del Proceso: %d\n", idp);
+	printf("PAGINA     MARCO    PRESENCIA    USO    MODIFICADO\n");
+	for (pag = 0; pag < cantidad_paginas; pag++) {
+		printf("  %d         %d          %d          %d         %d\n",pag,tabla_procesos[idp][pag].marco,
+				tabla_procesos[idp][pag].presencia,
+				tabla_procesos[idp][pag].bit_uso,
+				tabla_procesos[idp][pag].modificado);
+
+		if(archivo){
+			fprintf(archivo,"  %d         %d          %d          %d         %d\n",pag,tabla_procesos[idp][pag].marco,tabla_procesos[idp][pag].presencia,tabla_procesos[idp][pag].bit_uso,tabla_procesos[idp][pag].modificado);
+		}
+	}
+			printf("\n");
 	if (archivo) {
 		fprintf(archivo, "\n");
 		fclose(archivo);
 	}
 	}
 }
+
 
 void dump_est_gen() { //generar un reporte en pantalla y un archivo con las tablas de paginas de todos los procesos
 	log_info(logger, "Comando dump_est_gen: generar un reporte sobre el contenido de las tablas de paginas de todos los procesos");
@@ -727,12 +741,15 @@ void flush_tlb() { //limpia completamente la tlb
 	int i;
 	for (i = 0; i < entradas_tlb; i++) {
 		tlb[i].idp = -1;
+		tlb[i].marco=-1;
+		tlb[i].pagina=-1;
+		tlb[i].uso=-1;
 	}
 	}
 }
 
 void flush_memory(int idp) { //marca todas las paginas del proceso como modificadas
-	log_info(logger, "Comando flush_memory: marcar todas las paginas del proceso como modificadas");
+	log_info(logger, "Comando flush_memory: marcar todas las paginas del proceso %d como modificadas",idp);
 	int cant_paginas = cant_paginas_procesos[idp];
 	int i;
 	for (i = 0; i < cant_paginas; i++) {
@@ -771,7 +788,10 @@ void reconocer_comando(char *comando, char* param) {
 		flush_tlb();
 	} else if (!strcmp(comando, "flush_memory")) {
 		flush_memory(atoi(param));
-	} else {
+	}else if(!strcmp(comando, "ver") && !strcmp(param, "tlb")){
+		ver_tlb();
+	}
+		else {
 		printf("No existe el comando");
 	}
 	pthread_mutex_unlock(&lock);
@@ -820,6 +840,18 @@ void sacar_pagina_de_tlb(int idp,int pagina){
 		}
 	}
 }
+}
+
+void ver_tlb(){
+	if(entradas_tlb!=0){
+			printf("El estado actual de la tlb:\n");
+			printf("ID_PROCESO   PAGINA   MARCO   REFERENCIA\n");
+			int i;
+			for(i=0;i<entradas_tlb;i++){
+			printf("    %d        %d       %d        %d\n",tlb[i].idp,tlb[i].pagina,tlb[i].marco,tlb[i].uso);
+			}
+			printf("\n");
+	}
 }
 
 int buscar_pagina_victima(int idp) {
