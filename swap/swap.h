@@ -12,7 +12,6 @@
 #include <signal.h>
 
 #define RUTA_LOG "/home/utnso/swap.log"
-#define RUTA_CONFIG "/home/utnso/tp-2016-1c-Hellfish-Group/swap/config/swap.config"
 
 typedef int Bool;
 #define true 1
@@ -43,7 +42,7 @@ t_log* logger_pantalla;
 sig_atomic_t flagTerminar = 0;
 int socket_umc;
 
-void abrirConfiguracion();
+void abrirConfiguracion(char* ruta);
 void cerrar_todo();
 
 void inicializar(int id_programa,int paginas_requeridas, char* programa);

@@ -13,7 +13,6 @@
 #include <signal.h>
 
 #define RUTA_LOG "/home/utnso/cpu"
-#define RUTA_CONFIG "/home/utnso/tp-2016-1c-Hellfish-Group/cpu/config/cpu.config"
 
 //Defino funciones de primitivas
 
@@ -73,7 +72,7 @@ int pcb_bloqueado;
 int pcb_finalizar;
 int cpu_ocupada;
 
-void abrirConfiguracion();
+void abrirConfiguracion(char* ruta);
 void cerrar_todo();
 char* obtener_instruccion(t_PCB * pcb);
 char* pedir_bytes_umc(int num_pagina, int offset, int tamanio);

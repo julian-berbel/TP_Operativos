@@ -4,7 +4,7 @@ int main(int cantidadArgumentos, char* argumentos[]){
 	char* programa = leerArchivo(RUTA_PROGRAMA);
 	signal(SIGINT, senialTerminar);
 
-	abrirConfiguracion();
+	abrirConfiguracion(argumentos[1]);
 	log_info(logger, "Inicia proceso Consola");
 
 	socket_nucleo = crear_socket_cliente(ipNucleo, puertoNucleo);
@@ -29,8 +29,8 @@ int main(int cantidadArgumentos, char* argumentos[]){
 	return 0;
 }
 
-void abrirConfiguracion(){
-	configuracionConsola = config_create(RUTA_CONFIG);
+void abrirConfiguracion(char* ruta){
+	configuracionConsola = config_create(ruta);
 	ipNucleo = config_get_string_value(configuracionConsola, "IP_NUCLEO");
 	puertoNucleo = config_get_string_value(configuracionConsola, "PUERTO_NUCLEO");
 	char* ruta_log = devolver_ruta_log();

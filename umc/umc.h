@@ -16,7 +16,6 @@
 
 
 #define RUTA_LOG "/home/utnso/umc.log"
-#define RUTA_CONFIG "/home/utnso/tp-2016-1c-Hellfish-Group/umc/config/umc.config"
 
 t_config* configuracionUMC;
 char* puertoUmc;
@@ -53,7 +52,7 @@ typedef struct{
 
 int socket_servidor;
 
-void abrirConfiguracion();
+void abrirConfiguracion(char* ruta);
 void inicializar_estructuras();
 void cerrar_todo();
 void *funcion_nucleo(void *argumento);

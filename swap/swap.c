@@ -1,7 +1,7 @@
 #include "swap.h"
 
-int main() {
-	abrirConfiguracion();
+int main(int cantidadArgumentos, char* argumentos[]) {
+	abrirConfiguracion(argumentos[1]);
 	crearArchivoBinario(nombre_data, pagina_size, cant_paginas);
 	abrirArchivoBinario();
 
@@ -44,8 +44,8 @@ int main() {
 
 
 
-void abrirConfiguracion() {
-	configuracion_swap = config_create(RUTA_CONFIG);
+void abrirConfiguracion(char* ruta) {
+	configuracion_swap = config_create(ruta);
 	puertoSwap = config_get_string_value(configuracion_swap, "PUERTO_ESCUCHA");
 	ipSwap = config_get_string_value(configuracion_swap, "IP_SWAP");
 	nombre_data = config_get_string_value(configuracion_swap, "NOMBRE_SWAP");
@@ -287,13 +287,20 @@ void agregarProcesoALista(int id_programa, int paginas_requeridas, char* program
 void finalizar(int id_programa) { // testeado
 	log_info(logger, "Finalizando proceso %d", id_programa);
 	int j;
-	int contPagDelProceso = 1;
+	int contPagDelProceso = 0;
+	for (j = 0; j < list_size(listaDeProcesos); j++) {
+		t_proceso* proceso = list_get(listaDeProcesos, j);
+		if (proceso->pid == id_programa) {
+			char* paginaBlanca = paginaEnBlanco();
+			escribir_pagina(id_programa,contPagDelProceso,paginaBlanca);
+			free(paginaBlanca);
+			contPagDelProceso++;
+		}
+	}
 	for (j = 0; j < list_size(listaDeProcesos); j++) {
 		t_proceso* proceso = list_get(listaDeProcesos, j);
 		if (proceso->pid == id_programa) {
 			int paginaALiberar = proceso->pagina;
-			escribir_pagina(id_programa,contPagDelProceso,paginaEnBlanco());
-			contPagDelProceso++;
 			list_remove(listaDeProcesos, j);
 			t_swap* swap = list_get(espacioTotal, paginaALiberar);
 			swap->bit_uso = 0;

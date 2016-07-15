@@ -67,18 +67,25 @@ void quantumTerminado(void* cpu){
 	void* mensaje;
 	int tamanioMensaje;
 	pthread_mutex_lock(&mutexColaReady);
-	if(!hayCPUsLibres() && colaPCBReady->elements->elements_count){
+	if(((t_cpu*)cpu)->cpu_cerrandose == 1){
 		pthread_mutex_unlock(&mutexColaReady);
-
 		t_elemento_cola* elemento = desalojar(cpu);
-
 		elemento->estado = READY;
 		sem_post(&moverPCBs);
-	}else{
-		pthread_mutex_unlock(&mutexColaReady);
-		tamanioMensaje = serializarContinuarEjecucion(&mensaje);
-		enviar(((t_cpu*)cpu)->socketCPU, mensaje, tamanioMensaje);
-		free(mensaje);
+	} else {
+		if(!hayCPUsLibres() && colaPCBReady->elements->elements_count){
+			pthread_mutex_unlock(&mutexColaReady);
+
+			t_elemento_cola* elemento = desalojar(cpu);
+
+			elemento->estado = READY;
+			sem_post(&moverPCBs);
+		}else{
+			pthread_mutex_unlock(&mutexColaReady);
+			tamanioMensaje = serializarContinuarEjecucion(&mensaje);
+			enviar(((t_cpu*)cpu)->socketCPU, mensaje, tamanioMensaje);
+			free(mensaje);
+		}
 	}
 }
 
@@ -143,7 +150,7 @@ int mayorSocket(int mayor){
 
 void leerCambios(){
 	log_info(logger, "Leyendo cambios en archivo de config");
-	t_config* configAux = config_create(RUTA_CONFIG);
+	t_config* configAux = config_create(ruta_config);
 	quantum = config_get_int_value(configAux, "QUANTUM");
 	quantum_sleep = config_get_int_value(configAux, "QUANTUM_SLEEP");
 
@@ -185,7 +192,7 @@ void threadReceptorYEscuchaConsolas(){
 	socket_consolas = crear_socket_servidor(ipNucleo, puertoNucleo);
 
 	int i, conexionRecibida, descriptor_inotify = inotify_init(), n;
-	inotify_add_watch(descriptor_inotify, RUTA_CONFIG, IN_MODIFY);
+	inotify_add_watch(descriptor_inotify, ruta_config, IN_MODIFY);
 
 	n = (socket_consolas> descriptor_inotify) ? socket_consolas:descriptor_inotify;
 	n = mayorSocket(n) + 1;
@@ -237,38 +244,63 @@ void threadReceptorYEscuchaConsolas(){
 
 void cerrarCPU(void* cpu, void* ultimoMensaje){
 	_Bool buscarCPU(void* elementoDeLaLista){
-			return elementoDeLaLista == cpu;
+		return elementoDeLaLista == cpu;
 	}
 
-	pthread_mutex_lock(&mutexCPUs);
-	list_remove_by_condition(cpus, (void*) buscarCPU);
-	pthread_mutex_unlock(&mutexCPUs);
-
-	log_info(logger, "Destruyendo CPU");
-
-	if(ultimoMensaje){
-		if(((t_cpu*)cpu)->elemento){
-			t_elemento_cola* elemento = desalojar(cpu);
-			elemento->estado = READY;
+	if(!((t_cpu*)cpu)->cpu_cerrandose){
+		((t_cpu*)cpu)->cpu_cerrandose = 1;
+		if((ultimoMensaje == 0) && (((t_cpu*)cpu)->elemento)){
+			void* mensaje;
+			int tamanioMensaje = serializarImprimir("Perdida conexion con la CPU que ejecutaba el programa. Finalizando ejecucion.", &mensaje);
+			t_consola* consola = buscarConsola(((t_cpu*)cpu)->elemento->pcb->pid);
+			enviar(consola->socketConsola, mensaje, tamanioMensaje);
+			((t_cpu*)cpu)->elemento->estado = EXIT;
+			sem_post(&moverPCBs);
+			pthread_mutex_lock(&mutexCPUs);
+			list_remove_by_condition(cpus, (void*) buscarCPU);
+			pthread_mutex_unlock(&mutexCPUs);
+			/*free(((t_cpu*)cpu)->hiloCPU);
+			free(cpu);*/
 		}
-
-		void* mensaje;
-		int tamanioMensaje = serializarTerminar(&mensaje);
-		enviar(((t_cpu*)cpu)->socketCPU, mensaje, tamanioMensaje);
-		free(mensaje);
-
-		shutdown(((t_cpu*)cpu)->socketCPU, 0);
-	}else if(((t_cpu*)cpu)->elemento){
-		void* mensaje;
-		int tamanioMensaje = serializarImprimir("Perdida conexion con la CPU que ejecutaba el programa. Finalizando ejecucion.", &mensaje);
-		t_consola* consola = buscarConsola(((t_cpu*)cpu)->elemento->pcb->pid);
-		enviar(consola->socketConsola, mensaje, tamanioMensaje);
-
-		((t_cpu*)cpu)->elemento->estado = EXIT;
+		if((ultimoMensaje != 0) && (((t_cpu*)cpu)->elemento == NULL)){
+			enviar_string(((t_cpu*)cpu)->socketCPU, "cerrate");
+		}
+		return;
 	}
-	sem_post(&moverPCBs);
-	free(((t_cpu*)cpu)->hiloCPU);
-	free(cpu);
+	if(((t_cpu*)cpu)->cpu_cerrandose){
+		pthread_mutex_lock(&mutexCPUs);
+		list_remove_by_condition(cpus, (void*) buscarCPU);
+		pthread_mutex_unlock(&mutexCPUs);
+
+		log_info(logger, "Destruyendo CPU");
+
+		/*if(ultimoMensaje){
+			if(((t_cpu*)cpu)->elemento){
+				t_elemento_cola* elemento = desalojar(cpu);
+				elemento->estado = READY;
+			}
+
+			void* mensaje;
+			int tamanioMensaje = serializarTerminar(&mensaje);
+			enviar(((t_cpu*)cpu)->socketCPU, mensaje, tamanioMensaje);
+			free(mensaje);
+
+			shutdown(((t_cpu*)cpu)->socketCPU, 0);
+		}else if(((t_cpu*)cpu)->elemento){
+			void* mensaje;
+			int tamanioMensaje = serializarImprimir("Perdida conexion con la CPU que ejecutaba el programa. Finalizando ejecucion.", &mensaje);
+			t_consola* consola = buscarConsola(((t_cpu*)cpu)->elemento->pcb->pid);
+			enviar(consola->socketConsola, mensaje, tamanioMensaje);
+
+			((t_cpu*)cpu)->elemento->estado = EXIT;
+		}
+		sem_post(&moverPCBs);
+		shutdown(((t_cpu*)cpu)->socketCPU, 0);
+		free(((t_cpu*)cpu)->hiloCPU);
+		free(cpu);*/
+		((t_cpu*)cpu)->cpu_cerrandose = 2;
+		return;
+	}
 }
 
 void programaTerminado(void* cpu){
@@ -294,14 +326,17 @@ void threadEscuchaCPU(t_cpu* cpu){
 
 	printf("Conectado a un CPU\n");
 
-	while(!flagTerminar){
+	while((!flagTerminar) && (cpu->cpu_cerrandose != 2)){
 		mensaje = recibir(socket);
 		if(!mensaje) break;
 		procesarMensaje(mensaje, cpu);
 	}
 
-	if(!flagTerminar && !mensaje) cerrarCPU(cpu, mensaje);//CPU desconectado a la fuerza
+	if((!flagTerminar) && (!mensaje)) cerrarCPU(cpu, mensaje);//CPU desconectado a la fuerza
 
+	shutdown(((t_cpu*)cpu)->socketCPU, 0);
+	free(((t_cpu*)cpu)->hiloCPU);
+	free(cpu);
 	close(socket);
 }
 
@@ -313,6 +348,7 @@ void crearThreadDeCPU(int conexionRecibida){
 	cpu->socketCPU = conexionRecibida;
 	cpu->hiloCPU = hiloEscuchaCPU;
 	cpu->elemento = NULL;
+	cpu->cpu_cerrandose = 0;
 
 	pthread_mutex_lock(&mutexCPUs);
 	list_add(cpus, (void*) cpu);
@@ -356,9 +392,11 @@ void destruirCPU(t_cpu* cpu){
 	free(cpu);
 }
 
-int main(){
+int main(int cantidadArgumentos, char* argumentos[]){
+	ruta_config = string_new();
+	string_append(&ruta_config, argumentos[1]);
 
-	init();
+	init(ruta_config);
 
 	log_info(logger, "Inicia proceso Núcleo");
 
@@ -369,8 +407,8 @@ int main(){
 	return 0;
 }
 
-void init(){
-	configuracionNucleo = config_create(RUTA_CONFIG);
+void init(char* ruta){
+	configuracionNucleo = config_create(ruta);
 	ipNucleo = config_get_string_value(configuracionNucleo, "IP_NUCLEO");
 	puertoNucleo = config_get_string_value(configuracionNucleo, "PUERTO_PROG");
 	puertoCPU = config_get_string_value(configuracionNucleo, "PUERTO_CPU");
@@ -447,6 +485,7 @@ void cerrar_todo(){
 	shutdown(socket_cpus, 0);
 	shutdown(socket_umc, 0);
 	close(descriptor_inotify);
+	free(ruta_config);
 
 	list_iterate(consolas, (void*) bloquearConsola);
 	pthread_join(hiloConsolas, NULL);
@@ -715,7 +754,11 @@ void matarProceso(t_elemento_cola* elemento){
 }
 
 _Bool estaLibre(t_cpu* cpu){
+	if((!cpu->elemento) && (cpu->cpu_cerrandose == 0)){
 		return !cpu->elemento;
+	}else{
+		return cpu->elemento;
+	}
 }
 
 t_cpu* cpuLibre(){

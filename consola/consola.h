@@ -10,8 +10,7 @@
 #include "interfazNucleo.h"
 
 #define RUTA_LOG "/home/utnso/consola"
-#define RUTA_CONFIG "/home/utnso/tp-2016-1c-Hellfish-Group/consola/config/consola.config"
-#define RUTA_PROGRAMA argumentos[1]
+#define RUTA_PROGRAMA argumentos[2]
 
 t_config* configuracionConsola;
 char* ipNucleo;
@@ -22,7 +21,7 @@ int socket_nucleo;
 
 int flagTerminar = 0;
 
-void abrirConfiguracion();
+void abrirConfiguracion(char* ruta);
 void cerrar_todo();
 int archivoExiste();
 char* leerArchivo();

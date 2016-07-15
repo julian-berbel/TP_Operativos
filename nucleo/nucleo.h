@@ -17,7 +17,6 @@
 #include <sys/inotify.h>
 
 #define RUTA_LOG "/home/utnso/nucleo.log"
-#define RUTA_CONFIG "/home/utnso/tp-2016-1c-Hellfish-Group/nucleo/config/nucleo.config"
 
 t_config* configuracionNucleo;
 char* ipNucleo;
@@ -52,6 +51,7 @@ sig_atomic_t flagTerminar = 0;
 int tamanioDePagina;
 int descriptor_inotify;
 sem_t moverPCBs;
+char* ruta_config;
 
 typedef enum{READY, EXEC, BLOCK, EXIT, CANCELADO} estadoACambiar;
 
@@ -64,6 +64,7 @@ typedef struct{
 	pthread_t* hiloCPU;
 	int socketCPU;
 	t_elemento_cola* elemento;
+	int cpu_cerrandose;
 }t_cpu;
 
 typedef struct{
@@ -99,7 +100,7 @@ pthread_mutex_t mutexPID = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t mutexCPUs = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t mutexSemaforosGlobales = PTHREAD_MUTEX_INITIALIZER;
 
-void init();
+void init(char* ruta);
 void cerrar_todo();
 
 void cancelar(void* consola);

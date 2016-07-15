@@ -389,17 +389,18 @@ void signal_primitiva(t_nombre_semaforo identificador_semaforo){
 }
 
 void cerrarCPU(int n){
-	if(n == SIGUSR1){
+	if(n == SIGINT){
 		void* mensaje;
 		int tamanioMensaje = serializarCerrarCPU(&mensaje);
 		enviar(socket_nucleo, mensaje, tamanioMensaje);
 		free(mensaje);
+		flagTerminar = 1;
 	}
 }
 
-int main(){
-	abrirConfiguracion();
-	signal(SIGUSR1, cerrarCPU);
+int main(int cantidadArgumentos, char* argumentos[]){
+	abrirConfiguracion(argumentos[1]);
+	signal(SIGINT, cerrarCPU);
 	log_info(logger, "Inicia proceso CPU");
 	socket_nucleo = crear_socket_cliente(ipNucleo, puertoNucleo);
 	log_info(logger_pantalla, "CPU y Nucleo conectados");
@@ -437,14 +438,17 @@ int main(){
 	if(!cpu_ocupada){
 		log_info(logger, "La cpu esta libre antes de cerrarse");
 	}
+	if(cpu_ocupada){
+		log_info(logger, "La cpu sigue ocupada antes de cerrarse");
+	}
 
 	cerrar_todo();
 
 	return 0;
 }
 
-void abrirConfiguracion(){
-	configuracionCPU = config_create(RUTA_CONFIG);
+void abrirConfiguracion(char* ruta){
+	configuracionCPU = config_create(ruta);
 	ipNucleo = config_get_string_value(configuracionCPU, "IP_NUCLEO");
 	puertoNucleo = config_get_string_value(configuracionCPU, "PUERTO_NUCLEO");
 	ipUMC = config_get_string_value(configuracionCPU, "IP_UMC");
@@ -466,6 +470,7 @@ void cerrar_todo(){
 	int tamanioMensaje = serializarCerrarCPU(&mensaje);
 	enviar(socket_nucleo, mensaje, tamanioMensaje);
 	free(mensaje);
+	shutdown(socket_nucleo, 0);
 	close(socket_nucleo);
 	log_destroy(logger);
 	log_destroy(logger_pantalla);

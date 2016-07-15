@@ -73,7 +73,7 @@ void threadInterpreteConsola() {
 
 int main(int cantidadArgumentos, char* argumentos[]) {
 
- abrirConfiguracion();
+ abrirConfiguracion(argumentos[1]);
  log_info(logger, "Inicia proceso UMC");
 
  inicializar_estructuras();
@@ -142,8 +142,8 @@ void inicializar_estructuras(){
 	 }
 	 }
 }
-void abrirConfiguracion() {
-	configuracionUMC = config_create(RUTA_CONFIG);
+void abrirConfiguracion(char* ruta) {
+	configuracionUMC = config_create(ruta);
 	ipUmc = config_get_string_value(configuracionUMC, "IP_UMC");
 	puertoUmc = config_get_string_value(configuracionUMC, "PUERTO");
 	ipSwap = config_get_string_value(configuracionUMC, "IP_SWAP");
