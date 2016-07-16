@@ -2,7 +2,7 @@
 
 int main(int cantidadArgumentos, char* argumentos[]){
 	char* programa = leerArchivo(RUTA_PROGRAMA);
-	signal(SIGINT, senialTerminar);
+	signal(SIGUSR1, senialTerminar);
 
 	abrirConfiguracion(argumentos[1]);
 	log_info(logger, "Inicia proceso Consola");
@@ -76,7 +76,7 @@ void imprimir(char* mensaje){
 }
 
 void senialTerminar(int n){
-	if(n == SIGINT){
+	if(n == SIGUSR1){
 		terminar();
 	}
 }

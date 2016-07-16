@@ -1,2 +1,79 @@
-                                                               c                                                               	                                                               f                                                               
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                
+#!/usr/bin/ansisop
+#Overflow en el numero 3*4 + 5 % 300 = 16
+begin
+	variables r
+	r <- f 0
+end
+
+function f
+	variables a, r
+	io HDD1 5
+	a=$0+1
+	print a
+	r <- g a
+end
+
+function g
+	variables a, r
+	io HDD1 1
+	a=$0+1
+	print a
+	r <- f a
+end
+
+
+                        1           0                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               #!/usr/bin/ansisop
+#Alliance - S4
+
+begin
+variables f, i, t
+
+	#`f`: Hasta donde contar
+	i=0
+	f=20
+	:inicio
+
+	#`i`: Iterador
+	i=i+1
+	
+	#Imprimir el contador
+	print i
+
+	#`t`: Comparador entre `i` y `f`
+	t=f-i
+	#De no ser iguales, salta a inicio
+
+	#esperar
+	io HDD1 3
+	jnz t inicio
+end
+
+
+    20  1   19                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      #!/usr/bin/ansisop
+#Alliance - S4
+
+begin
+variables f, i, t
+
+	#`f`: Hasta donde contar
+	i=0
+	f=20
+	:inicio
+
+	#`i`: Iterador
+	i=i+1
+	
+	#Imprimir el contador
+	print i
+
+	#`t`: Comparador entre `i` y `f`
+	t=f-i
+	#De no ser iguales, salta a inicio
+
+	#esperar
+	io HDD1 3
+	jnz t inicio
+end
+
+
+        1   -1                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      

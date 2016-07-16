@@ -757,7 +757,7 @@ _Bool estaLibre(t_cpu* cpu){
 	if((!cpu->elemento) && (cpu->cpu_cerrandose == 0)){
 		return !cpu->elemento;
 	}else{
-		return cpu->elemento;
+		return 0;
 	}
 }
 

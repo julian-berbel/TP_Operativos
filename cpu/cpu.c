@@ -206,6 +206,7 @@ t_valor_variable obtenerValorCompartida(t_nombre_compartida variable){
 	int* valor_variable_recibida = malloc(sizeof(int));
 	valor_variable_recibida = (int*) recibir(socket_nucleo);
 	int valor_variable = *valor_variable_recibida;
+	free(valor_variable_recibida);
 	log_info(logger, "Valor convertido del nucleo: %d", valor_variable);
 	int i = 0;
 	while(string_cortado[i] != NULL){
@@ -389,7 +390,7 @@ void signal_primitiva(t_nombre_semaforo identificador_semaforo){
 }
 
 void cerrarCPU(int n){
-	if(n == SIGINT){
+	if(n == SIGUSR1){
 		void* mensaje;
 		int tamanioMensaje = serializarCerrarCPU(&mensaje);
 		enviar(socket_nucleo, mensaje, tamanioMensaje);
@@ -400,7 +401,7 @@ void cerrarCPU(int n){
 
 int main(int cantidadArgumentos, char* argumentos[]){
 	abrirConfiguracion(argumentos[1]);
-	signal(SIGINT, cerrarCPU);
+	signal(SIGUSR1, cerrarCPU);
 	log_info(logger, "Inicia proceso CPU");
 	socket_nucleo = crear_socket_cliente(ipNucleo, puertoNucleo);
 	log_info(logger_pantalla, "CPU y Nucleo conectados");
@@ -425,6 +426,9 @@ int main(int cantidadArgumentos, char* argumentos[]){
 	while(!flagTerminar){
 		mensaje = recibir(socket_nucleo);
 		if(!mensaje)break;
+		if((strcmp(mensaje, "cerrate") == 0)){
+			cpu_ocupada = 0;
+		}
 		if((strcmp(mensaje, "cerrate") != 0)){
 			procesarMensaje(mensaje, NULL);
 		}
