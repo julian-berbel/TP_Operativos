@@ -216,7 +216,7 @@ void recorrerYModificarArchivoYListas() {
 				t_proceso* proceso = list_get(listaDeProcesos, j);
 				if (proceso->pagina == swapSig->pagina) {
 					proceso->pagina = swap->pagina;
-					list_replace(listaDeProcesos, j, proceso);
+					//list_replace(listaDeProcesos, j, proceso);
 					j = list_size(listaDeProcesos); //para que salga del for y no recorra toda la lista
 				}
 			}
@@ -224,10 +224,10 @@ void recorrerYModificarArchivoYListas() {
 			escribirArchivoBinarioEnPag(swap->pagina, paginaAMoverEnUso);
 			swap->bit_uso = 1;
 			swapSig->bit_uso = 0;
-			t_swap* swapReemplazado = list_replace(espacioTotal, i, swap);
-			free(swapReemplazado);
-			swapReemplazado = list_replace(espacioTotal, i + 1, swapSig);
-			free(swapReemplazado);
+			//t_swap* swapReemplazado = list_replace(espacioTotal, i, swap);
+			//free(swapReemplazado);
+			//swapReemplazado = list_replace(espacioTotal, i + 1, swapSig);
+			//free(swapReemplazado);
 
 		}
 	}
@@ -326,6 +326,7 @@ int cant_pags_disponibles() {
 
 void leer_pagina(int id_programa, int num_pagina) {
 	log_info(logger, "Leyendo pagina %d del programa %d", num_pagina, id_programa);
+	usleep(retardo_acceso * 1000);
 	int i;
 	t_list* paginasDelProceso = list_create();
 	int tamanioListaProcesos = list_size(listaDeProcesos);
@@ -369,6 +370,7 @@ void escribir_pagina(int id_programa, int num_pagina, char* buffer) {
 
 	}*/
 	log_info(logger, "Escribiendo la pagina %d del programa %d", num_pagina, id_programa);
+	usleep(retardo_acceso * 1000);
 	int i;
 	t_list* paginasDelProceso = list_create();
 	int paginaAEscribir = -1;

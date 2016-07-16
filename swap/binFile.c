@@ -70,7 +70,7 @@ void abrirArchivoBinario(){
 
 void escribirArchivoBinarioEnPag(int numPagina, char* buffer) {
 
-	usleep(retardo_acceso * 1000);
+
 
 	fseek(archivo, paginaEnBytes(numPagina), SEEK_SET);
 
@@ -80,7 +80,7 @@ void escribirArchivoBinarioEnPag(int numPagina, char* buffer) {
 
 char* leerArchivoBinarioEnPagina(int numPagina) {
 
-	usleep(retardo_acceso * 1000);
+
 	//archivo = fopen(rutaArchivoSwap(), "rb+");
 	char* buffer = malloc(pagina_size + 1);
 	memset(buffer, '\0', (pagina_size + 1));

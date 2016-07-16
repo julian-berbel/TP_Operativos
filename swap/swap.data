@@ -1,79 +1,73 @@
 #!/usr/bin/ansisop
-#Overflow en el numero 3*4 + 5 % 300 = 16
 begin
-	variables r
-	r <- f 0
-end
-
-function f
-	variables a, r
-	io HDD1 5
-	a=$0+1
-	print a
-	r <- g a
-end
-
-function g
-	variables a, r
-	io HDD1 1
-	a=$0+1
-	print a
-	r <- f a
-end
-
-
-                        1           0                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               #!/usr/bin/ansisop
-#Alliance - S4
-
-begin
-variables f, i, t
-
-	#`f`: Hasta donde contar
+#un vector de 5 posiciones
+variables a, b, c, d, e, i
+	#No inicializo las primeras 5 variables (vector) para tener elementos aleatorios
+	#i va a ser mi iterador, me interesa que empieze en 0
 	i=0
-	f=20
-	:inicio
 
-	#`i`: Iterador
-	i=i+1
+	#Bucle del for
+	:for
+	#imprime el valor iavo del vector
+	print *&a+i
+	#pongo en 0 el valor de la posicion para verificar escritura
+	*&a+i = 0
+	#avanzo en el vector (de a 4 posiciones, 1 int)
+	i=i+4
+	#Si i no es 20 (5 posiciones del vector * 4 temanio de las variables)
+	jnz 20-i for
 	
-	#Imprimir el contador
-	print i
-
-	#`t`: Comparador entre `i` y `f`
-	t=f-i
-	#De no ser iguales, salta a inicio
-
-	#esperar
-	io HDD1 3
-	jnz t inicio
+	#Final del bucle
+	textPrint Fin
 end
 
 
-    20  1   19                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      #!/usr/bin/ansisop
-#Alliance - S4
-
+                             0   0               4                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           #!/usr/bin/ansisop
 begin
-variables f, i, t
-
-	#`f`: Hasta donde contar
+#un vector de 5 posiciones
+variables a, b, c, d, e, i
+	#No inicializo las primeras 5 variables (vector) para tener elementos aleatorios
+	#i va a ser mi iterador, me interesa que empieze en 0
 	i=0
-	f=20
-	:inicio
 
-	#`i`: Iterador
-	i=i+1
+	#Bucle del for
+	:for
+	#imprime el valor iavo del vector
+	print *&a+i
+	#pongo en 0 el valor de la posicion para verificar escritura
+	*&a+i = 0
+	#avanzo en el vector (de a 4 posiciones, 1 int)
+	i=i+4
+	#Si i no es 20 (5 posiciones del vector * 4 temanio de las variables)
+	jnz 20-i for
 	
-	#Imprimir el contador
-	print i
-
-	#`t`: Comparador entre `i` y `f`
-	t=f-i
-	#De no ser iguales, salta a inicio
-
-	#esperar
-	io HDD1 3
-	jnz t inicio
+	#Final del bucle
+	textPrint Fin
 end
 
 
-        1   -1                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      
+                             0                   0                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           #!/usr/bin/ansisop
+begin
+#un vector de 5 posiciones
+variables a, b, c, d, e, i
+	#No inicializo las primeras 5 variables (vector) para tener elementos aleatorios
+	#i va a ser mi iterador, me interesa que empieze en 0
+	i=0
+
+	#Bucle del for
+	:for
+	#imprime el valor iavo del vector
+	print *&a+i
+	#pongo en 0 el valor de la posicion para verificar escritura
+	*&a+i = 0
+	#avanzo en el vector (de a 4 posiciones, 1 int)
+	i=i+4
+	#Si i no es 20 (5 posiciones del vector * 4 temanio de las variables)
+	jnz 20-i for
+	
+	#Final del bucle
+	textPrint Fin
+end
+
+
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             
